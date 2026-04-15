@@ -1,0 +1,29 @@
+{
+  "name": "kybos-core",
+  "version": "0.1.0",
+  "description": "A fast, small, LLM-friendly candlestick chart library",
+  "type": "module",
+  "main": "dist/chart.js",
+  "module": "dist/chart.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "dev": "node esbuild.config.js --watch",
+    "serve": "npx serve .",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "candlestick",
+    "chart",
+    "financial",
+    "trading",
+    "canvas",
+    "webgl"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "esbuild": "^0.20.0"
+  }
+}

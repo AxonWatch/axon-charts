@@ -1,0 +1,184 @@
+import { niceTicks, getPriceDecimals, calculateTimeStep } from '../utils/math.js';
+import { LAYOUT, getUsableHeight } from '../core/layout.js';
+import { priceToY, yToPrice, deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
+import { IChart } from '../types/index.js';
+
+/**
+ * Handles price and time axis rendering
+ */
+export class Axes {
+  private chart: IChart;
+
+  constructor(chart: IChart) {
+    this.chart = chart;
+  }
+
+  /**
+   * Draw price axis with nice-tick algorithm
+   * VIRTUAL: Derives prices from the current viewport boundaries
+   */
+  public drawPriceAxis(ctx: CanvasRenderingContext2D): void {
+    const { w, h, axisWidth } = this.chart.state;
+
+    // 1. Calculate the price at the top and bottom of the visible chart area
+    const topPrice = yToPrice(0, this.chart.state);
+    const bottomPrice = yToPrice(h - LAYOUT.BOTTOM_MARGIN, this.chart.state);
+
+    // 2. Feed THESE dynamic prices into the niceTicks algorithm
+    const ticks = niceTicks(
+      Math.min(topPrice, bottomPrice),
+      Math.max(topPrice, bottomPrice),
+      10
+    );
+
+    // Get live price to avoid overlapping labels
+    const data = this.chart.dataManager.data;
+    const currentPrice = data.length > 0 ? data[data.length - 1].close : null;
+    const currentPriceY = currentPrice !== null ? priceToY(currentPrice, this.chart.state) : LAYOUT.OFFSCREEN_PRICE_FALLBACK;
+
+    // Draw price labels
+    ctx.fillStyle = this.chart.options.layout.textColor;
+    ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+
+    ticks.forEach(price => {
+      const y = priceToY(price, this.chart.state);
+
+      // Only draw if within visible chart area
+      if (y < 0 || y > h - LAYOUT.BOTTOM_MARGIN) return;
+
+      // Collision detection with live price label
+      if (Math.abs(y - currentPriceY) < LAYOUT.COLLISION_THRESHOLD) return;
+
+      // Use Professional Formatter
+      const label = this.chart.priceFormatter.formatPrice(price);
+      ctx.fillText(label, w - LAYOUT.LABEL_OFFSET, y);
+    });
+
+    ctx.textAlign = 'left';
+  }
+
+  /**
+   * Draw time axis with interval snapping
+   * VIRTUAL & SNAPPED: Anchors to clean time boundaries (e.g. 13:00, 14:00)
+   */
+  public drawTimeAxis(ctx: CanvasRenderingContext2D): void {
+    const { w, h, barWidth, data, axisWidth } = this.chart.state;
+    if (data.length === 0) return;
+
+    // 1. Calculate time interval and step
+    const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
+    const step = calculateTimeStep(barWidth);
+    const stepTime = step * interval;
+    
+    // 2. Reference point for "Time Space" vs "Index Space" mapping
+    const refBar = data[data.length - 1];
+    const refIdx = data.length - 1;
+    const refTime = refBar.time;
+
+    // 3. Find the 'Time' at the left edge of the screen (x=0)
+    const leftIndex = xToIndex(0, this.chart.state);
+    const leftTime = refTime + (leftIndex - refIdx) * interval;
+
+    // 4. SNAP the leftTime to the nearest 'nice' boundary (Epoch-based)
+    const startSnappedTime = Math.floor(leftTime / stepTime) * stepTime;
+
+    // SIDEBAR: Must use dynamic axisWidth for visual boundary
+    const chartWidth = w - axisWidth;
+
+    // 5. Draw!
+    ctx.strokeStyle = this.chart.options.grid.vertLines.color;
+    ctx.fillStyle = this.chart.options.layout.textColor;
+    ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Skip if hidden
+    if (!this.chart.options.grid.show) ctx.strokeStyle = 'transparent';
+    if (!this.chart.options.timeScale.visible) return;
+
+    // SAFETY: Prevent infinite loops if stepTime is 0 or NaN
+    const safeStepTime = Math.max(1, stepTime || 1);
+    let iterations = 0;
+    const MAX_ITERATIONS = 1000;
+
+    // Loop across the screen time-by-time
+    for (let currentT = startSnappedTime; ; currentT += safeStepTime) {
+      if (++iterations > MAX_ITERATIONS) break;
+      // Calculate index for this nice time
+      const virtualIdx = refIdx + (currentT - refTime) / interval;
+      const x = indexToX(virtualIdx, this.chart.state);
+
+      if (x > chartWidth) break;
+      if (x < -100) continue; // Skip if far to the left
+
+      // Draw vertical grid line (Full Height)
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
+      ctx.stroke();
+
+      // Draw time label
+      if (x >= 0 && x <= chartWidth) {
+        const label = this.formatTimeLabel(currentT, virtualIdx, step, interval);
+        ctx.fillText(label, x, h - LAYOUT.TIME_LABEL_Y);
+      }
+    }
+
+    ctx.textAlign = 'left';
+  }
+
+  /**
+   * Format time label with date rollover
+   */
+  private formatTimeLabel(time: number, index: number, step: number, interval: number): string {
+    const date = new Date(time);
+    const prevTime = time - (step * interval);
+    const prevDate = new Date(prevTime);
+
+    // Check if we should show date (first bar or day change)
+    const isNewDay = date.getDate() !== prevDate.getDate() || 
+                     date.getMonth() !== prevDate.getMonth() || 
+                     date.getFullYear() !== prevDate.getFullYear();
+
+    if (isNewDay) {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+    }
+  }
+
+  /**
+   * Draw grid lines
+   */
+  public drawGrid(ctx: CanvasRenderingContext2D): void {
+    if (!this.chart.options.grid.show) return;
+
+    const { w, h, axisWidth } = this.chart.state;
+
+    ctx.strokeStyle = this.chart.options.grid.horzLines.color;
+    ctx.lineWidth = this.chart.options.grid.horzLines.width;
+
+    // 1. Calculate horizontal grid lines using the SAME virtual logic as the axis labels
+    const topPrice = yToPrice(0, this.chart.state);
+    const bottomPrice = yToPrice(h - LAYOUT.BOTTOM_MARGIN, this.chart.state);
+
+    const ticks = niceTicks(
+      Math.min(topPrice, bottomPrice),
+      Math.max(topPrice, bottomPrice),
+      10
+    );
+
+    ticks.forEach(price => {
+      const y = priceToY(price, this.chart.state);
+
+      if (y < 0 || y > h - LAYOUT.BOTTOM_MARGIN) return;
+
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w - axisWidth, y);
+      ctx.stroke();
+    });
+  }
+}
