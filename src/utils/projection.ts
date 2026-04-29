@@ -67,7 +67,13 @@ export function yToPrice(y: number, state: ChartState): number {
  * Uses sub-pixel precision (no Math.round) for smooth rendering
  */
 export function indexToX(index: number, state: ChartState): number {
-  return (index * state.barWidth) + state.offsetX + (state.barWidth / 2);
+  // Guard against invalid inputs
+  if (!isFinite(index) || state.barWidth <= 0 || !isFinite(state.offsetX)) {
+    return 0;
+  }
+
+  const x = (index * state.barWidth) + state.offsetX + (state.barWidth / 2);
+  return isNaN(x) || !isFinite(x) ? 0 : x;
 }
 
 /**
@@ -75,7 +81,15 @@ export function indexToX(index: number, state: ChartState): number {
  * Magnetic Snap: Rounds to the nearest bar center
  */
 export function xToIndex(x: number, state: ChartState): number {
-  return Math.round((x - state.offsetX - (state.barWidth / 2)) / state.barWidth);
+  // Guard against invalid inputs that could produce NaN
+  if (state.barWidth <= 0 || !isFinite(x) || !isFinite(state.offsetX)) {
+    return 0;
+  }
+
+  const index = Math.round((x - state.offsetX - (state.barWidth / 2)) / state.barWidth);
+
+  // Ensure we return a valid number
+  return isNaN(index) || !isFinite(index) ? 0 : index;
 }
 
 /**
@@ -101,9 +115,12 @@ export function clampOffsetX(
   const chartAreaWidth = screenWidth - axisWidth;
 
   // Max offsetX: First bar at left edge (0)
-  const maxOffsetX = chartAreaWidth - (barWidth * 2); 
-  
-  return Math.min(maxOffsetX, offsetX);
+  const maxOffsetX = chartAreaWidth - (barWidth * 2);
+
+  // Min offsetX: Last bar at right edge (prevents scrolling too far left)
+  const minOffsetX = calculateRightEdgeOffset(totalBars, barWidth, screenWidth, rightGap, axisWidth);
+
+  return Math.max(minOffsetX, Math.min(maxOffsetX, offsetX));
 }
 
 /**

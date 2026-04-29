@@ -26,11 +26,16 @@ export class Renderer {
   createBuffer(): void {
     const { w, h, devicePixelRatio, barWidth } = this.chart.state;
 
+    // Guard against truly invalid dimensions (zero or negative)
+    if (w <= 0 || h <= 0 || barWidth <= 0) {
+      return;
+    }
+
     // SMART BUFFER:
     const screenBars = Math.ceil(w / barWidth);
     const marginPixels = Math.min(w, 1000);
     const marginBars = Math.max(20, Math.ceil(marginPixels / barWidth));
-    
+
     const minBarsNeeded = screenBars + marginBars;
     let bufferWidth = Math.ceil(minBarsNeeded * barWidth);
 
@@ -40,7 +45,7 @@ export class Renderer {
     // REUSE LOGIC: Only resize if width/height changed significantly
     if (this.candleBuffer) {
       const currentBufferWidth = this.candleBuffer.width / devicePixelRatio;
-      if (Math.abs(currentBufferWidth - bufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD && 
+      if (Math.abs(currentBufferWidth - bufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD &&
           this.lastBufferWidth === barWidth) {
         return;
       }
@@ -51,9 +56,10 @@ export class Renderer {
       this.candleBuffer = document.createElement('canvas');
     }
 
-    this.candleBuffer.width = Math.ceil(bufferWidth * devicePixelRatio);
-    this.candleBuffer.height = Math.ceil(h * devicePixelRatio);
-    
+    // Ensure buffer has at least 1px dimensions
+    this.candleBuffer.width = Math.max(1, Math.ceil(bufferWidth * devicePixelRatio));
+    this.candleBuffer.height = Math.max(1, Math.ceil(h * devicePixelRatio));
+
     this.bufferCtx = this.candleBuffer.getContext('2d', { alpha: true });
 
     if (this.bufferCtx) {
@@ -160,28 +166,37 @@ export class Renderer {
   drawViewport(mainCtx: CanvasRenderingContext2D): void {
     const { w, h, barWidth, devicePixelRatio, axisWidth } = this.chart.state;
 
+    // Only skip if dimensions are truly invalid (<= 0)
+    if (w <= 0 || h <= 0 || barWidth <= 0) {
+      return;
+    }
+
     mainCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
     mainCtx.clearRect(0, 0, w, h);
 
-    mainCtx.save();
-    mainCtx.beginPath();
-    mainCtx.rect(0, 0, w - axisWidth, h - LAYOUT.BOTTOM_MARGIN);
-    mainCtx.clip();
+    // Skip clipping if viewport is too small
+    if (w - axisWidth > 0 && h - LAYOUT.BOTTOM_MARGIN > 0) {
+      mainCtx.save();
+      mainCtx.beginPath();
+      mainCtx.rect(0, 0, w - axisWidth, h - LAYOUT.BOTTOM_MARGIN);
+      mainCtx.clip();
 
-    const bufferStartScreenX = indexToX(this.bufferRenderStart, this.chart.state) - (barWidth / 2);
-    const bufferWidthCSS = (this.bufferRenderEnd - this.bufferRenderStart) * barWidth;
+      const bufferStartScreenX = indexToX(this.bufferRenderStart, this.chart.state) - (barWidth / 2);
+      const bufferWidthCSS = (this.bufferRenderEnd - this.bufferRenderStart) * barWidth;
 
-    if (this.candleBuffer) {
-      mainCtx.drawImage(
-        this.candleBuffer,
-        0, 0,
-        bufferWidthCSS * devicePixelRatio, h * devicePixelRatio,
-        bufferStartScreenX, 0,
-        bufferWidthCSS, h
-      );
+      // Only draw if buffer exists and has valid dimensions
+      if (this.candleBuffer && this.candleBuffer.width > 0 && this.candleBuffer.height > 0) {
+        mainCtx.drawImage(
+          this.candleBuffer,
+          0, 0,
+          bufferWidthCSS * devicePixelRatio, h * devicePixelRatio,
+          bufferStartScreenX, 0,
+          bufferWidthCSS, h
+        );
+      }
+
+      mainCtx.restore();
     }
-
-    mainCtx.restore();
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {

@@ -133,6 +133,8 @@ export class Chart {
 
   // Event handlers stored for proper removal
   private readonly handleResizeBound: () => void;
+  private resizeObserver: ResizeObserver | null = null;
+  private isResizing = false;
 
   constructor(container: HTMLElement | string, options: ChartOptions = {}) {
     // 1. Validation
@@ -181,11 +183,42 @@ export class Chart {
 
     this.startCountdownTimer();
 
-    // 5. Setup Resize Listener (Memory Leak Protected)
-    this.handleResizeBound = this.resize.bind(this);
+    // 5. Setup Resize Listeners (Memory Leak Protected)
+    this.handleResizeBound = () => {
+      try {
+        this.resize();
+      } catch (error) {
+        console.warn('AxonCharts: Window resize error:', error);
+      }
+    };
     window.addEventListener('resize', this.handleResizeBound);
 
-    this.resize();
+    // Use ResizeObserver for better container resize tracking
+    if (typeof ResizeObserver !== 'undefined') {
+      this.resizeObserver = new ResizeObserver((entries) => {
+        try {
+          for (const entry of entries) {
+            const { width, height } = entry.contentRect;
+            if (width > 0 && height > 0) {
+              this.resize(width, height);
+            }
+          }
+        } catch (error) {
+          // Silently handle ResizeObserver errors to prevent SES exceptions
+          console.warn('AxonCharts: ResizeObserver callback error:', error);
+        }
+      });
+      this.resizeObserver.observe(this.container);
+    }
+
+    // Initial resize (delayed to ensure container layout is complete)
+    requestAnimationFrame(() => {
+      try {
+        this.resize();
+      } catch (error) {
+        console.warn('AxonCharts: Initial resize error:', error);
+      }
+    });
   }
 
   private initCanvases(): void {
@@ -207,30 +240,123 @@ export class Chart {
   }
 
   public resize(width?: number, height?: number): void {
-    const containerW = typeof this.options.layout.width === 'number'
-      ? this.options.layout.width
-      : this.container.clientWidth;
-    const containerH = typeof this.options.layout.height === 'number'
-      ? this.options.layout.height
-      : this.container.clientHeight;
+    // Prevent reentrant resize calls (can happen with ResizeObserver + window resize)
+    if (this.isResizing) {
+      return;
+    }
 
-    this.state.w = width ?? containerW;
-    this.state.h = height ?? containerH;
+    this.isResizing = true;
 
-    [this.bgCanvas, this.mainCanvas].forEach(canvas => {
-      canvas.width = this.state.w * this.state.devicePixelRatio;
-      canvas.height = this.state.h * this.state.devicePixelRatio;
-      canvas.style.width = this.state.w + 'px';
-      canvas.style.height = this.state.h + 'px';
-    });
+    try {
+      // If dimensions provided, use them. Otherwise read from container.
+      let targetWidth = width;
+      let targetHeight = height;
 
-    this.bgCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
-    this.mainCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
-    this.mainCtx.imageSmoothingEnabled = false;
+      if (targetWidth === undefined || targetHeight === undefined) {
+        // Layout options can override container dimensions
+        const containerW = typeof this.options.layout.width === 'number'
+          ? this.options.layout.width
+          : this.container.clientWidth;
+        const containerH = typeof this.options.layout.height === 'number'
+          ? this.options.layout.height
+          : this.container.clientHeight;
 
-    this.renderer.createBuffer();
-    this.crosshair.resize(this.state.w, this.state.h, this.state.devicePixelRatio);
-    this.render();
+        targetWidth = targetWidth ?? containerW;
+        targetHeight = targetHeight ?? containerH;
+      }
+
+      // Ensure minimum valid dimensions
+      const newWidth = Math.max(1, targetWidth);
+      const newHeight = Math.max(1, targetHeight);
+
+      // Skip if dimensions haven't actually changed (prevents unnecessary redraws)
+      if (this.state.w === newWidth && this.state.h === newHeight) {
+        return;
+      }
+
+      this.state.w = newWidth;
+      this.state.h = newHeight;
+
+      // Smart resize: Adjust offset based on autoScroll state
+      const isAutoScrolling = this.isAutoScrolling();
+
+      try {
+        if (isAutoScrolling && !this.dataManager.isEmpty) {
+          // Option 1: Anchor to latest candle (user is watching live data)
+          this.state.offsetX = calculateRightEdgeOffset(
+            this.dataManager.length,
+            this.state.barWidth,
+            this.state.w,
+            this.state.rightGap,
+            this.state.axisWidth
+          );
+        } else if (!this.dataManager.isEmpty) {
+          // Option 2: Preserve visible center (user is viewing historical data)
+          // Only proceed if we have valid dimensions
+          if (this.state.w > this.state.axisWidth && this.state.barWidth > 0) {
+            // Use current offset (after user interactions) to find the actual center
+            const chartAreaWidth = this.state.w - this.state.axisWidth;
+            const centerPixelX = chartAreaWidth / 2;
+            let centerIndex = xToIndex(centerPixelX, this.state);
+
+            // Validate centerIndex is within data bounds and is a valid number
+            if (!isNaN(centerIndex) && isFinite(centerIndex)) {
+              centerIndex = Math.max(0, Math.min(centerIndex, this.dataManager.length - 1));
+
+              // Recalculate offset to keep the same center index at new dimensions
+              const newChartAreaWidth = this.state.w - this.state.axisWidth;
+              const targetCenterPixelX = newChartAreaWidth / 2;
+              const targetIndexX = centerIndex * this.state.barWidth;
+
+              // targetCenterPixelX = targetIndexX + newOffsetX + (barWidth / 2)
+              // newOffsetX = targetCenterPixelX - targetIndexX - (barWidth / 2)
+              const newOffsetX = targetCenterPixelX - targetIndexX - (this.state.barWidth / 2);
+
+              // Validate newOffsetX before clamping
+              if (!isNaN(newOffsetX) && isFinite(newOffsetX)) {
+                // Clamp the new offset to prevent off-screen rendering
+                this.state.offsetX = clampOffsetX(
+                  newOffsetX,
+                  this.state.barWidth,
+                  this.dataManager.length,
+                  this.state.w,
+                  this.state.rightGap,
+                  this.state.axisWidth
+                );
+              }
+            }
+          }
+          // If dimensions are invalid or calculations fail, keep existing offset
+        }
+      } catch (error) {
+        // If any calculation fails, log warning and keep existing offset
+        console.warn('AxonCharts: Smart resize calculation failed, keeping existing offset:', error);
+        // Offset remains unchanged - safe fallback
+      }
+
+      [this.bgCanvas, this.mainCanvas].forEach(canvas => {
+        canvas.width = this.state.w * this.state.devicePixelRatio;
+        canvas.height = this.state.h * this.state.devicePixelRatio;
+        canvas.style.width = this.state.w + 'px';
+        canvas.style.height = this.state.h + 'px';
+      });
+
+      this.bgCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
+      this.mainCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
+      this.mainCtx.imageSmoothingEnabled = false;
+
+      this.renderer.createBuffer();
+      this.crosshair.resize(this.state.w, this.state.h, this.state.devicePixelRatio);
+
+      try {
+        this.render();
+      } catch (renderError) {
+        console.warn('AxonCharts: Render failed during resize:', renderError);
+      }
+    } finally {
+      // Always reset the resizing flag, even if errors occur
+      this.isResizing = false;
+    }
   }
 
   private updatePriceScale(): boolean {
@@ -517,6 +643,10 @@ export class Chart {
   public destroy(): void {
     this.stopCountdownTimer();
     window.removeEventListener('resize', this.handleResizeBound);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     this.eventManager.destroy();
     this.bgCanvas.remove();
     this.mainCanvas.remove();

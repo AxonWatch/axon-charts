@@ -57,15 +57,20 @@ export class EventManager {
     const { w, h, axisWidth } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
+    // Use client coordinates for consistency
+    const rect = this.chart.mainCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
     // If double-clicked on Price Axis, reset vertical zoom AND offset
-    if (e.offsetX > chartAreaWidth) {
+    if (mouseX > chartAreaWidth) {
       this.chart.state.priceScale = 1.0;
       this.chart.state.priceOffset = 0;
       this.chart.render();
     }
 
     // If double-clicked on Time Axis, reset horizontal zoom to default
-    if (e.offsetY > h - LAYOUT.BOTTOM_MARGIN) {
+    if (mouseY > h - LAYOUT.BOTTOM_MARGIN) {
       this.chart.state.barWidth = this.chart.state.baseBarWidth;
       this.chart.renderer.createBuffer();
       this.scrollToLatest();
@@ -84,8 +89,13 @@ export class EventManager {
     const { w, h, rightGap, axisWidth } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
+    // Use client coordinates for consistency
+    const rect = this.chart.mainCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
     // Price Axis Zoom
-    if (e.offsetX > chartAreaWidth) {
+    if (mouseX > chartAreaWidth) {
       this.chart.state.priceScale *= (e.deltaY > 0 ? LAYOUT.PRICE_SCROLL_FACTOR_IN : LAYOUT.PRICE_SCROLL_FACTOR_OUT);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
       this.chart.render();
@@ -93,15 +103,15 @@ export class EventManager {
     }
 
     // Horizontal Zoom
-    const isTimeAxis = e.offsetY > h - LAYOUT.BOTTOM_MARGIN;
+    const isTimeAxis = mouseY > h - LAYOUT.BOTTOM_MARGIN;
     const oldWidth = this.chart.state.barWidth;
     const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
     const newWidth = oldWidth * factor;
 
     if (newWidth < LAYOUT.MIN_BAR_WIDTH || newWidth > maxBarWidth) return;
 
-    const mouseIdx = isTimeAxis ? this.chart.dataManager.length - 1 : xToIndex(e.offsetX, this.chart.state);
-    const anchorX = isTimeAxis ? indexToX(this.chart.dataManager.length - 1, this.chart.state) : e.offsetX;
+    const mouseIdx = isTimeAxis ? this.chart.dataManager.length - 1 : xToIndex(mouseX, this.chart.state);
+    const anchorX = isTimeAxis ? indexToX(this.chart.dataManager.length - 1, this.chart.state) : mouseX;
 
     this.chart.state.barWidth = newWidth;
 
@@ -121,13 +131,18 @@ export class EventManager {
     const { w, h, axisWidth } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
+    // Use client coordinates for consistency
+    const rect = this.chart.mainCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
     this.isDragging = true;
-    this.lastMouseX = e.offsetX;
-    this.lastMouseY = e.offsetY;
-    
-    if (e.offsetX > chartAreaWidth) {
+    this.lastMouseX = mouseX;
+    this.lastMouseY = mouseY;
+
+    if (mouseX > chartAreaWidth) {
       this.dragMode = 'price';
-    } else if (e.offsetY > h - LAYOUT.BOTTOM_MARGIN) {
+    } else if (mouseY > h - LAYOUT.BOTTOM_MARGIN) {
       this.dragMode = 'time';
     } else {
       this.dragMode = 'chart';
@@ -143,8 +158,14 @@ export class EventManager {
     const { w, h, rightGap, barWidth, axisWidth } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
-    const isOverPrice = e.offsetX > chartAreaWidth;
-    const isOverTime = e.offsetY > h - LAYOUT.BOTTOM_MARGIN;
+    // Use client coordinates with getBoundingClientRect for consistent positioning
+    // even when mouse is outside the chart area
+    const rect = this.chart.mainCanvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const isOverPrice = mouseX > chartAreaWidth;
+    const isOverTime = mouseY > h - LAYOUT.BOTTOM_MARGIN;
 
     // Update cursor based on enabled behaviors
     if (isOverPrice) {
@@ -163,14 +184,14 @@ export class EventManager {
       // Guard: Check if price-scale drag is disabled
       if (!this.chart.options.behavior.dragPriceScale) return;
 
-      const deltaY = e.offsetY - this.lastMouseY;
+      const deltaY = mouseY - this.lastMouseY;
       this.chart.state.priceScale *= (1 + deltaY / LAYOUT.DRAG_SCALE_DIVISOR);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
     } else if (this.dragMode === 'time') {
       // Guard: Check if drag-to-zoom is disabled
       if (!this.chart.options.behavior.dragToZoom) return;
 
-      const deltaX = e.offsetX - this.lastMouseX;
+      const deltaX = mouseX - this.lastMouseX;
       const factor = Math.pow(LAYOUT.ZOOM_FACTOR_IN, -deltaX / LAYOUT.ZOOM_SENSITIVITY);
       const oldWidth = this.chart.state.barWidth;
       const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
@@ -191,14 +212,14 @@ export class EventManager {
       // Guard: Check if pan-on-drag is disabled
       if (!this.chart.options.behavior.panOnMouseDrag) return;
 
-      this.chart.state.offsetX += e.offsetX - this.lastMouseX;
+      this.chart.state.offsetX += mouseX - this.lastMouseX;
       if (this.chart.state.priceScale !== 1.0) {
-        this.chart.state.priceOffset += e.offsetY - this.lastMouseY;
+        this.chart.state.priceOffset += mouseY - this.lastMouseY;
       }
     }
 
-    this.lastMouseX = e.offsetX;
-    this.lastMouseY = e.offsetY;
+    this.lastMouseX = mouseX;
+    this.lastMouseY = mouseY;
 
     this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
     this.checkAutoScrollState();
