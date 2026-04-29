@@ -136,14 +136,14 @@ export class Chart {
 
   constructor(container: HTMLElement | string, options: ChartOptions = {}) {
     // 1. Validation
-    if (!container) throw new Error('KybosCore: Container element is required');
+    if (!container) throw new Error('AxonCharts: Container element is required');
     
     this.container = typeof container === 'string'
       ? document.querySelector(container)!
       : container;
 
     if (!this.container) {
-      throw new Error(`KybosCore: Container "${container}" not found`);
+      throw new Error(`AxonCharts: Container "${container}" not found`);
     }
 
     // 2. Validate and initialize options
@@ -289,7 +289,7 @@ export class Chart {
   }
 
   public setData(bars: Bar[]): void {
-    if (!Array.isArray(bars)) throw new Error('KybosCore: Data must be an array');
+    if (!Array.isArray(bars)) throw new Error('AxonCharts: Data must be an array');
     
     // Validate structural integrity of data
     if (bars.length > 0) {
@@ -327,11 +327,11 @@ export class Chart {
    * Internal validation for Bar structure
    */
   private validateBar(bar: Bar): void {
-    if (!bar) throw new Error('KybosCore: Bar data is null or undefined');
+    if (!bar) throw new Error('AxonCharts: Bar data is null or undefined');
     const fields: (keyof Bar)[] = ['time', 'open', 'high', 'low', 'close'];
     for (const field of fields) {
       if (typeof bar[field] !== 'number' || isNaN(bar[field] as number)) {
-        throw new Error(`KybosCore: Invalid bar data. Field "${field}" must be a valid number.`);
+        throw new Error(`AxonCharts: Invalid bar data. Field "${field}" must be a valid number.`);
       }
     }
   }

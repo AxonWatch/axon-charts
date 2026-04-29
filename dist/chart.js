@@ -1,6 +1,8 @@
-// Kybos Core v0.1.0
+// Axon Charts v1.0.0
+// Licensed under Apache-2.0
+// https://github.com/axon-charts/axon-charts
 "use strict";
-var KybosCore = (() => {
+var AxonCharts = (() => {
   var __defProp = Object.defineProperty;
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -2323,10 +2325,10 @@ var KybosCore = (() => {
       this.countdownRafId = null;
       this.lastCountdownUpdate = 0;
       if (!container)
-        throw new Error("KybosCore: Container element is required");
+        throw new Error("AxonCharts: Container element is required");
       this.container = typeof container === "string" ? document.querySelector(container) : container;
       if (!this.container) {
-        throw new Error(`KybosCore: Container "${container}" not found`);
+        throw new Error(`AxonCharts: Container "${container}" not found`);
       }
       validateOptions(options);
       this.options = this.normalizeOptions(options);
@@ -2436,7 +2438,7 @@ var KybosCore = (() => {
     }
     setData(bars) {
       if (!Array.isArray(bars))
-        throw new Error("KybosCore: Data must be an array");
+        throw new Error("AxonCharts: Data must be an array");
       if (bars.length > 0) {
         this.validateBar(bars[0]);
         if (bars.length > 1)
@@ -2468,11 +2470,11 @@ var KybosCore = (() => {
      */
     validateBar(bar) {
       if (!bar)
-        throw new Error("KybosCore: Bar data is null or undefined");
+        throw new Error("AxonCharts: Bar data is null or undefined");
       const fields = ["time", "open", "high", "low", "close"];
       for (const field of fields) {
         if (typeof bar[field] !== "number" || isNaN(bar[field])) {
-          throw new Error(`KybosCore: Invalid bar data. Field "${field}" must be a valid number.`);
+          throw new Error(`AxonCharts: Invalid bar data. Field "${field}" must be a valid number.`);
         }
       }
     }

@@ -11,9 +11,13 @@ const options = {
   sourcemap: false, // Disable sourcemap for now
   minify: false, // Disable minification to debug easier
   treeShaking: true,
-  globalName: 'KybosCore',
+  globalName: 'AxonCharts',
   banner: {
-    js: '// Kybos Core v0.1.0'
+    js: [
+      '// Axon Charts v1.0.0',
+      '// Licensed under Apache-2.0',
+      '// https://github.com/axon-charts/axon-charts'
+    ].join('\n')
   },
   // Make exports available on global object
   define: {

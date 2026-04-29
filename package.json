@@ -1,7 +1,7 @@
 {
-  "name": "kybos-core",
-  "version": "0.1.0",
-  "description": "A fast, small, LLM-friendly candlestick chart library",
+  "name": "axon-charts",
+  "version": "1.0.0",
+  "description": "A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration",
   "type": "module",
   "main": "dist/chart.js",
   "module": "dist/chart.js",
@@ -18,10 +18,19 @@
     "financial",
     "trading",
     "canvas",
-    "webgl"
+    "llm",
+    "ai",
+    "axon",
+    "fintech",
+    "charting",
+    "candlestick-chart",
+    "financial-chart",
+    "trading-chart",
+    "realtime",
+    "webassembly"
   ],
-  "author": "",
-  "license": "MIT",
+  "author": "Axon Charts",
+  "license": "Apache-2.0",
   "devDependencies": {
     "typescript": "^5.0.0",
     "esbuild": "^0.20.0"
