@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](package.json)
-[![Bundle Size](https://img.shields.io/badge/bundle%20size-17%20KB-brightgreen.svg)](dist/chart.js)
+[![Bundle Size](https://img.shields.io/badge/bundle%20size-16%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 
@@ -12,7 +12,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 
 - ⚡ **Performance** - <8ms first render, <0.2ms tick updates
 - 🤖 **AI-First** - Native LLM integration with structured context export
-- 📦 **Lightweight** - Only 17KB minified (no external dependencies)
+- 📦 **Lightweight** - Only 16KB gzipped (zero external dependencies)
 - 🎨 **Customizable** - Comprehensive configuration API
 - 🔒 **Type-Safe** - Full TypeScript support
 
