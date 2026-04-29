@@ -8,10 +8,15 @@ const options = {
   format: 'iife',
   target: 'es2020',
   outfile: 'dist/chart.js',
-  sourcemap: false, // Disable sourcemap for now
-  minify: false, // Disable minification to debug easier
+  sourcemap: false, // Disable sourcemap for production build
+  minify: true, // Enable minification for production
   treeShaking: true,
   globalName: 'AxonCharts',
+  minifyWhitespace: true,
+  minifyIdentifiers: true,
+  minifySyntax: true,
+  charset: 'utf8',
+  legalComments: 'none', // Remove license comments from code (keep banner)
   banner: {
     js: [
       '// Axon Charts v1.0.0',
