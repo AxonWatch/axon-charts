@@ -8,6 +8,7 @@ import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calc
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
+import { TimeScaleAPI } from '../api/time-scale.js';
 
 const DEFAULT_OPTIONS: Required<ChartOptions> = {
   layout: {
@@ -118,6 +119,7 @@ export class Chart {
   public eventManager: EventManager;
   private priceFormatter: PriceFormatter;
   private priceScaleAPI: PriceScaleAPI;
+  private timeScaleAPI: TimeScaleAPI;
 
   // Real-time Countdown management
   private countdownRafId: number | null = null;
@@ -170,6 +172,7 @@ export class Chart {
     this.crosshair = new Crosshair(this);
     this.eventManager = new EventManager(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
+    this.timeScaleAPI = new TimeScaleAPI(this);
 
     this.startCountdownTimer();
 
@@ -463,5 +466,13 @@ export class Chart {
    */
   public priceScale(): PriceScaleAPI {
     return this.priceScaleAPI;
+  }
+
+  /**
+   * Get the Time Scale API
+   * Provides methods to control the X-axis (time scale) behavior
+   */
+  public timeScale(): TimeScaleAPI {
+    return this.timeScaleAPI;
   }
 }
