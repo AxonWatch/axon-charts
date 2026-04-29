@@ -5,6 +5,9 @@ var KybosCore = (() => {
   var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
   var __getOwnPropNames = Object.getOwnPropertyNames;
   var __hasOwnProp = Object.prototype.hasOwnProperty;
+  var __esm = (fn, res) => function __init() {
+    return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+  };
   var __export = (target, all) => {
     for (var name in all)
       __defProp(target, name, { get: all[name], enumerable: true });
@@ -19,6 +22,88 @@ var KybosCore = (() => {
   };
   var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
+  // src/utils/formatter.ts
+  var formatter_exports = {};
+  __export(formatter_exports, {
+    PriceFormatter: () => PriceFormatter
+  });
+  var PriceFormatter;
+  var init_formatter = __esm({
+    "src/utils/formatter.ts"() {
+      "use strict";
+      PriceFormatter = class {
+        constructor(format) {
+          this.lastMeasurement = null;
+          this.format = format || { type: "price" };
+        }
+        /**
+         * Format a price value to a string
+         */
+        formatPrice(price) {
+          if (isNaN(price) || !isFinite(price))
+            return "0.00";
+          if (this.format.type === "custom" && this.format.formatter) {
+            return this.format.formatter(price);
+          }
+          if (this.format.type === "volume") {
+            return this.formatVolume(price);
+          }
+          if (this.format.type === "percent") {
+            return price.toFixed(2) + "%";
+          }
+          const precision = this.getPrecision();
+          return price.toFixed(precision);
+        }
+        /**
+         * Determine decimal precision based on options or auto-detection
+         */
+        getPrecision() {
+          if (this.format.precision !== void 0) {
+            return this.format.precision;
+          }
+          if (this.format.minMove !== void 0) {
+            return this.getPrecisionFromMinMove(this.format.minMove);
+          }
+          return 2;
+        }
+        /**
+         * Auto-detect required width for the price axis
+         * Measures a 'worst case' price string using the current font
+         */
+        measureRequiredWidth(ctx, minPrice, maxPrice) {
+          if (isNaN(minPrice) || isNaN(maxPrice))
+            return 60;
+          if (this.lastMeasurement) {
+            const rangeChanged = Math.abs(minPrice - this.lastMeasurement.min) > minPrice * 0.05 || Math.abs(maxPrice - this.lastMeasurement.max) > maxPrice * 0.05;
+            if (!rangeChanged) {
+              return this.lastMeasurement.width;
+            }
+          }
+          const longPrice = Math.max(Math.abs(minPrice), Math.abs(maxPrice));
+          const testString = this.formatPrice(longPrice);
+          const metrics = ctx.measureText(testString);
+          const padding = 20;
+          const width = Math.ceil((metrics.width + padding) / 5) * 5;
+          this.lastMeasurement = { min: minPrice, max: maxPrice, width };
+          return width;
+        }
+        getPrecisionFromMinMove(minMove) {
+          const s = minMove.toString();
+          if (s.indexOf(".") === -1)
+            return 0;
+          return s.split(".")[1].length;
+        }
+        formatVolume(price) {
+          if (price >= 1e6)
+            return (price / 1e6).toFixed(2) + "M";
+          if (price >= 1e3)
+            return (price / 1e3).toFixed(2) + "K";
+          return price.toFixed(0);
+        }
+      };
+    }
+  });
+
   // src/index.ts
   var src_exports = {};
   __export(src_exports, {
@@ -28,6 +113,7 @@ var KybosCore = (() => {
     DataManager: () => DataManager,
     EventManager: () => EventManager,
     LAYOUT: () => LAYOUT,
+    PriceScaleAPI: () => PriceScaleAPI,
     Projection: () => projection_exports,
     Renderer: () => Renderer,
     calculateTimeStep: () => calculateTimeStep,
@@ -1245,75 +1331,99 @@ var KybosCore = (() => {
     return item !== null && typeof item === "object" && !Array.isArray(item);
   }
 
-  // src/utils/formatter.ts
-  var PriceFormatter = class {
-    constructor(format) {
-      this.lastMeasurement = null;
-      this.format = format || { type: "price" };
+  // src/core/chart.ts
+  init_formatter();
+
+  // src/api/price-scale.ts
+  var PriceScaleAPI = class {
+    constructor(chart) {
+      this.chart = chart;
     }
     /**
-     * Format a price value to a string
+     * Set the price scale mode
+     * @param mode - 'linear' for standard linear scale, 'logarithmic' for log scale
      */
-    formatPrice(price) {
-      if (isNaN(price) || !isFinite(price))
-        return "0.00";
-      if (this.format.type === "custom" && this.format.formatter) {
-        return this.format.formatter(price);
+    setMode(mode) {
+      if (mode !== "linear" && mode !== "logarithmic") {
+        throw new Error(`PriceScaleAPI.setMode: invalid mode "${mode}". Must be 'linear' or 'logarithmic'.`);
       }
-      if (this.format.type === "volume") {
-        return this.formatVolume(price);
-      }
-      if (this.format.type === "percent") {
-        return price.toFixed(2) + "%";
-      }
-      const precision = this.getPrecision();
-      return price.toFixed(precision);
+      this.chart.state.priceScaleMode = mode;
+      this.chart.state.priceOffset = 0;
+      this.chart.render();
     }
     /**
-     * Determine decimal precision based on options or auto-detection
+     * Get the current price scale mode
+     * @returns Current mode: 'linear' or 'logarithmic'
      */
-    getPrecision() {
-      if (this.format.precision !== void 0) {
-        return this.format.precision;
-      }
-      if (this.format.minMove !== void 0) {
-        return this.getPrecisionFromMinMove(this.format.minMove);
-      }
-      return 2;
+    getMode() {
+      return this.chart.state.priceScaleMode ?? "linear";
     }
     /**
-     * Auto-detect required width for the price axis
-     * Measures a 'worst case' price string using the current font
+     * Set scale margins (padding at top/bottom as percentage 0-1)
+     * @param margins - Object with top and bottom margins (0-1 range)
+     * @throws Error if margins are out of range
+     *
+     * Note: Currently this option is accepted but not implemented in the price range calculation.
+     * The DataManager uses a hardcoded LAYOUT.PRICE_PADDING_RATIO (0.07) instead.
+     * This API is provided for future implementation and type compatibility.
      */
-    measureRequiredWidth(ctx, minPrice, maxPrice) {
-      if (isNaN(minPrice) || isNaN(maxPrice))
-        return 60;
-      if (this.lastMeasurement) {
-        const rangeChanged = Math.abs(minPrice - this.lastMeasurement.min) > minPrice * 0.05 || Math.abs(maxPrice - this.lastMeasurement.max) > maxPrice * 0.05;
-        if (!rangeChanged) {
-          return this.lastMeasurement.width;
+    setMargins(margins) {
+      if (typeof margins.top !== "number" || margins.top < 0 || margins.top > 1) {
+        throw new Error("PriceScaleAPI.setMargins: top margin must be a number between 0 and 1");
+      }
+      if (typeof margins.bottom !== "number" || margins.bottom < 0 || margins.bottom > 1) {
+        throw new Error("PriceScaleAPI.setMargins: bottom margin must be a number between 0 and 1");
+      }
+      if (!this.chart.options.priceScale.scaleMargins) {
+        this.chart.options.priceScale.scaleMargins = { top: 0.1, bottom: 0.1 };
+      }
+      this.chart.options.priceScale.scaleMargins.top = margins.top;
+      this.chart.options.priceScale.scaleMargins.bottom = margins.bottom;
+      this.chart.render();
+    }
+    /**
+     * Get the current scale margins
+     * @returns Current margins object with top and bottom values
+     */
+    getMargins() {
+      return this.chart.options.priceScale.scaleMargins || { top: 0.1, bottom: 0.1 };
+    }
+    /**
+     * Apply price scale options
+     * @param options - Partial price scale options to apply
+     */
+    setOptions(options) {
+      const currentOptions = this.chart.options.priceScale;
+      const newOptions = { ...currentOptions, ...options };
+      if (options.mode) {
+        this.setMode(options.mode);
+      }
+      if (options.scaleMargins) {
+        this.setMargins(options.scaleMargins);
+      }
+      if (options.priceFormat) {
+        this.chart.options.priceScale.priceFormat = options.priceFormat;
+        const { PriceFormatter: PriceFormatter2 } = (init_formatter(), __toCommonJS(formatter_exports));
+        this.chart["priceFormatter"] = new PriceFormatter2(options.priceFormat);
+        this.chart.render();
+      }
+      if (options.currentPrice) {
+        this.chart.options.priceScale.currentPrice = {
+          ...this.chart.options.priceScale.currentPrice,
+          ...options.currentPrice
+        };
+        if (options.currentPrice.showCountdown !== void 0) {
+          this.chart["restartCountdownTimer"]();
         }
+        this.chart.render();
       }
-      const longPrice = Math.max(Math.abs(minPrice), Math.abs(maxPrice));
-      const testString = this.formatPrice(longPrice);
-      const metrics = ctx.measureText(testString);
-      const padding = 20;
-      const width = Math.ceil((metrics.width + padding) / 5) * 5;
-      this.lastMeasurement = { min: minPrice, max: maxPrice, width };
-      return width;
     }
-    getPrecisionFromMinMove(minMove) {
-      const s = minMove.toString();
-      if (s.indexOf(".") === -1)
-        return 0;
-      return s.split(".")[1].length;
-    }
-    formatVolume(price) {
-      if (price >= 1e6)
-        return (price / 1e6).toFixed(2) + "M";
-      if (price >= 1e3)
-        return (price / 1e3).toFixed(2) + "K";
-      return price.toFixed(0);
+    /**
+     * Get current price scale options
+     * @returns Copy of current price scale options
+     */
+    getOptions() {
+      return { ...this.chart.options.priceScale };
     }
   };
 
@@ -1420,6 +1530,7 @@ var KybosCore = (() => {
       this.initCanvases();
       this.crosshair = new Crosshair(this);
       this.eventManager = new EventManager(this);
+      this.priceScaleAPI = new PriceScaleAPI(this);
       this.startCountdownTimer();
       this.handleResizeBound = this.resize.bind(this);
       window.addEventListener("resize", this.handleResizeBound);
@@ -1681,6 +1792,13 @@ var KybosCore = (() => {
     }
     scrollToLatest() {
       this.eventManager.scrollToLatest();
+    }
+    /**
+     * Get the Price Scale API
+     * Provides methods to control the Y-axis (price scale) behavior
+     */
+    priceScale() {
+      return this.priceScaleAPI;
     }
   };
 

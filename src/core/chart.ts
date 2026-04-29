@@ -7,6 +7,7 @@ import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
+import { PriceScaleAPI } from '../api/price-scale.js';
 
 const DEFAULT_OPTIONS: Required<ChartOptions> = {
   layout: {
@@ -116,6 +117,7 @@ export class Chart {
   public renderer: Renderer;
   public eventManager: EventManager;
   private priceFormatter: PriceFormatter;
+  private priceScaleAPI: PriceScaleAPI;
 
   // Real-time Countdown management
   private countdownRafId: number | null = null;
@@ -167,6 +169,7 @@ export class Chart {
     this.initCanvases();
     this.crosshair = new Crosshair(this);
     this.eventManager = new EventManager(this);
+    this.priceScaleAPI = new PriceScaleAPI(this);
 
     this.startCountdownTimer();
 
@@ -453,4 +456,12 @@ export class Chart {
 
   public isAutoScrolling(): boolean { return this.eventManager.isAutoScrolling(); }
   public scrollToLatest(): void { this.eventManager.scrollToLatest(); }
+
+  /**
+   * Get the Price Scale API
+   * Provides methods to control the Y-axis (price scale) behavior
+   */
+  public priceScale(): PriceScaleAPI {
+    return this.priceScaleAPI;
+  }
 }
