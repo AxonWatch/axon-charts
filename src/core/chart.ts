@@ -20,8 +20,8 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
   },
   grid: {
     show: true,
-    vertLines: { color: '#2a2a2a', style: 'solid', width: 1 },
-    horzLines: { color: '#2a2a2a', style: 'solid', width: 1 }
+    vertLines: { show: true, color: '#2a2a2a', width: 1 },
+    horzLines: { show: true, color: '#2a2a2a', width: 1 }
   },
   priceScale: {
     mode: 'linear',

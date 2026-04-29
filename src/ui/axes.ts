@@ -88,15 +88,20 @@ export class Axes {
     const chartWidth = w - axisWidth;
 
     // 5. Draw!
-    ctx.strokeStyle = this.chart.options.grid.vertLines.color;
+    const vertOptions = this.chart.options.grid.vertLines || {};
     ctx.fillStyle = this.chart.options.layout.textColor;
     ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Skip if hidden
-    if (!this.chart.options.grid.show) ctx.strokeStyle = 'transparent';
+    // Skip if hidden (master toggle or per-axis toggle)
+    if (!this.chart.options.grid.show || vertOptions.show === false) return;
     if (!this.chart.options.timeScale.visible) return;
+
+    // Apply grid line styles (always solid)
+    ctx.strokeStyle = vertOptions.color ?? '#2a2a2a';
+    ctx.lineWidth = vertOptions.width ?? 1;
+    ctx.setLineDash([]);
 
     // SAFETY: Prevent infinite loops if stepTime is 0 or NaN
     const safeStepTime = Math.max(1, stepTime || 1);
@@ -157,8 +162,15 @@ export class Axes {
 
     const { w, h, axisWidth } = this.chart.state;
 
-    ctx.strokeStyle = this.chart.options.grid.horzLines.color;
-    ctx.lineWidth = this.chart.options.grid.horzLines.width;
+    const horzOptions = this.chart.options.grid.horzLines || {};
+
+    // Skip if per-axis toggle is off
+    if (horzOptions.show === false) return;
+
+    // Apply grid line styles (always solid)
+    ctx.strokeStyle = horzOptions.color ?? '#2a2a2a';
+    ctx.lineWidth = horzOptions.width ?? 1;
+    ctx.setLineDash([]);
 
     // 1. Calculate horizontal grid lines using the SAME virtual logic as the axis labels
     const topPrice = yToPrice(0, this.chart.state);

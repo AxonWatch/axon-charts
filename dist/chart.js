@@ -408,15 +408,18 @@ var KybosCore = (() => {
       const leftTime = refTime + (leftIndex - refIdx) * interval;
       const startSnappedTime = Math.floor(leftTime / stepTime) * stepTime;
       const chartWidth = w - axisWidth;
-      ctx.strokeStyle = this.chart.options.grid.vertLines.color;
+      const vertOptions = this.chart.options.grid.vertLines || {};
       ctx.fillStyle = this.chart.options.layout.textColor;
       ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      if (!this.chart.options.grid.show)
-        ctx.strokeStyle = "transparent";
+      if (!this.chart.options.grid.show || vertOptions.show === false)
+        return;
       if (!this.chart.options.timeScale.visible)
         return;
+      ctx.strokeStyle = vertOptions.color ?? "#2a2a2a";
+      ctx.lineWidth = vertOptions.width ?? 1;
+      ctx.setLineDash([]);
       const safeStepTime = Math.max(1, stepTime || 1);
       let iterations = 0;
       const MAX_ITERATIONS = 1e3;
@@ -461,8 +464,12 @@ var KybosCore = (() => {
       if (!this.chart.options.grid.show)
         return;
       const { w, h, axisWidth } = this.chart.state;
-      ctx.strokeStyle = this.chart.options.grid.horzLines.color;
-      ctx.lineWidth = this.chart.options.grid.horzLines.width;
+      const horzOptions = this.chart.options.grid.horzLines || {};
+      if (horzOptions.show === false)
+        return;
+      ctx.strokeStyle = horzOptions.color ?? "#2a2a2a";
+      ctx.lineWidth = horzOptions.width ?? 1;
+      ctx.setLineDash([]);
       const topPrice = yToPrice(0, this.chart.state);
       const bottomPrice = yToPrice(h - LAYOUT.BOTTOM_MARGIN, this.chart.state);
       const ticks = niceTicks(
@@ -1320,8 +1327,8 @@ var KybosCore = (() => {
     },
     grid: {
       show: true,
-      vertLines: { color: "#2a2a2a", style: "solid", width: 1 },
-      horzLines: { color: "#2a2a2a", style: "solid", width: 1 }
+      vertLines: { show: true, color: "#2a2a2a", width: 1 },
+      horzLines: { show: true, color: "#2a2a2a", width: 1 }
     },
     priceScale: {
       mode: "linear",

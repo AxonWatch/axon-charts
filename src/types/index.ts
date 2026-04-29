@@ -28,8 +28,8 @@ export interface ChartOptions {
   // === Grid ===
   grid?: {
     show?: boolean;
-    vertLines?: { color?: string; style?: 'solid' | 'dashed'; width?: number };
-    horzLines?: { color?: string; style?: 'solid' | 'dashed'; width?: number };
+    vertLines?: { show?: boolean; color?: string; width?: number };
+    horzLines?: { show?: boolean; color?: string; width?: number };
   };
 
   // === Price Scale ===
