@@ -2106,30 +2106,60 @@ var KybosCore = (() => {
     setOptions(partialOptions) {
       const normalizedPartial = this.normalizePartialOptions(partialOptions);
       this.options = deepMerge(this.options, normalizedPartial);
+      let needsRender = false;
+      let needsCrosshairUpdate = false;
+      let needsResize = false;
       if (normalizedPartial.timeScale) {
         if (normalizedPartial.timeScale.barSpacing !== void 0) {
           this.state.barWidth = this.options.timeScale.barSpacing;
           this.renderer.createBuffer();
+          needsRender = true;
         }
         if (normalizedPartial.timeScale.rightOffset !== void 0) {
           this.state.rightGap = this.options.timeScale.rightOffset;
+          needsRender = true;
+        }
+        if (normalizedPartial.timeScale.visible !== void 0) {
+          needsRender = true;
+        }
+        if (normalizedPartial.timeScale.minBarSpacing !== void 0 || normalizedPartial.timeScale.maxBarSpacing !== void 0) {
         }
       }
       if (normalizedPartial.priceScale) {
         if (normalizedPartial.priceScale.mode !== void 0) {
           this.state.priceScaleMode = normalizedPartial.priceScale.mode;
+          needsRender = true;
         }
         if (normalizedPartial.priceScale.priceFormat !== void 0) {
           this.priceFormatter = new PriceFormatter(this.options.priceScale.priceFormat);
+          needsRender = true;
         }
         if (normalizedPartial.priceScale.currentPrice !== void 0) {
           this.restartCountdownTimer();
+          needsRender = true;
         }
       }
-      if (normalizedPartial.layout && (normalizedPartial.layout.width || normalizedPartial.layout.height)) {
+      if (normalizedPartial.layout) {
+        if (normalizedPartial.layout.width !== void 0 || normalizedPartial.layout.height !== void 0) {
+          needsResize = true;
+        }
+        if (normalizedPartial.layout.background !== void 0 || normalizedPartial.layout.textColor !== void 0 || normalizedPartial.layout.fontSize !== void 0 || normalizedPartial.layout.fontFamily !== void 0) {
+          needsRender = true;
+        }
+      }
+      if (normalizedPartial.grid) {
+        needsRender = true;
+      }
+      if (normalizedPartial.crosshair) {
+        needsCrosshairUpdate = true;
+      }
+      if (needsResize) {
         this.resize();
-      } else {
+      } else if (needsRender) {
         this.render();
+      }
+      if (needsCrosshairUpdate) {
+        this.crosshair.draw();
       }
     }
     normalizePartialOptions(options) {

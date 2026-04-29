@@ -360,31 +360,90 @@ export class Chart {
   public setOptions(partialOptions: Partial<ChartOptions>): void {
     const normalizedPartial = this.normalizePartialOptions(partialOptions);
     this.options = deepMerge(this.options, normalizedPartial);
+
+    let needsRender = false;
+    let needsCrosshairUpdate = false;
+    let needsResize = false;
+
+    // === TIME SCALE ===
     if (normalizedPartial.timeScale) {
       if (normalizedPartial.timeScale.barSpacing !== undefined) {
         this.state.barWidth = this.options.timeScale.barSpacing;
         this.renderer.createBuffer();
+        needsRender = true;
       }
       if (normalizedPartial.timeScale.rightOffset !== undefined) {
         this.state.rightGap = this.options.timeScale.rightOffset;
+        needsRender = true;
       }
-    }
-    if (normalizedPartial.priceScale) {
-      if (normalizedPartial.priceScale.mode !== undefined) {
-        this.state.priceScaleMode = normalizedPartial.priceScale.mode;
+      if (normalizedPartial.timeScale.visible !== undefined) {
+        needsRender = true;
       }
-      if (normalizedPartial.priceScale.priceFormat !== undefined) {
-        this.priceFormatter = new PriceFormatter(this.options.priceScale.priceFormat);
-      }
-      if (normalizedPartial.priceScale.currentPrice !== undefined) {
-        this.restartCountdownTimer();
+      if (normalizedPartial.timeScale.minBarSpacing !== undefined ||
+          normalizedPartial.timeScale.maxBarSpacing !== undefined) {
+        // Options updated by deepMerge, enforced in events.ts
+        // No immediate render needed unless we want to clamp current barWidth
       }
     }
 
-    if (normalizedPartial.layout && (normalizedPartial.layout.width || normalizedPartial.layout.height)) {
+    // === PRICE SCALE ===
+    if (normalizedPartial.priceScale) {
+      if (normalizedPartial.priceScale.mode !== undefined) {
+        this.state.priceScaleMode = normalizedPartial.priceScale.mode;
+        needsRender = true;
+      }
+      if (normalizedPartial.priceScale.priceFormat !== undefined) {
+        this.priceFormatter = new PriceFormatter(this.options.priceScale.priceFormat);
+        needsRender = true;
+      }
+      if (normalizedPartial.priceScale.currentPrice !== undefined) {
+        this.restartCountdownTimer();
+        needsRender = true;
+      }
+    }
+
+    // === LAYOUT ===
+    if (normalizedPartial.layout) {
+      if (normalizedPartial.layout.width !== undefined || normalizedPartial.layout.height !== undefined) {
+        needsResize = true;
+      }
+      // Visual changes that need re-render
+      if (normalizedPartial.layout.background !== undefined ||
+          normalizedPartial.layout.textColor !== undefined ||
+          normalizedPartial.layout.fontSize !== undefined ||
+          normalizedPartial.layout.fontFamily !== undefined) {
+        needsRender = true;
+      }
+    }
+
+    // === GRID ===
+    if (normalizedPartial.grid) {
+      // Any grid change requires re-render
+      needsRender = true;
+    }
+
+    // === CROSSHAIR ===
+    if (normalizedPartial.crosshair) {
+      needsCrosshairUpdate = true;
+    }
+
+    // === BEHAVIOR ===
+    // No state updates needed - flags are read directly in events.ts
+    // Changes take effect immediately on next event
+
+    // === COLORS (LEGACY) ===
+    // Colors are mapped to layout/grid in normalizePartialOptions()
+    // Handled by layout/grid handlers above
+
+    // === APPLY CHANGES ===
+    if (needsResize) {
       this.resize();
-    } else {
+    } else if (needsRender) {
       this.render();
+    }
+
+    if (needsCrosshairUpdate) {
+      this.crosshair.draw();
     }
   }
 
