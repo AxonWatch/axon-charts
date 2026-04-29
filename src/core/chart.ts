@@ -9,6 +9,7 @@ import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
+import { CrosshairAPI } from '../api/crosshair.js';
 
 const DEFAULT_OPTIONS: Required<ChartOptions> = {
   layout: {
@@ -120,6 +121,7 @@ export class Chart {
   private priceFormatter: PriceFormatter;
   private priceScaleAPI: PriceScaleAPI;
   private timeScaleAPI: TimeScaleAPI;
+  private crosshairAPI: CrosshairAPI;
 
   // Real-time Countdown management
   private countdownRafId: number | null = null;
@@ -170,6 +172,7 @@ export class Chart {
     this.renderer = new Renderer(this);
     this.initCanvases();
     this.crosshair = new Crosshair(this);
+    this.crosshairAPI = new CrosshairAPI(this, this.crosshair);
     this.eventManager = new EventManager(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
     this.timeScaleAPI = new TimeScaleAPI(this);
@@ -474,5 +477,13 @@ export class Chart {
    */
   public timeScale(): TimeScaleAPI {
     return this.timeScaleAPI;
+  }
+
+  /**
+   * Get the Crosshair API
+   * Provides methods to control the crosshair overlay behavior and appearance
+   */
+  public crosshairAPI(): CrosshairAPI {
+    return this.crosshairAPI;
   }
 }
