@@ -94,14 +94,18 @@ export class Axes {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Skip if hidden (master toggle or per-axis toggle)
-    if (!this.chart.options.grid.show || vertOptions.show === false) return;
+    // Skip if time scale is hidden (this hides both labels and grid)
     if (!this.chart.options.timeScale.visible) return;
 
-    // Apply grid line styles (always solid)
-    ctx.strokeStyle = vertOptions.color ?? '#2a2a2a';
-    ctx.lineWidth = vertOptions.width ?? 1;
-    ctx.setLineDash([]);
+    // Check if we should draw vertical grid lines
+    const drawVertLines = this.chart.options.grid.show && vertOptions.show !== false;
+
+    // Apply grid line styles (always solid) - only if we're going to draw them
+    if (drawVertLines) {
+      ctx.strokeStyle = vertOptions.color ?? '#2a2a2a';
+      ctx.lineWidth = vertOptions.width ?? 1;
+      ctx.setLineDash([]);
+    }
 
     // SAFETY: Prevent infinite loops if stepTime is 0 or NaN
     const safeStepTime = Math.max(1, stepTime || 1);
@@ -118,13 +122,15 @@ export class Axes {
       if (x > chartWidth) break;
       if (x < -100) continue; // Skip if far to the left
 
-      // Draw vertical grid line (Full Height)
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
-      ctx.stroke();
+      // Draw vertical grid line (Full Height) - only if enabled
+      if (drawVertLines) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
+        ctx.stroke();
+      }
 
-      // Draw time label
+      // Draw time label (always, unless timeScale.hidden)
       if (x >= 0 && x <= chartWidth) {
         const label = this.formatTimeLabel(currentT, virtualIdx, step, interval);
         ctx.fillText(label, x, h - LAYOUT.TIME_LABEL_Y);

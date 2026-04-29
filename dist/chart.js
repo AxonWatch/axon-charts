@@ -413,13 +413,14 @@ var KybosCore = (() => {
       ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      if (!this.chart.options.grid.show || vertOptions.show === false)
-        return;
       if (!this.chart.options.timeScale.visible)
         return;
-      ctx.strokeStyle = vertOptions.color ?? "#2a2a2a";
-      ctx.lineWidth = vertOptions.width ?? 1;
-      ctx.setLineDash([]);
+      const drawVertLines = this.chart.options.grid.show && vertOptions.show !== false;
+      if (drawVertLines) {
+        ctx.strokeStyle = vertOptions.color ?? "#2a2a2a";
+        ctx.lineWidth = vertOptions.width ?? 1;
+        ctx.setLineDash([]);
+      }
       const safeStepTime = Math.max(1, stepTime || 1);
       let iterations = 0;
       const MAX_ITERATIONS = 1e3;
@@ -432,10 +433,12 @@ var KybosCore = (() => {
           break;
         if (x < -100)
           continue;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
-        ctx.stroke();
+        if (drawVertLines) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
+          ctx.stroke();
+        }
         if (x >= 0 && x <= chartWidth) {
           const label = this.formatTimeLabel(currentT, virtualIdx, step, interval);
           ctx.fillText(label, x, h - LAYOUT.TIME_LABEL_Y);
