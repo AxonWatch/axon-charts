@@ -10,6 +10,7 @@ import { PriceFormatter } from '../utils/formatter.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
+import { validateOptions } from '../utils/validation.js';
 
 const DEFAULT_OPTIONS: Required<ChartOptions> = {
   layout: {
@@ -145,7 +146,8 @@ export class Chart {
       throw new Error(`KybosCore: Container "${container}" not found`);
     }
 
-    // 2. Initialize options
+    // 2. Validate and initialize options
+    validateOptions(options);
     this.options = this.normalizeOptions(options);
 
     // 3. Initialize state
@@ -358,6 +360,9 @@ export class Chart {
   }
 
   public setOptions(partialOptions: Partial<ChartOptions>): void {
+    // Validate options before applying
+    validateOptions(partialOptions);
+
     const normalizedPartial = this.normalizePartialOptions(partialOptions);
     this.options = deepMerge(this.options, normalizedPartial);
 
