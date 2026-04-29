@@ -276,8 +276,7 @@ var KybosCore = (() => {
     const maxOffsetX = chartAreaWidth - barWidth * 2;
     return Math.min(maxOffsetX, offsetX);
   }
-  function calculateRightEdgeOffset(totalBars, barWidth, screenWidth, rightGap) {
-    const axisWidth = LAYOUT.RIGHT_GAP;
+  function calculateRightEdgeOffset(totalBars, barWidth, screenWidth, rightGap, axisWidth) {
     const chartAreaWidth = screenWidth - axisWidth;
     const targetRightEdge = chartAreaWidth - rightGap - 1;
     return targetRightEdge - totalBars * barWidth;
@@ -303,9 +302,11 @@ var KybosCore = (() => {
     return nice * magnitude;
   }
   function calculateTimeStep(barWidth) {
+    if (!barWidth || barWidth <= 0)
+      return 10;
     const targetPixels = LAYOUT.TIME_LABEL_TARGET_PIXELS;
     const roughStep = targetPixels / barWidth;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep) || 0));
     const normalized = roughStep / magnitude;
     let nice;
     if (normalized < LAYOUT.NICE_THRESHOLD_LOW) {
@@ -416,7 +417,12 @@ var KybosCore = (() => {
         ctx.strokeStyle = "transparent";
       if (!this.chart.options.timeScale.visible)
         return;
-      for (let currentT = startSnappedTime; ; currentT += stepTime) {
+      const safeStepTime = Math.max(1, stepTime || 1);
+      let iterations = 0;
+      const MAX_ITERATIONS = 1e3;
+      for (let currentT = startSnappedTime; ; currentT += safeStepTime) {
+        if (++iterations > MAX_ITERATIONS)
+          break;
         const virtualIdx = refIdx + (currentT - refTime) / interval;
         const x = indexToX(virtualIdx, this.chart.state);
         if (x > chartWidth)
@@ -968,6 +974,8 @@ var KybosCore = (() => {
        * Handle wheel zoom
        */
       this.handleWheel = (e) => {
+        if (!this.chart.options.behavior.scrollToZoom)
+          return;
         e.preventDefault();
         const factor = e.deltaY > 0 ? LAYOUT.ZOOM_FACTOR_OUT : LAYOUT.ZOOM_FACTOR_IN;
         const { w, h, rightGap, axisWidth } = this.chart.state;
@@ -1020,19 +1028,23 @@ var KybosCore = (() => {
         const isOverPrice = e.offsetX > chartAreaWidth;
         const isOverTime = e.offsetY > h - LAYOUT.BOTTOM_MARGIN;
         if (isOverPrice) {
-          this.chart.mainCanvas.style.cursor = "ns-resize";
+          this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragPriceScale ? "ns-resize" : "default";
         } else if (isOverTime) {
-          this.chart.mainCanvas.style.cursor = "ew-resize";
+          this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragToZoom ? "ew-resize" : "default";
         } else {
           this.chart.mainCanvas.style.cursor = "crosshair";
         }
         if (!this.isDragging)
           return;
         if (this.dragMode === "price") {
+          if (!this.chart.options.behavior.dragPriceScale)
+            return;
           const deltaY = e.offsetY - this.lastMouseY;
           this.chart.state.priceScale *= 1 + deltaY / LAYOUT.DRAG_SCALE_DIVISOR;
           this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
         } else if (this.dragMode === "time") {
+          if (!this.chart.options.behavior.dragToZoom)
+            return;
           const deltaX = e.offsetX - this.lastMouseX;
           const factor = Math.pow(LAYOUT.ZOOM_FACTOR_IN, -deltaX / LAYOUT.ZOOM_SENSITIVITY);
           const oldWidth = this.chart.state.barWidth;
@@ -1049,6 +1061,8 @@ var KybosCore = (() => {
             this.chart.state.offsetX = naturalOffset * (1 - weight) + centeredOffset * weight;
           }
         } else {
+          if (!this.chart.options.behavior.panOnMouseDrag)
+            return;
           this.chart.state.offsetX += e.offsetX - this.lastMouseX;
           if (this.chart.state.priceScale !== 1) {
             this.chart.state.priceOffset += e.offsetY - this.lastMouseY;
@@ -1078,6 +1092,8 @@ var KybosCore = (() => {
           this.lastMouseX = touch.clientX;
           this.requestRender();
         } else if (e.touches.length === 2) {
+          if (!this.chart.options.behavior.pinchToZoom)
+            return;
           const currentDistance = this.getTouchDistance(e.touches);
           const factor = currentDistance / this.lastTouchDistance;
           const { w, axisWidth, rightGap } = this.chart.state;
@@ -1484,7 +1500,7 @@ var KybosCore = (() => {
       this.dataManager.setData(bars);
       if (this.dataManager.length === 0)
         return;
-      this.state.offsetX = calculateRightEdgeOffset(this.dataManager.length, this.state.barWidth, this.state.w, this.state.rightGap);
+      this.state.offsetX = calculateRightEdgeOffset(this.dataManager.length, this.state.barWidth, this.state.w, this.state.rightGap, this.state.axisWidth);
       this.render();
     }
     appendBar(bar) {

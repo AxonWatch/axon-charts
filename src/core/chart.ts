@@ -288,7 +288,7 @@ export class Chart {
 
     this.dataManager.setData(bars);
     if (this.dataManager.length === 0) return;
-    this.state.offsetX = calculateRightEdgeOffset(this.dataManager.length, this.state.barWidth, this.state.w, this.state.rightGap);
+    this.state.offsetX = calculateRightEdgeOffset(this.dataManager.length, this.state.barWidth, this.state.w, this.state.rightGap, this.state.axisWidth);
     this.render();
   }
 

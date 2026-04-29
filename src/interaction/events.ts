@@ -76,6 +76,9 @@ export class EventManager {
    * Handle wheel zoom
    */
   private handleWheel = (e: WheelEvent): void => {
+    // Guard: Check if scroll-to-zoom is disabled
+    if (!this.chart.options.behavior.scrollToZoom) return;
+
     e.preventDefault();
     const factor = e.deltaY > 0 ? LAYOUT.ZOOM_FACTOR_OUT : LAYOUT.ZOOM_FACTOR_IN;
     const { w, h, rightGap, axisWidth } = this.chart.state;
@@ -143,10 +146,13 @@ export class EventManager {
     const isOverPrice = e.offsetX > chartAreaWidth;
     const isOverTime = e.offsetY > h - LAYOUT.BOTTOM_MARGIN;
 
+    // Update cursor based on enabled behaviors
     if (isOverPrice) {
-      this.chart.mainCanvas.style.cursor = 'ns-resize';
+      // Only show resize cursor if dragPriceScale is enabled
+      this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragPriceScale ? 'ns-resize' : 'default';
     } else if (isOverTime) {
-      this.chart.mainCanvas.style.cursor = 'ew-resize';
+      // Only show resize cursor if dragToZoom is enabled
+      this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragToZoom ? 'ew-resize' : 'default';
     } else {
       this.chart.mainCanvas.style.cursor = 'crosshair';
     }
@@ -154,10 +160,16 @@ export class EventManager {
     if (!this.isDragging) return;
 
     if (this.dragMode === 'price') {
+      // Guard: Check if price-scale drag is disabled
+      if (!this.chart.options.behavior.dragPriceScale) return;
+
       const deltaY = e.offsetY - this.lastMouseY;
       this.chart.state.priceScale *= (1 + deltaY / LAYOUT.DRAG_SCALE_DIVISOR);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
     } else if (this.dragMode === 'time') {
+      // Guard: Check if drag-to-zoom is disabled
+      if (!this.chart.options.behavior.dragToZoom) return;
+
       const deltaX = e.offsetX - this.lastMouseX;
       const factor = Math.pow(LAYOUT.ZOOM_FACTOR_IN, -deltaX / LAYOUT.ZOOM_SENSITIVITY);
       const oldWidth = this.chart.state.barWidth;
@@ -176,6 +188,9 @@ export class EventManager {
         this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
       }
     } else {
+      // Guard: Check if pan-on-drag is disabled
+      if (!this.chart.options.behavior.panOnMouseDrag) return;
+
       this.chart.state.offsetX += e.offsetX - this.lastMouseX;
       if (this.chart.state.priceScale !== 1.0) {
         this.chart.state.priceOffset += e.offsetY - this.lastMouseY;
@@ -209,6 +224,9 @@ export class EventManager {
       this.lastMouseX = touch.clientX;
       this.requestRender();
     } else if (e.touches.length === 2) {
+      // Guard: Check if pinch-to-zoom is disabled
+      if (!this.chart.options.behavior.pinchToZoom) return;
+
       const currentDistance = this.getTouchDistance(e.touches);
       const factor = currentDistance / this.lastTouchDistance;
       const { w, axisWidth, rightGap } = this.chart.state;

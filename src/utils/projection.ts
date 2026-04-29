@@ -114,9 +114,9 @@ export function calculateRightEdgeOffset(
   totalBars: number,
   barWidth: number,
   screenWidth: number,
-  rightGap: number
+  rightGap: number,
+  axisWidth: number
 ): number {
-  const axisWidth = LAYOUT.RIGHT_GAP;
   const chartAreaWidth = screenWidth - axisWidth;
 
   // target: Place the right edge of the last bar exactly at (chartAreaWidth - rightGap)
