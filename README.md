@@ -238,7 +238,7 @@ All options are optional with sensible defaults:
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Minified bundle | <25 KB | **17 KB** ✅ |
+| Minified bundle | <25 KB gzipped | **16 KB gzipped** ✅ |
 | First render (500 bars) | <16ms | ~8ms ✅ |
 | Live tick update | <2ms | **<0.2ms** 🚀 |
 | Mousemove overlay | <1ms | <0.3ms ✅ |

@@ -463,9 +463,9 @@ export class Chart {
   }
 
   public getContext() {
-    const { w, h, priceMin, priceMax, barWidth, offsetX, rightGap } = this.state;
+    const { w, h, axisWidth, priceMin, priceMax, barWidth, offsetX, rightGap } = this.state;
     const data = this.dataManager.data;
-    const usableWidth = w - rightGap;
+    const usableWidth = w - axisWidth;
     const startIdx = Math.max(0, Math.ceil((1 - offsetX - barWidth) / barWidth));
     const endIdx = Math.min(data.length - 1, Math.floor((usableWidth - 1 - offsetX) / barWidth));
     const visibleBars = data.slice(startIdx, endIdx + 1);
