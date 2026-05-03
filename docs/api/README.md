@@ -263,7 +263,8 @@ chart.crosshairAPI().isVisible(): boolean
 **Modes:**
 - `'none'` — Crosshair completely hidden
 - `'magnet'` — Crosshair snaps to the nearest bar center
-- `'normal'` — Crosshair follows mouse freely (currently same as magnet)
+- `'normal'` — Crosshair follows mouse freely (no snap to bar center)
+- `'magnet'` — Crosshair snaps to nearest bar
 
 #### Labels & Tooltip
 
@@ -434,6 +435,44 @@ These are accepted for backward compatibility but mapped to the hierarchical str
 | `maxBars` | `data.maxBars` | Init-only |
 
 ---
+
+
+
+### Planned Options (v1.0.1)
+
+These will be added in the next release:
+
+```typescript
+// Toggle custom right-click menu (default: true)
+crosshair?: {
+  // ... existing options ...
+  rightClickMenu?: boolean;   // When false, suppresses right-click menu
+}
+
+// Full date in crosshair time label (default: true)
+timeScale?: {
+  // ... existing options ...
+  showFullDate?: boolean;     // When true: "Fri 03 Jan'26 17:55"
+}
+
+// Market header bar
+market?: {
+  show?: boolean;             // default: true (if baseAsset set)
+  baseAsset?: string;         // e.g. 'BTC'
+  quoteAsset?: string;        // e.g. 'USDT'
+  timeframe?: string;         // e.g. '1m', '4H', '1d'
+  exchange?: string;          // e.g. 'Binance'
+}
+
+// Watermark overlay
+watermark?: {
+  show?: boolean;             // default: false
+  text?: string;              // default: '' (empty = disabled)
+  color?: string;             // default: '#ffffff'
+  fontSize?: number;          // default: 48
+  opacity?: number;           // default: 0.07
+}
+```
 
 ## Quick Examples
 

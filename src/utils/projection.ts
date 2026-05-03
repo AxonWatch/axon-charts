@@ -12,6 +12,8 @@ export interface ChartState {
   barWidth: number;
   baseBarWidth: number;
   rightGap: number;
+  topMargin: number;
+  bottomMargin: number;
   devicePixelRatio: number;
   priceScale: number;   // Vertical zoom factor
   priceOffset: number;  // Manual vertical pan offset
@@ -24,7 +26,7 @@ export interface ChartState {
  * Sub-pixel precision (no rounding) for smooth rendering
  */
 export function priceToY(price: number, state: ChartState): number {
-  const usableH = getUsableHeight(state.h);
+  const usableH = state.h - state.topMargin - state.bottomMargin;
   let ratio: number;
 
   if (state.priceScaleMode === 'logarithmic') {
@@ -37,7 +39,7 @@ export function priceToY(price: number, state: ChartState): number {
     ratio = (price - state.priceMin) / priceRange;
   }
 
-  const baseY = state.h - LAYOUT.BOTTOM_MARGIN - (ratio * usableH);
+  const baseY = state.h - state.bottomMargin - (ratio * usableH);
   return baseY + state.priceOffset;
 }
 
@@ -45,9 +47,9 @@ export function priceToY(price: number, state: ChartState): number {
  * Convert Y coordinate to price
  */
 export function yToPrice(y: number, state: ChartState): number {
-  const usableH = getUsableHeight(state.h);
+  const usableH = state.h - state.topMargin - state.bottomMargin;
   const adjustedY = y - state.priceOffset;
-  const ratio = (state.h - LAYOUT.BOTTOM_MARGIN - adjustedY) / usableH;
+  const ratio = (state.h - state.bottomMargin - adjustedY) / usableH;
 
   if (state.priceScaleMode === 'logarithmic') {
     const minLog = Math.log10(Math.max(state.priceMin, 0.01));

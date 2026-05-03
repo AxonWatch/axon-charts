@@ -18,11 +18,11 @@ export class Axes {
    * VIRTUAL: Derives prices from the current viewport boundaries
    */
   public drawPriceAxis(ctx: CanvasRenderingContext2D): void {
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
     // 1. Calculate the price at the top and bottom of the visible chart area
     const topPrice = yToPrice(0, this.chart.state);
-    const bottomPrice = yToPrice(h - LAYOUT.BOTTOM_MARGIN, this.chart.state);
+    const bottomPrice = yToPrice(h - bottomMargin, this.chart.state);
 
     // 2. Feed THESE dynamic prices into the niceTicks algorithm
     const ticks = niceTicks(
@@ -46,7 +46,7 @@ export class Axes {
       const y = priceToY(price, this.chart.state);
 
       // Only draw if within visible chart area
-      if (y < 0 || y > h - LAYOUT.BOTTOM_MARGIN) return;
+      if (y < 0 || y > h - bottomMargin) return;
 
       // Collision detection with live price label
       if (Math.abs(y - currentPriceY) < LAYOUT.COLLISION_THRESHOLD) return;
@@ -64,14 +64,14 @@ export class Axes {
    * VIRTUAL & SNAPPED: Anchors to clean time boundaries (e.g. 13:00, 14:00)
    */
   public drawTimeAxis(ctx: CanvasRenderingContext2D): void {
-    const { w, h, barWidth, data, axisWidth } = this.chart.state;
+    const { w, h, barWidth, data, axisWidth, bottomMargin } = this.chart.state;
     if (data.length === 0) return;
 
     // 1. Calculate time interval and step
     const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
     const step = calculateTimeStep(barWidth);
     const stepTime = step * interval;
-    
+
     // 2. Reference point for "Time Space" vs "Index Space" mapping
     const refBar = data[data.length - 1];
     const refIdx = data.length - 1;
@@ -126,14 +126,16 @@ export class Axes {
       if (drawVertLines) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
-        ctx.lineTo(x, h - LAYOUT.BOTTOM_MARGIN);
+        ctx.lineTo(x, h - bottomMargin);
         ctx.stroke();
       }
 
       // Draw time label (always, unless timeScale.hidden)
       if (x >= 0 && x <= chartWidth) {
         const label = this.formatTimeLabel(currentT, virtualIdx, step, interval);
-        ctx.fillText(label, x, h - LAYOUT.TIME_LABEL_Y);
+        // Center label vertically in the time axis area
+        const labelY = h - bottomMargin / 2;
+        ctx.fillText(label, x, labelY);
       }
     }
 
@@ -149,14 +151,24 @@ export class Axes {
     const prevDate = new Date(prevTime);
 
     // Check if we should show date (first bar or day change)
-    const isNewDay = date.getDate() !== prevDate.getDate() || 
-                     date.getMonth() !== prevDate.getMonth() || 
+    const isNewDay = date.getDate() !== prevDate.getDate() ||
+                     date.getMonth() !== prevDate.getMonth() ||
                      date.getFullYear() !== prevDate.getFullYear();
+
+    // If timeVisible is false, always show date
+    if (!this.chart.options.timeScale.timeVisible) {
+      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
 
     if (isNewDay) {
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     } else {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      // Check if seconds should be shown
+      if (this.chart.options.timeScale.secondsVisible) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      } else {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      }
     }
   }
 
@@ -166,7 +178,7 @@ export class Axes {
   public drawGrid(ctx: CanvasRenderingContext2D): void {
     if (!this.chart.options.grid.show) return;
 
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
     const horzOptions = this.chart.options.grid.horzLines || {};
 
@@ -180,7 +192,7 @@ export class Axes {
 
     // 1. Calculate horizontal grid lines using the SAME virtual logic as the axis labels
     const topPrice = yToPrice(0, this.chart.state);
-    const bottomPrice = yToPrice(h - LAYOUT.BOTTOM_MARGIN, this.chart.state);
+    const bottomPrice = yToPrice(h - bottomMargin, this.chart.state);
 
     const ticks = niceTicks(
       Math.min(topPrice, bottomPrice),
@@ -191,7 +203,7 @@ export class Axes {
     ticks.forEach(price => {
       const y = priceToY(price, this.chart.state);
 
-      if (y < 0 || y > h - LAYOUT.BOTTOM_MARGIN) return;
+      if (y < 0 || y > h - bottomMargin) return;
 
       ctx.beginPath();
       ctx.moveTo(0, y);

@@ -12,6 +12,9 @@ export class EventManager {
   private lastMouseY: number = 0;
   private lastTouchDistance: number = 0;
   private autoScrollEnabled: boolean = true;
+  private contextMenuActive: boolean = false;
+  private _contextMenu: HTMLDivElement | undefined;
+  private _contextMenuDismiss: ((e: MouseEvent) => void) | undefined;
   private dragMode: 'chart' | 'price' | 'time' = 'chart';
   private rafId: number | null = null;
 
@@ -41,6 +44,7 @@ export class EventManager {
     mainCanvas.addEventListener('wheel', this.handleWheel);
     mainCanvas.addEventListener('mousedown', this.handleMouseDown);
     mainCanvas.addEventListener('dblclick', this.handleDblClick);
+    mainCanvas.addEventListener('contextmenu', this.handleContextMenu);
     window.addEventListener('mouseup', this.handleMouseUp);
     window.addEventListener('mousemove', this.handleMouseMove);
 
@@ -54,7 +58,7 @@ export class EventManager {
    * Handle double click
    */
   private handleDblClick = (e: MouseEvent): void => {
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
     // Use client coordinates for consistency
@@ -70,13 +74,180 @@ export class EventManager {
     }
 
     // If double-clicked on Time Axis, reset horizontal zoom to default
-    if (mouseY > h - LAYOUT.BOTTOM_MARGIN) {
+    if (mouseY > h - bottomMargin) {
       this.chart.state.barWidth = this.chart.state.baseBarWidth;
       this.chart.renderer.createBuffer();
       this.scrollToLatest();
     }
   }
 
+
+
+  /**
+   * Handle right-click: show custom context menu with chart export options
+   */
+  private handleContextMenu = (e: MouseEvent): void => {
+    e.preventDefault();
+
+    // Check if right-click menu is disabled
+    if (!this.chart.options.crosshair.rightClickMenu) {
+      return;
+    }
+
+    // Remove any existing context menu first
+    this.removeContextMenu();
+
+    const container = this.chart.container;
+    const rect = container.getBoundingClientRect();
+
+    // Create menu element
+    const menu = document.createElement('div');
+    menu.id = 'axon-context-menu';
+    menu.style.cssText = [
+      'position: fixed',
+      'z-index: 99999',
+      'background: #1e1e1e',
+      'border: 1px solid #444',
+      'border-radius: 6px',
+      'padding: 4px 0',
+      'min-width: 190px',
+      'box-shadow: 0 4px 16px rgba(0,0,0,0.4)',
+      'font-family: system-ui, sans-serif',
+      'font-size: 13px',
+      'left: ' + e.clientX + 'px',
+      'top: ' + e.clientY + 'px'
+    ].join(';');
+
+    // Copy Image option
+    const copyItem = document.createElement('div');
+    copyItem.textContent = '📋 Copy Chart Image';
+    copyItem.style.cssText = [
+      'padding: 8px 16px',
+      'cursor: pointer',
+      'color: #ccc',
+      'display: flex',
+      'align-items: center',
+      'gap: 8px',
+      'white-space: nowrap'
+    ].join(';');
+    copyItem.addEventListener('mouseenter', () => { copyItem.style.background = '#333'; });
+    copyItem.addEventListener('mouseleave', () => { copyItem.style.background = 'transparent'; });
+    copyItem.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      this.copyChartToClipboard();
+      this.removeContextMenu();
+    });
+
+    // Save Image option
+    const saveItem = document.createElement('div');
+    saveItem.textContent = '💾 Save Chart Image As...';
+    saveItem.style.cssText = [
+      'padding: 8px 16px',
+      'cursor: pointer',
+      'color: #ccc',
+      'display: flex',
+      'align-items: center',
+      'gap: 8px',
+      'white-space: nowrap'
+    ].join(';');
+    saveItem.addEventListener('mouseenter', () => { saveItem.style.background = '#333'; });
+    saveItem.addEventListener('mouseleave', () => { saveItem.style.background = 'transparent'; });
+    saveItem.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      this.saveChartImage();
+      this.removeContextMenu();
+    });
+
+    // Divider
+    const divider = document.createElement('div');
+    divider.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
+
+    // Separator label
+    const sepLabel = document.createElement('div');
+    sepLabel.textContent = 'Export full chart with background, grid, and axes';
+    sepLabel.style.cssText = [
+      'padding: 4px 16px 6px',
+      'font-size: 11px',
+      'color: #666',
+      'font-style: italic'
+    ].join(';');
+
+    menu.appendChild(copyItem);
+    menu.appendChild(saveItem);
+    menu.appendChild(divider);
+    menu.appendChild(sepLabel);
+    document.body.appendChild(menu);
+
+    // Track for cleanup
+    this._contextMenu = menu;
+
+    // Close on any click outside
+    this._contextMenuDismiss = (ev2: MouseEvent) => {
+      if (menu && !menu.contains(ev2.target as Node)) {
+        this.removeContextMenu();
+      }
+    };
+    // Use setTimeout to avoid the current mousedown closing it immediately
+    setTimeout(() => {
+      document.addEventListener('mousedown', this._contextMenuDismiss);
+    }, 0);
+  }
+
+  /**
+   * Remove the custom context menu from the DOM
+   */
+  private removeContextMenu(): void {
+    if (this._contextMenuDismiss) {
+      document.removeEventListener('mousedown', this._contextMenuDismiss);
+      this._contextMenuDismiss = undefined;
+    }
+    if (this._contextMenu) {
+      this._contextMenu.remove();
+      this._contextMenu = undefined;
+    }
+  }
+
+  /**
+   * Copy chart image to clipboard
+   */
+  private copyChartToClipboard(): void {
+    try {
+      const chart = (this.chart as any);
+      if (typeof chart.toDataURL === 'function') {
+        const dataUrl = chart.toDataURL();
+        // Use chart.toBlob() for clipboard (avoids Image() load latency)
+        chart.toBlob().then(function(blob) {
+          if (blob) {
+            navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]).catch(function() {});
+          }
+        }).catch(function() {});
+      }
+    } catch (err) {
+      // Clipboard may not be available
+    }
+  }
+
+  /**
+   * Save chart image as PNG file
+   */
+  private saveChartImage(): void {
+    try {
+      const chart = (this.chart as any);
+      if (typeof chart.toDataURL === 'function') {
+        const dataUrl = chart.toDataURL();
+        const link = document.createElement('a');
+        link.download = 'chart-' + Date.now() + '.png';
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (err) {
+      // Download may fail in some contexts
+    }
+  }
   /**
    * Handle wheel zoom
    */
@@ -86,7 +257,7 @@ export class EventManager {
 
     e.preventDefault();
     const factor = e.deltaY > 0 ? LAYOUT.ZOOM_FACTOR_OUT : LAYOUT.ZOOM_FACTOR_IN;
-    const { w, h, rightGap, axisWidth } = this.chart.state;
+    const { w, h, rightGap, axisWidth, bottomMargin } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
     // Use client coordinates for consistency
@@ -103,7 +274,7 @@ export class EventManager {
     }
 
     // Horizontal Zoom
-    const isTimeAxis = mouseY > h - LAYOUT.BOTTOM_MARGIN;
+    const isTimeAxis = mouseY > h - bottomMargin;
     const oldWidth = this.chart.state.barWidth;
     const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
     const newWidth = oldWidth * factor;
@@ -122,13 +293,14 @@ export class EventManager {
 
     this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
     this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
-    
+
     this.checkAutoScrollState();
     this.requestRender();
+    this.chart.triggerVisibleRangeChange();
   }
 
   private handleMouseDown = (e: MouseEvent): void => {
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
     // Use client coordinates for consistency
@@ -142,10 +314,19 @@ export class EventManager {
 
     if (mouseX > chartAreaWidth) {
       this.dragMode = 'price';
-    } else if (mouseY > h - LAYOUT.BOTTOM_MARGIN) {
+    } else if (mouseY > h - bottomMargin) {
       this.dragMode = 'time';
     } else {
       this.dragMode = 'chart';
+
+      // Trigger onBarClick callback when clicking in chart area
+      if (this.chart.onBarClick) {
+        const barIndex = xToIndex(mouseX, this.chart.state);
+        const bar = this.chart.dataManager.data[barIndex];
+        if (bar) {
+          this.chart.onBarClick(bar, barIndex);
+        }
+      }
     }
   }
 
@@ -155,7 +336,7 @@ export class EventManager {
   }
 
   private handleMouseMove = (e: MouseEvent): void => {
-    const { w, h, rightGap, barWidth, axisWidth } = this.chart.state;
+    const { w, h, rightGap, barWidth, axisWidth, bottomMargin } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
     // Use client coordinates with getBoundingClientRect for consistent positioning
@@ -165,7 +346,7 @@ export class EventManager {
     const mouseY = e.clientY - rect.top;
 
     const isOverPrice = mouseX > chartAreaWidth;
-    const isOverTime = mouseY > h - LAYOUT.BOTTOM_MARGIN;
+    const isOverTime = mouseY > h - bottomMargin;
 
     // Update cursor based on enabled behaviors
     if (isOverPrice) {
@@ -208,6 +389,12 @@ export class EventManager {
         const centeredOffset = (chartAreaWidth / 2) - (lastIdx * newWidth) - (newWidth / 2);
         this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
       }
+
+      this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+      this.checkAutoScrollState();
+      this.requestRender();
+      this.chart.triggerVisibleRangeChange();
+      return;
     } else {
       // Guard: Check if pan-on-drag is disabled
       if (!this.chart.options.behavior.panOnMouseDrag) return;
@@ -224,6 +411,7 @@ export class EventManager {
     this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
     this.checkAutoScrollState();
     this.requestRender();
+    this.chart.triggerVisibleRangeChange();
   }
 
   private handleTouchStart = (e: TouchEvent): void => {
@@ -271,6 +459,7 @@ export class EventManager {
         this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
         this.lastTouchDistance = currentDistance;
         this.requestRender();
+        this.chart.triggerVisibleRangeChange();
       }
     }
   }
@@ -311,12 +500,15 @@ export class EventManager {
     this.chart.state.offsetX = calculateRightEdgeOffset(this.chart.dataManager.length, barWidth, w, rightGap, axisWidth);
     this.autoScrollEnabled = true;
     this.chart.render();
+    this.chart.triggerVisibleRangeChange();
   }
 
   public destroy(): void {
+    this.removeContextMenu();
     const mainCanvas = this.chart.mainCanvas;
     mainCanvas.removeEventListener('wheel', this.handleWheel);
     mainCanvas.removeEventListener('mousedown', this.handleMouseDown);
+    mainCanvas.removeEventListener('contextmenu', this.handleContextMenu);
     window.removeEventListener('mouseup', this.handleMouseUp);
     window.removeEventListener('mousemove', this.handleMouseMove);
     mainCanvas.removeEventListener('touchstart', this.handleTouchStart);

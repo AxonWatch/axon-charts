@@ -14,6 +14,9 @@ export class Crosshair {
   private y: number = -1;
   private visible: boolean = false;
 
+  // Constants
+  private readonly HEADER_HEIGHT = 28;
+
   // Event handler references for proper removal
   private handleMouseMove: (e: MouseEvent) => void;
   private handleMouseLeave: () => void;
@@ -64,10 +67,10 @@ export class Crosshair {
    * Find bar under cursor
    */
   private hitTest(x: number): number | null {
-    const { data } = this.chart.state;
+    const { data, axisWidth } = this.chart.state;
 
     // Check if cursor is in chart area
-    if (x < 0 || x > this.chart.state.w - LAYOUT.RIGHT_GAP) {
+    if (x < 0 || x > this.chart.state.w - axisWidth) {
       return null;
     }
 
@@ -100,31 +103,48 @@ export class Crosshair {
    * Draw crosshair and tooltip
    */
   public draw(): void {
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
     // Clear overlay
     this.overlayCtx.clearRect(0, 0, w, h);
 
+    // Draw market header if enabled
+    if (this.chart.options.market?.show) {
+      this.drawMarketHeader(w, this.HEADER_HEIGHT);
+    }
+
     // Check if over axes - FIXED: Use dynamic axisWidth for sidebar detection
     const isOverPriceAxis = this.x > w - axisWidth;
-    const isOverTimeAxis = this.y > h - LAYOUT.BOTTOM_MARGIN;
+    const isOverTimeAxis = this.y > h - bottomMargin;
     const isOverChart = !isOverPriceAxis && !isOverTimeAxis;
 
 
     // 1. Identify bar to display (use latest if not visible or over axes, or crosshair position if in chart)
     const data = this.chart.dataManager.data;
     let barIndex: number;
+    let crosshairX: number;
+    let displayTime: number;
 
     if (this.visible && isOverChart) {
-      // Use crosshair position
-      barIndex = xToIndex(this.x, this.chart.state);
+      const mode = this.chart.options.crosshair.mode;
+
+      if (mode === 'normal') {
+        // Use raw mouse position (no snap)
+        crosshairX = this.x;
+        barIndex = xToIndex(this.x, this.chart.state);
+      } else {
+        // Magnet mode: snap to nearest bar
+        barIndex = xToIndex(this.x, this.chart.state);
+        crosshairX = indexToX(barIndex, this.chart.state);
+      }
+
+      // Clamp to valid range
+      barIndex = Math.max(0, Math.min(barIndex, data.length - 1));
     } else {
       // Default to latest candle
       barIndex = data.length - 1;
+      crosshairX = indexToX(barIndex, this.chart.state);
     }
-
-    // Clamp to valid range
-    barIndex = Math.max(0, Math.min(barIndex, data.length - 1));
 
     // 2. Calculate Virtual Time (matches Axes.ts logic)
     const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
@@ -132,14 +152,32 @@ export class Crosshair {
     const refIdx = data.length > 0 ? data.length - 1 : 0;
     const virtualTime = refTime + (barIndex - refIdx) * interval;
 
+    // For normal mode, calculate time at cursor position
+    if (this.chart.options.crosshair.mode === 'normal' && this.visible && isOverChart) {
+      const cursorIndex = xToIndex(this.x, this.chart.state);
+      displayTime = refTime + (cursorIndex - refIdx) * interval;
+    } else {
+      displayTime = virtualTime;
+    }
+
+    // Trigger onCrosshairMove callback
+    if (this.visible && isOverChart && this.chart.onCrosshairMove) {
+      const bar = data[barIndex];
+      const price = this.getPriceAt(this.y);
+
+      this.chart.onCrosshairMove({
+        time: displayTime,
+        price: price,
+        bar: bar
+      });
+    }
+
     // 3. Draw crosshair elements (only in chart area when visible)
     if (this.visible && isOverChart && this.chart.options.crosshair.mode !== 'none') {
-      const snapX = indexToX(barIndex, this.chart.state);
-
       // Draw Axis Labels (Only if enabled in options)
       if (this.chart.options.crosshair.showLabels) {
         this.drawPriceLabel(this.getPriceAt(this.y));
-        this.drawTimeLabel(virtualTime, snapX);
+        this.drawTimeLabel(displayTime, crosshairX);
       }
 
       // Draw crosshair lines
@@ -151,8 +189,8 @@ export class Crosshair {
       this.overlayCtx.lineWidth = vert.width;
       this.overlayCtx.setLineDash(vert.style === 'dashed' ? [4, 4] : []);
       this.overlayCtx.beginPath();
-      this.overlayCtx.moveTo(snapX, 0);
-      this.overlayCtx.lineTo(snapX, h - LAYOUT.BOTTOM_MARGIN);
+      this.overlayCtx.moveTo(crosshairX, 0);
+      this.overlayCtx.lineTo(crosshairX, h - bottomMargin);
       this.overlayCtx.stroke();
 
       // Horizontal line
@@ -177,6 +215,42 @@ export class Crosshair {
   }
 
   /**
+   * Draw market header bar at top of chart
+   */
+  private drawMarketHeader(width: number, height: number): void {
+    const market = this.chart.options.market;
+    if (!market) return;
+
+    // Build header text: "BTC/USDT | 1m | Binance"
+    const parts = [
+      `${market.baseAsset || ''}/${market.quoteAsset || ''}`,
+      market.timeframe || '',
+      market.source || ''
+    ].filter(p => p.length > 0);
+
+    const headerText = parts.join(' | ');
+
+    // Draw background strip
+    this.overlayCtx.fillStyle = '#161616';
+    this.overlayCtx.fillRect(0, 0, width, height);
+
+    // Draw border line at bottom
+    this.overlayCtx.strokeStyle = '#333';
+    this.overlayCtx.lineWidth = 1;
+    this.overlayCtx.beginPath();
+    this.overlayCtx.moveTo(0, height);
+    this.overlayCtx.lineTo(width, height);
+    this.overlayCtx.stroke();
+
+    // Draw text
+    this.overlayCtx.fillStyle = '#888';
+    this.overlayCtx.font = '11px system-ui';
+    this.overlayCtx.textBaseline = 'middle';
+    this.overlayCtx.textAlign = 'left';
+    this.overlayCtx.fillText(headerText, 10, height / 2);
+  }
+
+  /**
    * Draw OHLC legend in the top-left corner
    */
   private drawTooltip(bar: Bar): void {
@@ -185,14 +259,16 @@ export class Crosshair {
     const high = bar.high.toFixed(2);
     const low = bar.low.toFixed(2);
     const close = bar.close.toFixed(2);
-    
+
     // 2. Determine color based on bar direction
     const isUp = bar.close >= bar.open;
     const color = isUp ? this.chart.options.colors.up : this.chart.options.colors.down;
 
-    // 3. Position: Top Left with small margin (Using LAYOUT)
+    // 3. Position: Top Left with small margin
+    // Account for market header if shown
+    const headerOffset = this.chart.options.market?.show ? this.HEADER_HEIGHT : 0;
     const startX = LAYOUT.TOOLTIP_MARGIN_X;
-    const startY = LAYOUT.TOOLTIP_MARGIN_Y;
+    const startY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset;
 
     this.overlayCtx.font = 'bold 12px system-ui';
     this.overlayCtx.textBaseline = 'top';
@@ -265,15 +341,39 @@ export class Crosshair {
    * Draw time label on X axis
    */
   private drawTimeLabel(time: number, x: number): void {
-    const { h } = this.chart.state;
+    const { h, bottomMargin } = this.chart.state;
     const date = new Date(time);
-    
-    // FIXED: Match time axis format (24-hour format)
-    const timeStr = date.toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
+
+    // Format based on options
+    let timeStr: string;
+    if (this.chart.options.timeScale.showFullDate) {
+      // Full date format: "Fri 03 Jan'26 17:55"
+      const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const dateNum = date.getDate().toString().padStart(2, '0');
+      const month = date.toLocaleDateString('en-US', { month: 'short' });
+      const year = date.getFullYear().toString().slice(-2);
+      const time = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+      timeStr = `${day} ${dateNum} ${month}'${year} ${time}`;
+    } else if (!this.chart.options.timeScale.timeVisible) {
+      timeStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    } else if (this.chart.options.timeScale.secondsVisible) {
+      timeStr = date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      });
+    } else {
+      timeStr = date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
 
     this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
     const textWidth = this.overlayCtx.measureText(timeStr).width;
@@ -281,8 +381,8 @@ export class Crosshair {
     const boxWidth = textWidth + padding * 2;
     const boxHeight = LAYOUT.LABEL_HEIGHT;
 
-    // FIXED: Centered in the bottom margin area (Using LAYOUT)
-    const textY = h - LAYOUT.TIME_LABEL_Y; 
+    // Center label vertically in the time axis area
+    const textY = h - bottomMargin / 2;
     const boxY = textY - boxHeight / 2;
 
     // Background (Match layout background)
@@ -329,6 +429,13 @@ export class Crosshair {
     this.overlayCanvas.style.width = w + 'px';
     this.overlayCanvas.style.height = h + 'px';
     this.overlayCtx.scale(devicePixelRatio, devicePixelRatio);
+  }
+
+  /**
+   * Get overlay canvas (for screenshot export)
+   */
+  public getOverlayCanvas(): HTMLCanvasElement | null {
+    return this.overlayCanvas;
   }
 
   /**

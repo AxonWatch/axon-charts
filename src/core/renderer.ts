@@ -147,7 +147,7 @@ export class Renderer {
 
   drawBackground(ctx: CanvasRenderingContext2D, force: boolean = false): void {
     if (!force) return;
-    const { w, h, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
     ctx.fillStyle = this.chart.options.layout.background;
     ctx.fillRect(0, 0, w, h);
@@ -156,15 +156,16 @@ export class Renderer {
 
     ctx.fillStyle = this.chart.options.layout.background;
     ctx.fillRect(w - axisWidth, 0, axisWidth, h);
-    ctx.fillRect(0, h - LAYOUT.BOTTOM_MARGIN, w, LAYOUT.BOTTOM_MARGIN);
+    ctx.fillRect(0, h - bottomMargin, w, bottomMargin);
 
     this.axes.drawTimeAxis(ctx);
     this.axes.drawPriceAxis(ctx);
     this.drawCurrentPriceLine(ctx);
+    this.drawWatermark(ctx);
   }
 
   drawViewport(mainCtx: CanvasRenderingContext2D): void {
-    const { w, h, barWidth, devicePixelRatio, axisWidth } = this.chart.state;
+    const { w, h, barWidth, devicePixelRatio, axisWidth, bottomMargin } = this.chart.state;
 
     // Only skip if dimensions are truly invalid (<= 0)
     if (w <= 0 || h <= 0 || barWidth <= 0) {
@@ -175,10 +176,10 @@ export class Renderer {
     mainCtx.clearRect(0, 0, w, h);
 
     // Skip clipping if viewport is too small
-    if (w - axisWidth > 0 && h - LAYOUT.BOTTOM_MARGIN > 0) {
+    if (w - axisWidth > 0 && h - bottomMargin > 0) {
       mainCtx.save();
       mainCtx.beginPath();
-      mainCtx.rect(0, 0, w - axisWidth, h - LAYOUT.BOTTOM_MARGIN);
+      mainCtx.rect(0, 0, w - axisWidth, h - bottomMargin);
       mainCtx.clip();
 
       const bufferStartScreenX = indexToX(this.bufferRenderStart, this.chart.state) - (barWidth / 2);
@@ -284,6 +285,27 @@ export class Renderer {
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  private drawWatermark(ctx: CanvasRenderingContext2D): void {
+    const watermark = this.chart.options.watermark;
+    if (!watermark?.show || !watermark?.text) return;
+
+    const { w, h, axisWidth } = this.chart.state;
+    const chartAreaWidth = w - axisWidth;
+
+    ctx.save();
+    ctx.translate(chartAreaWidth / 2, h / 2);
+    ctx.rotate(-Math.PI / 4);
+
+    ctx.font = `bold ${watermark.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = watermark.opacity;
+    ctx.fillStyle = watermark.color;
+
+    ctx.fillText(watermark.text, 0, 0);
+    ctx.restore();
   }
 
   destroy(): void {

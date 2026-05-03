@@ -52,6 +52,7 @@ export interface ChartOptions {
     visible?: boolean;
     timeVisible?: boolean;
     secondsVisible?: boolean;
+    showFullDate?: boolean;
     rightOffset?: number;
     barSpacing?: number;
     minBarSpacing?: number;
@@ -65,6 +66,7 @@ export interface ChartOptions {
     showTooltip?: boolean;
     vertLine?: { color?: string; width?: number; style?: 'solid' | 'dashed' };
     horzLine?: { color?: string; width?: number; style?: 'solid' | 'dashed' };
+    rightClickMenu?: boolean;
   };
 
   // === Behavior ===
@@ -81,6 +83,24 @@ export interface ChartOptions {
   data?: {
     maxBars?: number;
     autoCleanup?: boolean;
+  };
+
+  // === Market Header ===
+  market?: {
+    baseAsset?: string;
+    quoteAsset?: string;
+    timeframe?: string;
+    source?: string;
+    show?: boolean;
+  };
+
+  // === Watermark ===
+  watermark?: {
+    text?: string;
+    color?: string;
+    fontSize?: number;
+    opacity?: number;
+    show?: boolean;
   };
 
   // === Legacy / Compatibility ===
@@ -135,6 +155,57 @@ export interface ChartColors {
 export type ScrollLockChangeCallback = (locked: boolean) => void;
 
 /**
+ * Callback invoked when crosshair position changes
+ */
+export type CrosshairMoveCallback = (param: {
+  time: number;
+  price: number;
+  bar?: Bar;
+}) => void;
+
+/**
+ * Callback invoked when a bar is clicked
+ */
+export type BarClickCallback = (bar: Bar, index: number) => void;
+
+/**
+ * Callback invoked when the visible range changes
+ */
+export type VisibleRangeChangeCallback = (range: {
+  fromIndex: number;
+  toIndex: number;
+  fromTime: number;
+  toTime: number;
+}) => void;
+
+/**
+ * Command type for LLM-driven chart control
+ */
+export type ChartCommand =
+  | { type: 'setVisibleRange'; from: number; to: number }
+  | { type: 'scrollToTime'; time: number }
+  | { type: 'zoomIn'; factor?: number }
+  | { type: 'zoomOut'; factor?: number }
+  | { type: 'fitContent' }
+  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' };
+
+/**
+ * Chart state for serialization
+ */
+export interface ChartState {
+  version: string;
+  options: Required<ChartOptions>;
+  data: Bar[];
+  viewport: {
+    offsetX: number;
+    barWidth: number;
+    priceScale: number;
+    priceOffset: number;
+  };
+}
+
+/**
  * Interface for the main Chart component to enable circular type safety in sub-modules
  */
 export interface IChart {
@@ -152,6 +223,8 @@ export interface IChart {
     priceMax: number;
     data: Bar[];
     rightGap: number;
+    topMargin: number;
+    bottomMargin: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
@@ -161,7 +234,7 @@ export interface IChart {
     readonly data: Bar[];
     readonly length: number;
     readonly isEmpty: boolean;
-    getPriceRange(start: number, count: number): { min: number; max: number };
+    getPriceRange(start: number, count: number, scaleMargins?: { top?: number; bottom?: number }): { min: number; max: number };
   };
   renderer: {
     createBuffer(): void;
@@ -170,6 +243,9 @@ export interface IChart {
     formatPrice(price: number): string;
   };
   onScrollLockChange?: ScrollLockChangeCallback;
+  onCrosshairMove?: CrosshairMoveCallback;
+  onBarClick?: BarClickCallback;
+  onVisibleRangeChange?: VisibleRangeChangeCallback;
   render(): void;
   isAutoScrolling(): boolean;
   scrollToLatest(): void;

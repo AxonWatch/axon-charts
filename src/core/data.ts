@@ -7,9 +7,25 @@ import { LAYOUT } from './layout.js';
 export class DataManager {
   private _data: Bar[] = [];
   private _maxBars: number;
+  private _autoCleanup: boolean = true;
 
   constructor(maxBars: number = LAYOUT.DEFAULT_MAX_BARS) {
     this._maxBars = maxBars;
+  }
+
+  /**
+   * Set auto cleanup preference
+   */
+  setAutoCleanup(enabled: boolean): void {
+    this._autoCleanup = enabled;
+  }
+
+  /**
+   * Set maximum bars limit and enforce it
+   */
+  setMaxBars(max: number): void {
+    this._maxBars = max;
+    this.enforceMaxLimit(true);
   }
 
   /**
@@ -36,9 +52,9 @@ export class DataManager {
   /**
    * Replace all data with new data
    */
-  setData(bars: Bar[]): void {
+  setData(bars: Bar[], autoCleanup = true): void {
     this._data = [...bars];
-    this.enforceMaxLimit();
+    this.enforceMaxLimit(autoCleanup);
   }
 
   /**
@@ -46,7 +62,7 @@ export class DataManager {
    */
   appendBar(bar: Bar): void {
     this._data.push(bar);
-    this.enforceMaxLimit();
+    this.enforceMaxLimit(this._autoCleanup);
   }
 
   /**
@@ -112,7 +128,7 @@ export class DataManager {
   /**
    * Calculate price range for visible bars
    */
-  getPriceRange(startIdx: number, count: number): { min: number; max: number } {
+  getPriceRange(startIdx: number, count: number, scaleMargins?: { top?: number; bottom?: number }): { min: number; max: number } {
     if (this._data.length === 0) {
       return LAYOUT.DEFAULT_PRICE_RANGE;
     }
@@ -128,18 +144,25 @@ export class DataManager {
       maxP = Math.max(maxP, bar.high);
     }
 
-    // Add padding (Using LAYOUT constant)
-    const padding = (maxP - minP) * LAYOUT.PRICE_PADDING_RATIO || 1;
+    // Add padding using scaleMargins if provided, otherwise use LAYOUT constant
+    const topPadding = scaleMargins?.top ?? 0.1;
+    const bottomPadding = scaleMargins?.bottom ?? 0.1;
+
+    const range = maxP - minP;
+    const totalPadding = range * (topPadding + bottomPadding) || 1;
+
     return {
-      min: minP - padding,
-      max: maxP + padding
+      min: minP - totalPadding * (topPadding / (topPadding + bottomPadding)),
+      max: maxP + totalPadding * (bottomPadding / (topPadding + bottomPadding))
     };
   }
 
   /**
    * Enforce maximum bar limit by removing oldest bars
    */
-  enforceMaxLimit(): void {
+  enforceMaxLimit(shouldEnforce: boolean = true): void {
+    if (!shouldEnforce) return;
+
     if (this._data.length > this._maxBars) {
       const excess = this._data.length - this._maxBars;
       this._data.splice(0, excess);

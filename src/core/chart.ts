@@ -2,7 +2,7 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, ChartColors, Bar, ScrollLockChangeCallback } from '../types/index.js';
+import { ChartOptions, ChartColors, Bar, ScrollLockChangeCallback, ChartCommand, ChartState } from '../types/index.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
@@ -20,7 +20,7 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     textColor: '#aaaaaa',
     fontSize: 12,
     fontFamily: 'system-ui',
-    padding: { top: 10, right: 10, bottom: 10, left: 10 }
+    padding: { top: 40, right: 60, bottom: 35, left: 10 }
   },
   grid: {
     show: true,
@@ -42,6 +42,7 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     visible: true,
     timeVisible: true,
     secondsVisible: false,
+    showFullDate: true,
     rightOffset: 80,
     barSpacing: 11,
     minBarSpacing: 4,
@@ -52,18 +53,34 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     showLabels: true,
     showTooltip: true,
     vertLine: { color: '#555555', width: 1, style: 'dashed' },
-    horzLine: { color: '#555555', width: 1, style: 'dashed' }
+    horzLine: { color: '#555555', width: 1, style: 'dashed' },
+    rightClickMenu: true
   },
   behavior: {
     dragToZoom: true,
     scrollToZoom: true,
     pinchToZoom: true,
     panOnMouseDrag: true,
-    dragPriceScale: true
+    dragPriceScale: true,
+    autoScroll: true
   },
   data: {
     maxBars: 5000,
     autoCleanup: true
+  },
+  market: {
+    baseAsset: 'BTC',
+    quoteAsset: 'USDT',
+    timeframe: '1m',
+    source: '',
+    show: false
+  },
+  watermark: {
+    text: '',
+    color: '#ffffff',
+    fontSize: 48,
+    opacity: 0.07,
+    show: false
   },
   colors: {
     background: '#1a1a1a',
@@ -109,6 +126,8 @@ export class Chart {
     priceMax: number;
     data: Bar[];
     rightGap: number;
+    topMargin: number;
+    bottomMargin: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
@@ -130,6 +149,9 @@ export class Chart {
 
   // Callbacks
   public onScrollLockChange?: ScrollLockChangeCallback;
+  public onCrosshairMove?: CrosshairMoveCallback;
+  public onBarClick?: BarClickCallback;
+  public onVisibleRangeChange?: VisibleRangeChangeCallback;
 
   // Event handlers stored for proper removal
   private readonly handleResizeBound: () => void;
@@ -164,14 +186,17 @@ export class Chart {
       priceMax: 100,
       data: [],
       rightGap: this.options.timeScale.rightOffset,
+      topMargin: this.options.layout.padding?.top ?? LAYOUT.TOP_MARGIN,
+      bottomMargin: this.options.layout.padding?.bottom ?? LAYOUT.BOTTOM_MARGIN,
       priceScale: 1.0,
       priceOffset: 0,
       priceScaleMode: this.options.priceScale.mode,
-      axisWidth: LAYOUT.RIGHT_GAP
+      axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP
     };
 
     // 4. Initialize core modules
     this.dataManager = new DataManager(this.options.data.maxBars);
+    this.dataManager.setAutoCleanup(this.options.data.autoCleanup);
     this.priceFormatter = new PriceFormatter(this.options.priceScale.priceFormat);
     this.renderer = new Renderer(this);
     this.initCanvases();
@@ -350,6 +375,8 @@ export class Chart {
 
       try {
         this.render();
+        // Trigger visible range change callback after resize
+        this.triggerVisibleRangeChange();
       } catch (renderError) {
         console.warn('AxonCharts: Render failed during resize:', renderError);
       }
@@ -371,7 +398,11 @@ export class Chart {
       this.dataManager.length
     );
 
-    const range = this.dataManager.getPriceRange(firstVisibleIdx, visibleEnd - firstVisibleIdx);
+    const range = this.dataManager.getPriceRange(
+      firstVisibleIdx,
+      visibleEnd - firstVisibleIdx,
+      this.options.priceScale.scaleMargins
+    );
     const mid = (range.max + range.min) / 2;
     const halfRange = ((range.max - range.min) / 2) * priceScale;
 
@@ -384,7 +415,8 @@ export class Chart {
     // Logic: Only update if expanding, or contracting significantly (>20px) to prevent jitter
     const currentWidth = this.state.axisWidth;
     if (requiredWidth > currentWidth || (currentWidth - requiredWidth) > 20) {
-      this.state.axisWidth = Math.max(LAYOUT.RIGHT_GAP, requiredWidth);
+      const minAxisWidth = this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP;
+      this.state.axisWidth = Math.max(minAxisWidth, requiredWidth);
       return true;
     }
 
@@ -414,6 +446,34 @@ export class Chart {
     this.crosshair.draw();
   }
 
+  /**
+   * Trigger onVisibleRangeChange callback with current visible range
+   */
+  public triggerVisibleRangeChange(): void {
+    if (!this.onVisibleRangeChange || this.dataManager.isEmpty) return;
+
+    const { w, axisWidth, barWidth, offsetX } = this.state;
+    const data = this.dataManager.data;
+
+    const fromIndex = deriveVisibleStartIdx(this.state, data.length);
+    const barsVisible = Math.ceil((w - axisWidth) / barWidth);
+    const toIndex = Math.min(fromIndex + barsVisible, data.length - 1);
+
+    const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
+    const refTime = data.length > 0 ? data[data.length - 1].time : Date.now();
+    const refIdx = data.length > 0 ? data.length - 1 : 0;
+
+    const fromTime = refTime + (fromIndex - refIdx) * interval;
+    const toTime = refTime + (toIndex - refIdx) * interval;
+
+    this.onVisibleRangeChange({
+      fromIndex,
+      toIndex,
+      fromTime,
+      toTime
+    });
+  }
+
   public setData(bars: Bar[]): void {
     if (!Array.isArray(bars)) throw new Error('AxonCharts: Data must be an array');
     
@@ -423,7 +483,7 @@ export class Chart {
       if (bars.length > 1) this.validateBar(bars[bars.length - 1]);
     }
 
-    this.dataManager.setData(bars);
+    this.dataManager.setData(bars, this.options.data.autoCleanup);
     if (this.dataManager.length === 0) return;
     this.state.offsetX = calculateRightEdgeOffset(this.dataManager.length, this.state.barWidth, this.state.w, this.state.rightGap, this.state.axisWidth);
     this.render();
@@ -463,13 +523,13 @@ export class Chart {
   }
 
   public getContext() {
-    const { w, h, axisWidth, priceMin, priceMax, barWidth, offsetX, rightGap } = this.state;
+    const { w, h, axisWidth, priceMin, priceMax, barWidth, offsetX, rightGap, topMargin, bottomMargin } = this.state;
     const data = this.dataManager.data;
     const usableWidth = w - axisWidth;
     const startIdx = Math.max(0, Math.ceil((1 - offsetX - barWidth) / barWidth));
     const endIdx = Math.min(data.length - 1, Math.floor((usableWidth - 1 - offsetX) / barWidth));
     const visibleBars = data.slice(startIdx, endIdx + 1);
-    const usableH = h - LAYOUT.TOP_MARGIN - LAYOUT.BOTTOM_MARGIN;
+    const usableH = h - topMargin - bottomMargin;
     const pricePerPixel = (priceMax - priceMin) / (usableH || 1);
     const timePerBar = data.length > 1 ? data[1].time - data[0].time : 0;
 
@@ -545,6 +605,21 @@ export class Chart {
           normalizedPartial.layout.fontFamily !== undefined) {
         needsRender = true;
       }
+      // Padding changes
+      if (normalizedPartial.layout.padding) {
+        if (normalizedPartial.layout.padding.top !== undefined) {
+          this.state.topMargin = normalizedPartial.layout.padding.top;
+          needsRender = true;
+        }
+        if (normalizedPartial.layout.padding.bottom !== undefined) {
+          this.state.bottomMargin = normalizedPartial.layout.padding.bottom;
+          needsRender = true;
+        }
+        if (normalizedPartial.layout.padding.right !== undefined) {
+          this.state.axisWidth = normalizedPartial.layout.padding.right;
+          needsRender = true;
+        }
+      }
     }
 
     // === GRID ===
@@ -561,6 +636,17 @@ export class Chart {
     // === BEHAVIOR ===
     // No state updates needed - flags are read directly in events.ts
     // Changes take effect immediately on next event
+
+    // === DATA ===
+    if (normalizedPartial.data) {
+      if (normalizedPartial.data.maxBars !== undefined) {
+        this.dataManager.setMaxBars(normalizedPartial.data.maxBars);
+        needsRender = true;
+      }
+      if (normalizedPartial.data.autoCleanup !== undefined) {
+        this.dataManager.setAutoCleanup(normalizedPartial.data.autoCleanup);
+      }
+    }
 
     // === COLORS (LEGACY) ===
     // Colors are mapped to layout/grid in normalizePartialOptions()
@@ -596,6 +682,7 @@ export class Chart {
     if (options.height) { normalized.layout = normalized.layout || {}; normalized.layout.height = options.height; }
     if (options.rightGap !== undefined) { normalized.timeScale = normalized.timeScale || {}; normalized.timeScale.rightOffset = options.rightGap; }
     if (options.baseBarWidth !== undefined) { normalized.timeScale = normalized.timeScale || {}; normalized.timeScale.barSpacing = options.baseBarWidth; }
+    if (options.autoScroll !== undefined) { normalized.behavior = normalized.behavior || {}; normalized.behavior.autoScroll = options.autoScroll; }
     return normalized;
   }
 
@@ -656,6 +743,152 @@ export class Chart {
 
   public isAutoScrolling(): boolean { return this.eventManager.isAutoScrolling(); }
   public scrollToLatest(): void { this.eventManager.scrollToLatest(); }
+
+  /**
+   * Get all chart data (returns a copy)
+   */
+  public getData(): Bar[] {
+    return [...this.dataManager.data];
+  }
+
+  /**
+   * Get bar by index
+   */
+  public getBar(index: number): Bar | undefined {
+    return this.dataManager.data[index];
+  }
+
+  /**
+   * Get bar at specific timestamp
+   */
+  public getBarAtTime(time: number): Bar | undefined {
+    return this.dataManager.getBarAtTime(time);
+  }
+
+  /**
+   * Get range of bars
+   */
+  public getBars(startIndex: number, count: number): Bar[] {
+    return this.dataManager.data.slice(startIndex, startIndex + count);
+  }
+
+  /**
+   * Get bars in time range
+   */
+  public getBarsInRange(startTime: number, endTime: number): Bar[] {
+    return this.dataManager.data.filter(bar => bar.time >= startTime && bar.time <= endTime);
+  }
+
+  /**
+   * Execute a command for LLM-driven chart control
+   */
+  public execute(command: ChartCommand): void {
+    switch (command.type) {
+      case 'setVisibleRange':
+        this.timeScale().setVisibleRange(command.from, command.to);
+        break;
+      case 'scrollToTime':
+        this.timeScale().scrollToTime(command.time);
+        break;
+      case 'zoomIn':
+        this.timeScale().zoomIn(command.factor || 1.5);
+        break;
+      case 'zoomOut':
+        this.timeScale().zoomOut(command.factor || 1.5);
+        break;
+      case 'fitContent':
+        this.timeScale().fitContent();
+        break;
+      case 'setPriceScale':
+        this.priceScale().setMode(command.mode);
+        break;
+      case 'setCrosshair':
+        this.crosshairAPI().setMode(command.mode);
+        break;
+      default:
+        const _exhaustive: never = command;
+        throw new Error(`Unknown command type: ${(command as any).type}`);
+    }
+  }
+
+  /**
+   * Export chart as PNG data URL
+   */
+  public toDataURL(): string {
+    const exportCanvas = this.createExportCanvas();
+    return exportCanvas.toDataURL('image/png');
+  }
+
+  /**
+   * Export chart as Blob
+   */
+  public async toBlob(): Promise<Blob> {
+    return new Promise((resolve) => {
+      const exportCanvas = this.createExportCanvas();
+      exportCanvas.toBlob((blob) => {
+        resolve(blob!);
+      }, 'image/png');
+    });
+  }
+
+  /**
+   * Create export canvas with all chart layers merged
+   */
+  private createExportCanvas(): HTMLCanvasElement {
+    const exportCanvas = document.createElement('canvas');
+    exportCanvas.width = this.state.w * this.state.devicePixelRatio;
+    exportCanvas.height = this.state.h * this.state.devicePixelRatio;
+    const ctx = exportCanvas.getContext('2d')!;
+
+    // Draw background layer
+    ctx.drawImage(this.bgCanvas, 0, 0);
+    // Draw main chart layer
+    ctx.drawImage(this.mainCanvas, 0, 0);
+    // Draw crosshair overlay (if visible)
+    const overlayCanvas = this.crosshair.getOverlayCanvas();
+    if (overlayCanvas) {
+      ctx.drawImage(overlayCanvas, 0, 0);
+    }
+
+    return exportCanvas;
+  }
+
+  /**
+   * Save complete chart state
+   */
+  public saveState(): ChartState {
+    return {
+      version: '1.0.0',
+      options: deepClone(this.options),
+      data: [...this.dataManager.data],
+      viewport: {
+        offsetX: this.state.offsetX,
+        barWidth: this.state.barWidth,
+        priceScale: this.state.priceScale,
+        priceOffset: this.state.priceOffset
+      }
+    };
+  }
+
+  /**
+   * Load chart state
+   */
+  public loadState(state: ChartState): void {
+    // Restore options
+    this.setOptions(state.options);
+
+    // Restore data
+    this.setData(state.data);
+
+    // Restore viewport
+    this.state.offsetX = state.viewport.offsetX;
+    this.state.barWidth = state.viewport.barWidth;
+    this.state.priceScale = state.viewport.priceScale;
+    this.state.priceOffset = state.viewport.priceOffset;
+
+    // Re-render
+    this.render();
+  }
 
   /**
    * Get the Price Scale API
