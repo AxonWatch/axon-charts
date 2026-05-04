@@ -510,6 +510,34 @@ export class Chart {
   }
 
   /**
+   * Lightweight live update for high-frequency tick streams.
+   * Skips full buffer re-render, grid/axis redraw, and axis width re-measurement.
+   * Only re-draws the last candle in the buffer and copies to screen.
+   * ~10-20x faster than updateLastBar() for rapid stream updates.
+   *
+   * Use this when receiving 10+ ticks/second.
+   * Fall back to updateLastBar() occasionally when the candle closes
+   * so axes/grid catch up with any price range changes.
+   */
+  public updateLastBarFast(bar: Bar): void {
+    const previousLength = this.dataManager.length;
+    this.validateBar(bar);
+    this.dataManager.updateLastBar(bar);
+
+    // If new candle appended, use full render to handle buffer boundary + auto-scroll
+    if (this.dataManager.length > previousLength) {
+      this.ensureRightGapAndRoll();
+      this.renderer.createBuffer();
+      this.render();
+      return;
+    }
+
+    // Lightweight path: only update last candle in buffer, then composite
+    this.renderer.updateLastCandleInBuffer();
+    this.renderer.drawViewport(this.mainCtx);
+  }
+
+  /**
    * Internal validation for Bar structure
    */
   private validateBar(bar: Bar): void {

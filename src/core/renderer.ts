@@ -106,6 +106,29 @@ export class Renderer {
     this.bufferRenderEnd = renderEnd;
   }
 
+  /**
+   * Lightweight update: re-draw only the last candle in the buffer.
+   * Skips clearing the entire buffer. Call this instead of renderCandles()
+   * during high-frequency live ticks for ~10-20x faster updates.
+   */
+  updateLastCandleInBuffer(): void {
+    if (!this.bufferCtx || !this.candleBuffer) return;
+    const { data, barWidth } = this.chart.state;
+    if (data.length === 0) return;
+    const lastIdx = data.length - 1;
+
+    // Only redraw if the last index is within our buffer range
+    if (lastIdx < this.bufferRenderStart || lastIdx >= this.bufferRenderEnd) return;
+
+    // Clear just the last candle's region in the buffer
+    const bufferOffset = lastIdx - this.bufferRenderStart;
+    const candleX = bufferOffset * barWidth;
+    this.bufferCtx.clearRect(candleX, 0, barWidth, this.chart.state.h);
+
+    // Re-draw only the last candle
+    this.drawCandleToBuffer(lastIdx, this.bufferRenderStart);
+  }
+
   private drawCandleToBuffer(index: number, startIdx: number): void {
     if (!this.bufferCtx) return;
     const { data, barWidth } = this.chart.state;

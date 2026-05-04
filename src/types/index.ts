@@ -210,6 +210,8 @@ export interface IChart {
   };
   renderer: {
     createBuffer(): void;
+    /** Lightweight: re-draw only the last candle in the buffer */
+    updateLastCandleInBuffer(): void;
   };
   priceFormatter: {
     formatPrice(price: number): string;
