@@ -71,17 +71,25 @@ export class PriceFormatter {
     // Create 'worst case' strings (longest possible)
     const longPrice = Math.max(Math.abs(minPrice), Math.abs(maxPrice));
     const testString = this.formatPrice(longPrice);
-    
+
     // Measure and add padding
     const metrics = ctx.measureText(testString);
     const padding = 20;
-    
+
     // Snap to 5px increments to avoid jitter
     const width = Math.ceil((metrics.width + padding) / 5) * 5;
 
     // Cache result
     this.lastMeasurement = { min: minPrice, max: maxPrice, width };
     return width;
+  }
+
+  /**
+   * Invalidate the measurement cache.
+   * Call when data is replaced (symbol switch) so re-measurement uses fresh prices.
+   */
+  public resetMeasurement(): void {
+    this.lastMeasurement = null;
   }
 
   private getPrecisionFromMinMove(minMove: number): number {

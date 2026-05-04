@@ -101,12 +101,12 @@ export interface ChartOptions {
   watermark?: {
     text?: string;
     color?: string;
-    /** If null, auto-scales to ~30% of chart width. Set to a number to override. */
+    /** If null, auto-scales to ~30% of chart width. Set a number to override. */
     fontSize?: number | null;
     opacity?: number;
     show?: boolean;
-    /** Placement relative to the -45° rotation: 'center' (default), 'left' (bottom-left), 'right' (top-right) */
-    alignment?: 'left' | 'center' | 'right';
+    /** If true, renders diagonally at -45°. Default false (horizontal, centered). */
+    rotate?: boolean;
   };
 
   // === Init-Only ===

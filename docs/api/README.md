@@ -461,7 +461,7 @@ series?: {
   downColor?: string;          // default: '#ef4444'
 }
 
-// Market info label (in-chart, top-left)
+// Market info label (in-chart, top-left) + watermark pair fallback
 market?: {
   show?: boolean;             // default: false
   baseAsset?: string;         // e.g. 'BTC'
@@ -477,7 +477,7 @@ watermark?: {
   color?: string;             // default: '#ffffff'
   fontSize?: number | null;   // default: null (auto-scale to ~30% chart width)
   opacity?: number;           // default: 0.07
-  alignment?: 'left' | 'center' | 'right';  // default: 'center'
+  rotate?: boolean;           // default: false (horizontal centered). true = -45 diagonal
 }
 ```
 

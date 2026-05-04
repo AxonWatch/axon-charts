@@ -82,7 +82,7 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     fontSize: null,
     opacity: 0.07,
     show: false,
-    alignment: 'center'
+    rotate: false
   }
 };
 
@@ -248,6 +248,10 @@ export class Chart {
     this.bgCtx = this.bgCanvas.getContext('2d', { alpha: false })!;
     this.mainCtx = this.mainCanvas.getContext('2d', { alpha: true })!;
 
+    // Set the chart font on bgCtx so the first axis-width measurement uses the correct font
+    // (updatePriceScale measures before drawBackground sets the font)
+    this.bgCtx.font = `${this.options.layout.fontSize}px ${this.options.layout.fontFamily}`;
+
     this.container.appendChild(this.bgCanvas);
     this.container.appendChild(this.mainCanvas);
   }
@@ -358,6 +362,9 @@ export class Chart {
       this.mainCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
       this.mainCtx.imageSmoothingEnabled = false;
 
+      // Reset font after canvas resize (width/height change resets context state)
+      this.bgCtx.font = `${this.options.layout.fontSize}px ${this.options.layout.fontFamily}`;
+
       this.renderer.createBuffer();
       this.crosshair.resize(this.state.w, this.state.h, this.state.devicePixelRatio);
 
@@ -398,11 +405,13 @@ export class Chart {
     this.state.priceMax = mid + halfRange;
 
     // --- DYNAMIC AXIS WIDTH ---
+    // Ensure font is set before measuring (context state can be lost)
+    this.bgCtx.font = `${this.options.layout.fontSize}px ${this.options.layout.fontFamily}`;
     const requiredWidth = this.priceFormatter.measureRequiredWidth(this.bgCtx, this.state.priceMin, this.state.priceMax);
-    
-    // Logic: Only update if expanding, or contracting significantly (>20px) to prevent jitter
+
+    // Update if required width changed at all (snapping to 5px increments prevents most jitter)
     const currentWidth = this.state.axisWidth;
-    if (requiredWidth > currentWidth || (currentWidth - requiredWidth) > 20) {
+    if (requiredWidth !== currentWidth) {
       const minAxisWidth = this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP;
       this.state.axisWidth = Math.max(minAxisWidth, requiredWidth);
       return true;
@@ -470,6 +479,9 @@ export class Chart {
       this.validateBar(bars[0]);
       if (bars.length > 1) this.validateBar(bars[bars.length - 1]);
     }
+
+    // Invalidate measurement cache — new data means completely different prices
+    this.priceFormatter.resetMeasurement();
 
     this.dataManager.setData(bars, this.options.data.autoCleanup);
     if (this.dataManager.length === 0) return;
@@ -634,6 +646,26 @@ export class Chart {
       if (normalizedPartial.data.autoCleanup !== undefined) {
         this.dataManager.setAutoCleanup(normalizedPartial.data.autoCleanup);
       }
+    }
+
+    // === MARKET ===
+    if (normalizedPartial.market) {
+      // Market changes (pair, timeframe, source) need a re-render
+      // to update the header label and the watermark pair fallback
+      needsRender = true;
+    }
+
+    // === SERIES ===
+    if (normalizedPartial.series) {
+      // Candle color changes need a full re-render (candles + price line)
+      needsRender = true;
+      this.renderer.createBuffer();
+    }
+
+    // === WATERMARK ===
+    if (normalizedPartial.watermark) {
+      // Watermark visibility, text, color, font size, opacity
+      needsRender = true;
     }
 
     // === APPLY CHANGES ===
