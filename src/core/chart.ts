@@ -2,7 +2,7 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, ChartColors, Bar, ScrollLockChangeCallback, ChartCommand, ChartState } from '../types/index.js';
+import { ChartOptions, Bar, ScrollLockChangeCallback, ChartCommand, ChartState } from '../types/index.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
@@ -27,18 +27,19 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     vertLines: { show: true, color: '#2a2a2a', width: 1 },
     horzLines: { show: true, color: '#2a2a2a', width: 1 }
   },
+  series: {
+    upColor: '#22c55e',
+    downColor: '#ef4444'
+  },
   priceScale: {
     mode: 'linear',
     scaleMargins: { top: 0.1, bottom: 0.1 },
-    alignLabels: true,
-    minVisibleBars: 2,
     currentPrice: {
       showCountdown: true,
       countdownColor: 'rgba(255, 255, 255, 0.8)'
     }
   },
   timeScale: {
-    borderColor: '#2a2a2a',
     visible: true,
     timeVisible: true,
     secondsVisible: false,
@@ -82,21 +83,7 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     opacity: 0.07,
     show: false,
     alignment: 'center'
-  },
-  colors: {
-    background: '#1a1a1a',
-    grid: '#2a2a2a',
-    up: '#22c55e',
-    down: '#ef4444',
-    text: '#aaaaaa',
-    crosshair: '#555555'
-  },
-  width: 'auto',
-  height: 'auto',
-  timeframe: 60,
-  rightGap: 80,
-  autoScroll: true,
-  baseBarWidth: 11
+  }
 };
 
 /**
@@ -649,10 +636,6 @@ export class Chart {
       }
     }
 
-    // === COLORS (LEGACY) ===
-    // Colors are mapped to layout/grid in normalizePartialOptions()
-    // Handled by layout/grid handlers above
-
     // === APPLY CHANGES ===
     if (needsResize) {
       this.resize();
@@ -666,24 +649,11 @@ export class Chart {
   }
 
   private normalizePartialOptions(options: Partial<ChartOptions>): Partial<ChartOptions> {
+    // Series legacy mapping: accept 'colors' keys and map to 'series'
     const normalized = deepClone(options);
-    if (options.colors) {
-      normalized.layout = normalized.layout || {};
-      normalized.grid = normalized.grid || { vertLines: {}, horzLines: {} };
-      if (options.colors.background) normalized.layout.background = options.colors.background;
-      if (options.colors.text) normalized.layout.textColor = options.colors.text;
-      if (options.colors.grid) {
-        normalized.grid.vertLines = normalized.grid.vertLines || {};
-        normalized.grid.horzLines = normalized.grid.horzLines || {};
-        normalized.grid.vertLines.color = options.colors.grid;
-        normalized.grid.horzLines.color = options.colors.grid;
-      }
+    if (options.series) {
+      // No mapping needed — direct pass-through
     }
-    if (options.width) { normalized.layout = normalized.layout || {}; normalized.layout.width = options.width; }
-    if (options.height) { normalized.layout = normalized.layout || {}; normalized.layout.height = options.height; }
-    if (options.rightGap !== undefined) { normalized.timeScale = normalized.timeScale || {}; normalized.timeScale.rightOffset = options.rightGap; }
-    if (options.baseBarWidth !== undefined) { normalized.timeScale = normalized.timeScale || {}; normalized.timeScale.barSpacing = options.baseBarWidth; }
-    if (options.autoScroll !== undefined) { normalized.behavior = normalized.behavior || {}; normalized.behavior.autoScroll = options.autoScroll; }
     return normalized;
   }
 

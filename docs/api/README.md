@@ -455,6 +455,12 @@ timeScale?: {
   showFullDate?: boolean;     // When true: "Fri 03 Jan'26 17:55"
 }
 
+// Series colors
+series?: {
+  upColor?: string;            // default: '#22c55e'
+  downColor?: string;          // default: '#ef4444'
+}
+
 // Market info label (in-chart, top-left)
 market?: {
   show?: boolean;             // default: false

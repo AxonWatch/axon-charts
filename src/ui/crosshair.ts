@@ -245,7 +245,7 @@ export class Crosshair {
 
     // 2. Determine color based on bar direction
     const isUp = bar.close >= bar.open;
-    const color = isUp ? this.chart.options.colors.up : this.chart.options.colors.down;
+    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
 
     // 3. Position: Top Left with small margin
     // Account for market header line if shown (one line of bold 14px text ≈ 18px)

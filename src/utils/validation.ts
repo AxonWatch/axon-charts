@@ -68,32 +68,9 @@ export function validateOptions(options: Partial<ChartOptions>): void {
     validateData(options.data);
   }
 
-  // === LEGACY / COMPATIBILITY ===
-  if (options.width !== undefined) {
-    validateWidth(options.width, 'width');
-  }
-  if (options.height !== undefined) {
-    validateWidth(options.height, 'height');
-  }
-  if (options.timeframe !== undefined) {
-    validateTimeframe(options.timeframe);
-  }
-  if (options.maxBars !== undefined) {
-    validateMaxBars(options.maxBars);
-  }
-  if (options.rightGap !== undefined) {
-    validateRightGap(options.rightGap);
-  }
-  if (options.baseBarWidth !== undefined) {
-    validateBarSpacing(options.baseBarWidth, 'baseBarWidth');
-  }
+  // === INIT-ONLY ===
   if (options.devicePixelRatio !== undefined) {
     validateDevicePixelRatio(options.devicePixelRatio);
-  }
-
-  // === COLORS ===
-  if (options.colors) {
-    validateColors(options.colors);
   }
 }
 
@@ -192,16 +169,6 @@ function validatePriceScale(priceScale: any, path: string = 'priceScale'): void 
     validateMargins(priceScale.scaleMargins, `${path}.scaleMargins`);
   }
 
-  if (priceScale.alignLabels !== undefined && typeof priceScale.alignLabels !== 'boolean') {
-    throw new ValidationError(`${path}.alignLabels`, 'Align labels must be a boolean', priceScale.alignLabels);
-  }
-
-  if (priceScale.minVisibleBars !== undefined) {
-    if (typeof priceScale.minVisibleBars !== 'number' || priceScale.minVisibleBars < 1) {
-      throw new ValidationError(`${path}.minVisibleBars`, 'Min visible bars must be a number >= 1', priceScale.minVisibleBars);
-    }
-  }
-
   if (priceScale.priceFormat !== undefined) {
     validatePriceFormat(priceScale.priceFormat, `${path}.priceFormat`);
   }
@@ -275,10 +242,6 @@ function validateCurrentPrice(currentPrice: any, path: string): void {
 function validateTimeScale(timeScale: any, path: string = 'timeScale'): void {
   if (typeof timeScale !== 'object' || timeScale === null) {
     throw new ValidationError(path, 'Time scale must be an object', timeScale);
-  }
-
-  if (timeScale.borderColor !== undefined) {
-    validateColor(timeScale.borderColor, `${path}.borderColor`);
   }
 
   if (timeScale.visible !== undefined && typeof timeScale.visible !== 'boolean') {
@@ -401,19 +364,6 @@ function validateData(data: any, path: string = 'data'): void {
   }
 }
 
-function validateColors(colors: any, path: string = 'colors'): void {
-  if (typeof colors !== 'object' || colors === null) {
-    throw new ValidationError(path, 'Colors must be an object', colors);
-  }
-
-  const colorFields = ['background', 'grid', 'up', 'down', 'text', 'crosshair'];
-  for (const field of colorFields) {
-    if (colors[field] !== undefined) {
-      validateColor(colors[field], `${path}.${field}`);
-    }
-  }
-}
-
 // === HELPER VALIDATORS ===
 
 function validateWidth(value: any, path: string): void {
@@ -475,12 +425,6 @@ function validateRightGap(value: any, path: string): void {
 function validateMaxBars(value: any, path: string): void {
   if (typeof value !== 'number' || value < 1 || value > 1000000) {
     throw new ValidationError(path, 'Max bars must be a number between 1 and 1000000', value);
-  }
-}
-
-function validateTimeframe(value: any): void {
-  if (typeof value !== 'number' || value <= 0 || value > 31536000) {
-    throw new ValidationError('timeframe', 'Timeframe must be a positive number (seconds, max 1 year)', value);
   }
 }
 

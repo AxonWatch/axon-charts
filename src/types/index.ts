@@ -32,12 +32,16 @@ export interface ChartOptions {
     horzLines?: { show?: boolean; color?: string; width?: number };
   };
 
+  // === Series (Candle Colors) ===
+  series?: {
+    upColor?: string;
+    downColor?: string;
+  };
+
   // === Price Scale ===
   priceScale?: {
     mode?: 'linear' | 'logarithmic';
     scaleMargins?: { top?: number; bottom?: number };
-    alignLabels?: boolean;
-    minVisibleBars?: number;
     priceFormat?: PriceFormat;
     /** Current price line options */
     currentPrice?: {
@@ -48,7 +52,6 @@ export interface ChartOptions {
 
   // === Time Scale ===
   timeScale?: {
-    borderColor?: string;
     visible?: boolean;
     timeVisible?: boolean;
     secondsVisible?: boolean;
@@ -85,7 +88,7 @@ export interface ChartOptions {
     autoCleanup?: boolean;
   };
 
-  // === Market Header ===
+  // === Market Info ===
   market?: {
     baseAsset?: string;
     quoteAsset?: string;
@@ -106,24 +109,8 @@ export interface ChartOptions {
     alignment?: 'left' | 'center' | 'right';
   };
 
-  // === Legacy / Compatibility ===
-  /** Width in pixels or 'auto' for container width */
-  width?: number | 'auto';
-  /** Height in pixels or 'auto' for container height */
-  height?: number | 'auto';
-  /** Timeframe in seconds per bar (e.g., 60 for 1-minute bars) */
-  timeframe?: number;
-  /** Maximum number of bars to keep in memory (default: 5000) */
-  maxBars?: number;
-  /** Color scheme */
-  colors?: Partial<ChartColors>;
-  /** Right side gap in pixels (default: 80) */
-  rightGap?: number;
-  /** Enable auto-scroll to latest bar (default: true) */
-  autoScroll?: boolean;
-  /** Base bar width in pixels (default: 11) */
-  baseBarWidth?: number;
-  /** Custom device pixel ratio (defaults to window.devicePixelRatio) */
+  // === Init-Only ===
+  /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
   devicePixelRatio?: number;
 }
 
@@ -135,24 +122,6 @@ export interface PriceFormat {
   precision?: number;
   minMove?: number;
   formatter?: (price: number) => string;
-}
-
-/**
- * Chart color scheme
- */
-export interface ChartColors {
-  /** Background color */
-  background: string;
-  /** Grid line color */
-  grid: string;
-  /** Up candle color */
-  up: string;
-  /** Down candle color */
-  down: string;
-  /** Text color */
-  text: string;
-  /** Crosshair color */
-  crosshair: string;
 }
 
 export type ScrollLockChangeCallback = (locked: boolean) => void;

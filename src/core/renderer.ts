@@ -121,7 +121,7 @@ export class Renderer {
     const yClose = priceToY(bar.close, this.chart.state);
 
     const isUp = bar.close >= bar.open;
-    const color = isUp ? this.chart.options.colors.up : this.chart.options.colors.down;
+    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
 
     this.bufferCtx.fillStyle = color;
     this.bufferCtx.strokeStyle = color;
@@ -209,7 +209,7 @@ export class Renderer {
     const yClose = priceToY(currentPrice, this.chart.state);
 
     const isUp = lastBar.close >= lastBar.open;
-    const lineColor = isUp ? this.chart.options.colors.up : this.chart.options.colors.down;
+    const lineColor = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
 
     ctx.strokeStyle = lineColor;
     ctx.lineWidth = 1;
