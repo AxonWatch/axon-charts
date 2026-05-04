@@ -14,9 +14,6 @@ export class Crosshair {
   private y: number = -1;
   private visible: boolean = false;
 
-  // Constants
-  private readonly HEADER_HEIGHT = 28;
-
   // Event handler references for proper removal
   private handleMouseMove: (e: MouseEvent) => void;
   private handleMouseLeave: () => void;
@@ -110,7 +107,7 @@ export class Crosshair {
 
     // Draw market header if enabled
     if (this.chart.options.market?.show) {
-      this.drawMarketHeader(w, this.HEADER_HEIGHT);
+      this.drawMarketHeader();
     }
 
     // Check if over axes - FIXED: Use dynamic axisWidth for sidebar detection
@@ -215,13 +212,12 @@ export class Crosshair {
   }
 
   /**
-   * Draw market header bar at top of chart
+   * Draw market header as top-left label inside chart area
    */
-  private drawMarketHeader(width: number, height: number): void {
+  private drawMarketHeader(): void {
     const market = this.chart.options.market;
     if (!market) return;
 
-    // Build header text: "BTC/USDT | 1m | Binance"
     const parts = [
       `${market.baseAsset || ''}/${market.quoteAsset || ''}`,
       market.timeframe || '',
@@ -230,24 +226,11 @@ export class Crosshair {
 
     const headerText = parts.join(' | ');
 
-    // Draw background strip
-    this.overlayCtx.fillStyle = '#161616';
-    this.overlayCtx.fillRect(0, 0, width, height);
-
-    // Draw border line at bottom
-    this.overlayCtx.strokeStyle = '#333';
-    this.overlayCtx.lineWidth = 1;
-    this.overlayCtx.beginPath();
-    this.overlayCtx.moveTo(0, height);
-    this.overlayCtx.lineTo(width, height);
-    this.overlayCtx.stroke();
-
-    // Draw text
     this.overlayCtx.fillStyle = '#888';
-    this.overlayCtx.font = '11px system-ui';
-    this.overlayCtx.textBaseline = 'middle';
+    this.overlayCtx.font = 'bold 14px system-ui';
+    this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
-    this.overlayCtx.fillText(headerText, 10, height / 2);
+    this.overlayCtx.fillText(headerText, LAYOUT.TOOLTIP_MARGIN_X, LAYOUT.TOOLTIP_MARGIN_Y);
   }
 
   /**
@@ -265,8 +248,8 @@ export class Crosshair {
     const color = isUp ? this.chart.options.colors.up : this.chart.options.colors.down;
 
     // 3. Position: Top Left with small margin
-    // Account for market header if shown
-    const headerOffset = this.chart.options.market?.show ? this.HEADER_HEIGHT : 0;
+    // Account for market header line if shown (one line of bold 14px text ≈ 18px)
+    const headerOffset = this.chart.options.market?.show ? 18 : 0;
     const startX = LAYOUT.TOOLTIP_MARGIN_X;
     const startY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset;
 

@@ -455,22 +455,23 @@ timeScale?: {
   showFullDate?: boolean;     // When true: "Fri 03 Jan'26 17:55"
 }
 
-// Market header bar
+// Market info label (in-chart, top-left)
 market?: {
-  show?: boolean;             // default: true (if baseAsset set)
+  show?: boolean;             // default: false
   baseAsset?: string;         // e.g. 'BTC'
   quoteAsset?: string;        // e.g. 'USDT'
   timeframe?: string;         // e.g. '1m', '4H', '1d'
-  exchange?: string;          // e.g. 'Binance'
+  source?: string;            // e.g. 'Binance'
 }
 
-// Watermark overlay
+// Watermark overlay (auto-scaling)
 watermark?: {
   show?: boolean;             // default: false
-  text?: string;              // default: '' (empty = disabled)
+  text?: string;              // default: '' (empty = pair fallback)
   color?: string;             // default: '#ffffff'
-  fontSize?: number;          // default: 48
+  fontSize?: number | null;   // default: null (auto-scale to ~30% chart width)
   opacity?: number;           // default: 0.07
+  alignment?: 'left' | 'center' | 'right';  // default: 'center'
 }
 ```
 

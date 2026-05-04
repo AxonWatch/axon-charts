@@ -78,9 +78,10 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
   watermark: {
     text: '',
     color: '#ffffff',
-    fontSize: 48,
+    fontSize: null,
     opacity: 0.07,
-    show: false
+    show: false,
+    alignment: 'center'
   },
   colors: {
     background: '#1a1a1a',

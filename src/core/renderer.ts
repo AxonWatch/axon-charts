@@ -289,22 +289,67 @@ export class Renderer {
 
   private drawWatermark(ctx: CanvasRenderingContext2D): void {
     const watermark = this.chart.options.watermark;
-    if (!watermark?.show || !watermark?.text) return;
+    if (!watermark?.show) return;
+
+    // Resolve text: use watermark.text, or fall back to pair if market is configured
+    let wmText = (watermark.text || '').trim();
+    if (!wmText) {
+      const market = this.chart.options.market;
+      if (market?.show && market?.baseAsset && market?.quoteAsset) {
+        wmText = `${market.baseAsset}/${market.quoteAsset}`;
+      }
+    }
+    if (!wmText) return;
 
     const { w, h, axisWidth } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
+    const padding = 10;
+    const baseFontSize = 48;
+
+    // Determine font size: explicit override or auto-scale to ~30% of chart width
+    let fontSize: number;
+    if (watermark.fontSize != null && watermark.fontSize > 0) {
+      fontSize = watermark.fontSize;
+    } else {
+      // Auto-scale: measure at base, compute scale to achieve 30% chart width coverage
+      // after accounting for -45° rotation (cos(45°) ≈ 0.707)
+      ctx.font = `bold ${baseFontSize}px ${this.chart.options.layout.fontFamily}`;
+      const measuredWidth = ctx.measureText(wmText).width;
+      if (measuredWidth === 0) return;
+      const targetWidth = chartAreaWidth * 0.30;
+      const rotatedFactor = 0.707;
+      const targetMeasuredWidth = targetWidth / rotatedFactor;
+      fontSize = Math.round(baseFontSize * (targetMeasuredWidth / measuredWidth));
+      fontSize = Math.max(12, Math.min(fontSize, 128));
+    }
 
     ctx.save();
-    ctx.translate(chartAreaWidth / 2, h / 2);
-    ctx.rotate(-Math.PI / 4);
-
-    ctx.font = `bold ${watermark.fontSize}px ${this.chart.options.layout.fontFamily}`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     ctx.globalAlpha = watermark.opacity;
     ctx.fillStyle = watermark.color;
+    ctx.font = `bold ${fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.textBaseline = 'middle';
 
-    ctx.fillText(watermark.text, 0, 0);
+    const alignment = watermark.alignment || 'center';
+
+    if (alignment === 'center') {
+      ctx.translate(chartAreaWidth / 2, h / 2);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'center';
+      ctx.fillText(wmText, 0, 0);
+    } else if (alignment === 'left') {
+      ctx.translate(padding, h - padding);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(wmText, 0, 0);
+    } else if (alignment === 'right') {
+      ctx.translate(chartAreaWidth - padding, padding);
+      ctx.rotate(-Math.PI / 4);
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(wmText, 0, 0);
+    }
+
     ctx.restore();
   }
 
