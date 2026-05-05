@@ -169,7 +169,7 @@ export abstract class ScalePane implements SubPane {
 
     // Draw axis labels
     ctx.fillStyle = '#666';
-    ctx.font = '10px system-ui';
+    ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     const labelPadding = LAYOUT.LABEL_OFFSET;
@@ -208,7 +208,7 @@ export abstract class ScalePane implements SubPane {
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
       ctx.fillStyle = '#888';
-      ctx.font = 'bold 10px system-ui';
+      ctx.font = 'bold ' + chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(this.formatValue(latestVal), w - 5, curY);
@@ -224,7 +224,7 @@ export abstract class ScalePane implements SubPane {
     const rawValue = this.getTooltipValue(bar);
     const value = rawValue != null ? this.formatValue(rawValue) : '0';
 
-    ctx.font = 'bold 12px system-ui';
+    ctx.font = 'bold ' + chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
@@ -258,7 +258,7 @@ export abstract class ScalePane implements SubPane {
     ctx.lineWidth = 1;
     ctx.strokeRect(w - axisWidth, mouseY - labelHeight / 2, axisWidth, labelHeight);
     ctx.fillStyle = chart.options.layout.textColor;
-    ctx.font = '10px system-ui';
+    ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.formatValue(valueAtY), w - 5, mouseY);

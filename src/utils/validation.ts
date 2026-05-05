@@ -387,6 +387,16 @@ function validateVolume(volume: any, path: string = "volume"): void {
       throw new ValidationError(path + ".heightPercent", "Height percent must be a number between 0.05 and 0.5", volume.heightPercent);
     }
   }
+  if (volume.precision !== undefined && volume.precision !== null) {
+    if (typeof volume.precision !== "number" || volume.precision < 0 || volume.precision > 20) {
+      throw new ValidationError(path + ".precision", "Precision must be a number between 0 and 20, or null for auto-detect", volume.precision);
+    }
+  }
+  if (volume.minMove !== undefined && volume.minMove !== null) {
+    if (typeof volume.minMove !== "number" || volume.minMove <= 0) {
+      throw new ValidationError(path + ".minMove", "Min move must be a positive number, or null", volume.minMove);
+    }
+  }
 }
 
 // === HELPER VALIDATORS ===

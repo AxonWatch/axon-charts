@@ -113,7 +113,6 @@ export class Crosshair {
     // Check if over axes or sub-pane
     const isOverPriceAxis = this.x > w - axisWidth;
     const isOverTimeAxis = this.y > h - bottomMargin;
-    const isOverVolumePane = this.chart.options.volume.show && chartBottom > 0 && this.y > chartBottom && this.y <= h - bottomMargin;
     const isOverChart = !isOverPriceAxis && !isOverTimeAxis;
 
 
@@ -243,7 +242,7 @@ export class Crosshair {
     const headerText = parts.join(' | ');
 
     this.overlayCtx.fillStyle = '#888';
-    this.overlayCtx.font = 'bold 14px system-ui';
+    this.overlayCtx.font = 'bold ' + (this.chart.options.layout.fontSize + 2) + 'px ' + this.chart.options.layout.fontFamily;
     this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
     this.overlayCtx.fillText(headerText, LAYOUT.TOOLTIP_MARGIN_X, LAYOUT.TOOLTIP_MARGIN_Y);
@@ -269,7 +268,7 @@ export class Crosshair {
     const startX = LAYOUT.TOOLTIP_MARGIN_X;
     const startY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset;
 
-    this.overlayCtx.font = 'bold 12px system-ui';
+    this.overlayCtx.font = 'bold ' + this.chart.options.layout.fontSize + 'px ' + this.chart.options.layout.fontFamily;
     this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
 
@@ -352,7 +351,7 @@ export class Crosshair {
 
       // Draw price label text
       this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
-      this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+      this.overlayCtx.font = this.chart.options.layout.fontSize + 'px ' + this.chart.options.layout.fontFamily;
       this.overlayCtx.textAlign = 'right';
       this.overlayCtx.textBaseline = 'middle';
 
