@@ -4,11 +4,26 @@
   "description": "A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration",
   "type": "module",
   "main": "dist/chart.js",
-  "module": "dist/chart.js",
+  "module": "dist/chart.esm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/chart.esm.js",
+      "require": "./dist/chart.js",
+      "default": "./dist/chart.js"
+    },
+    "./*": "./*"
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "node esbuild.config.js",
     "dev": "node esbuild.config.js --watch",
+    "prepublishOnly": "npm run build",
     "serve": "npx serve .",
     "typecheck": "tsc --noEmit"
   },
@@ -26,8 +41,7 @@
     "candlestick-chart",
     "financial-chart",
     "trading-chart",
-    "realtime",
-    "webassembly"
+    "realtime"
   ],
   "author": "Axon Charts",
   "license": "Apache-2.0",

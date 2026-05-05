@@ -2,21 +2,15 @@ import * as esbuild from 'esbuild';
 
 const isWatch = process.argv.includes('--watch');
 
-const options = {
+const baseOptions = {
   entryPoints: ['src/index.ts'],
   bundle: true,
-  format: 'iife',
   target: 'es2020',
-  outfile: 'dist/chart.js',
-  sourcemap: false, // Disable sourcemap for production build
-  minify: true, // Enable minification for production
+  sourcemap: false,
+  minify: true,
   treeShaking: true,
-  globalName: 'AxonCharts',
-  minifyWhitespace: true,
-  minifyIdentifiers: true,
-  minifySyntax: true,
   charset: 'utf8',
-  legalComments: 'none', // Remove license comments from code (keep banner)
+  legalComments: 'none',
   banner: {
     js: [
       '// Axon Charts v1.0.0',
@@ -24,17 +18,39 @@ const options = {
       '// https://github.com/axon-charts/axon-charts'
     ].join('\n')
   },
-  // Make exports available on global object
   define: {
     'process.env.NODE_ENV': '"production"'
   }
 };
 
+const builds = [
+  // IIFE build (browser <script> tag)
+  {
+    ...baseOptions,
+    format: 'iife',
+    outfile: 'dist/chart.js',
+    globalName: 'AxonCharts',
+    minifyWhitespace: true,
+    minifyIdentifiers: true,
+    minifySyntax: true,
+  },
+  // ESM build (import / bundler integration)
+  {
+    ...baseOptions,
+    format: 'esm',
+    outfile: 'dist/chart.esm.js',
+  }
+];
+
 if (isWatch) {
-  const ctx = await esbuild.context(options);
-  await ctx.watch();
+  for (const opts of builds) {
+    const ctx = await esbuild.context(opts);
+    await ctx.watch();
+  }
   console.log('Watching for changes...');
 } else {
-  await esbuild.build(options);
-  console.log('Build complete: dist/chart.js');
+  for (const opts of builds) {
+    await esbuild.build(opts);
+  }
+  console.log('Build complete: dist/chart.js, dist/chart.esm.js');
 }

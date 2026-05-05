@@ -37,10 +37,7 @@ Returns everything an LLM needs to reason about the current chart state:
     "priceRange": { "min": 95.50, "max": 115.30 },
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
-  "state": {
-    "totalBars": 5000,
-    "isAutoScrolling": true
-  },
+  "state": { "totalBars": 5000, "isAutoScrolling": true },
   "visibleBars": [
     { "time": 1704067200000, "open": 100, "high": 105, "low": 98, "close": 103, "volume": 15000 },
     // ... all visible bars
@@ -54,8 +51,11 @@ Returns everything an LLM needs to reason about the current chart state:
 - The exact price range shown on screen
 - The time window (from/to timestamps)
 - Total dataset size vs visible window
-- Whether the chart is auto-scrolling (watching latest data)
+- Whether the chart is auto-scrolling
 - The current (latest) candle
+- Volume data is included on each bar if available
+
+**Note:** Volume sub-pane state (show/hide, zoom level) is not yet exposed via getContext(). This will be added in v1.1.0.
 
 ### getData() / getBars() — Full Data Access
 
@@ -80,51 +80,37 @@ const bar = chart.getBarAtTime(1704067200000);
 
 ### execute() — Universal Command
 
-The `execute()` method accepts plain action objects. It routes to the correct API internally.
+The `execute()` method accepts typed action objects. It routes to the correct API internally.
 
 ```typescript
 // Mode and visibility
-chart.execute({ action: 'setMode', target: 'priceScale', value: 'log' });
-chart.execute({ action: 'setMode', target: 'crosshair', value: 'none' });
-chart.execute({ action: 'setVisible', target: 'crosshair', value: false });
+chart.execute({ type: 'setPriceScale', mode: 'log' });
+chart.execute({ type: 'setCrosshair', mode: 'none' });
 
 // Viewport
-chart.execute({ action: 'scrollTo', params: [timestamp] });
-chart.execute({ action: 'scrollTo', params: [timestamp, 'center'] });
-chart.execute({ action: 'fitContent' });
-chart.execute({ action: 'zoomIn', params: [1.5] });
-chart.execute({ action: 'zoomOut', params: [2] });
-
-// Options
-chart.execute({
-  action: 'setOptions',
-  params: [{ grid: { vertLines: { show: false } } }]
-});
-
-// Read state
-const ctx = chart.execute({ action: 'getContext' });
+chart.execute({ type: 'scrollToTime', time: timestamp });
+chart.execute({ type: 'fitContent' });
+chart.execute({ type: 'zoomIn', factor: 1.5 });
+chart.execute({ type: 'zoomOut', factor: 2 });
+chart.execute({ type: 'setVisibleRange', from: 1704067200000, to: 1704153600000 });
 ```
 
-**Supported actions:**
+**Supported actions (discriminated union):**
 
-| Action | Target | Value / Params |
-|--------|--------|----------------|
-| `setMode` | `'priceScale'`, `'crosshair'` | Mode string |
-| `setVisible` | `'crosshair'` | `true` / `false` |
-| `setShowLabels` | `'crosshair'` | `true` / `false` |
-| `setShowTooltip` | `'crosshair'` | `true` / `false` |
-| `scrollTo` | — | `[timestamp, position?]` |
-| `fitContent` | — | — |
-| `zoomIn` | — | `[factor?]` |
-| `zoomOut` | — | `[factor?]` |
-| `setOptions` | — | `[partialOptions]` |
-| `getContext` | — | — |
-| `getData` | — | — |
-| `getBars` | — | `[count]` |
+```typescript
+type ChartCommand =
+  | { type: 'setVisibleRange'; from: number; to: number }
+  | { type: 'scrollToTime'; time: number }
+  | { type: 'zoomIn'; factor?: number }
+  | { type: 'zoomOut'; factor?: number }
+  | { type: 'fitContent' }
+  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' };
+```
+
+**Note:** Volume sub-pane is not yet controllable via execute(). Use `setOptions({ volume: { show: true/false } })` directly until v1.1.0 adds volume commands.
 
 ### Direct API Access
-
-For more control, the component APIs are also available directly:
 
 ```typescript
 chart.priceScale().setMode('logarithmic');
@@ -133,6 +119,9 @@ chart.timeScale().fitContent();
 chart.timeScale().scrollToTime(timestamp, 'center');
 chart.crosshairAPI().setMode('magnet');
 chart.setOptions({ grid: { show: false } });
+chart.setOptions({ volume: { show: true, heightPercent: 0.25 } });
+chart.setOptions({ market: { baseAsset: 'BTC', quoteAsset: 'USDT', show: true } });
+chart.setOptions({ watermark: { text: 'DEMO', show: true } });
 ```
 
 ---
@@ -150,7 +139,7 @@ chart.onCrosshairMove(({ bar, price, time, x, y }) => {
 
 // User clicks on a bar
 chart.onBarClick(({ bar, index }) => {
-  console.log(`Clicked bar #${index}: ${bar.symbol} $${bar.close}`);
+  console.log(`Clicked bar #${index}: $${bar.close}`);
 });
 
 // User pans or zooms
@@ -171,14 +160,10 @@ chart.onScrollLockChange((locked) => {
 const ctx = JSON.stringify(chart.getContext(), null, 2);
 
 // 2. LLM sends a command
-chart.execute({
-  action: 'scrollTo',
-  params: [1704067200000, 'center']
-});
+chart.execute({ type: 'scrollToTime', time: 1704067200000 });
 
 // 3. Chart fires events when user interacts
 chart.onVisibleRangeChange((range) => {
-  // Trigger re-read whenever viewport changes
   const updated = chart.getContext();
   sendToLLM(updated);
 });
@@ -202,7 +187,6 @@ const price = Projection.yToPrice(y, chart.state);
 
 // Layout constants
 import { LAYOUT } from 'axon-charts';
-// LAYOUT.TOP_MARGIN, LAYOUT.BOTTOM_MARGIN, LAYOUT.RIGHT_GAP, etc.
 ```
 
 ---
@@ -210,7 +194,7 @@ import { LAYOUT } from 'axon-charts';
 ## Screenshot for Vision LLMs
 
 ```typescript
-// Get a base64 data URL (merges all three canvas layers)
+// Get a base64 data URL (merges all three canvas layers + volume sub-pane)
 const screenshot = chart.toDataURL('image/png');
 
 // Send to vision-capable LLM
@@ -223,7 +207,7 @@ const screenshot = chart.toDataURL('image/png');
 ## State Management Across Sessions
 
 ```typescript
-// Save current chart state
+// Save current chart state (includes all options, data, and viewport)
 const state = chart.saveState();
 
 // Later, restore everything
@@ -231,7 +215,22 @@ const newChart = createChart('#container');
 newChart.loadState(state);
 ```
 
-The saved state includes: chart options, zoom level, scroll position, all bar data.
+The saved state includes: chart options, zoom level, scroll position, all bar data, volume sub-pane settings.
+
+---
+
+## Streaming Data for LLM Monitoring
+
+The chart supports high-frequency tick streams for live monitoring:
+
+```typescript
+// Fast path for every tick during live streaming
+chart.updateLastBarFast(currentCandle);
+
+// Periodically call chart.render() to refresh axes/grid every 20 ticks
+```
+
+See [docs/STREAMING.md](./docs/STREAMING.md) for detailed patterns and throttling strategies.
 
 ---
 
@@ -244,6 +243,9 @@ The saved state includes: chart options, zoom level, scroll position, all bar da
 | Event callbacks (onCrosshairMove) | ✅ | ✅ |
 | Screenshot capture | ✅ | ✅ |
 | State save/restore | ✅ | ✅ |
+| Volume sub-pane (render, tooltip, zoom) | ✅ | ✅ |
+| Volume state in getContext | ❌ v1.1.0 | — |
+| Series types (line, area, bar) | ❌ v1.1.0 | — |
 | Trend / volatility helpers | — | ✅ |
 | Support/resistance detection | — | ✅ |
 | Heiken Ashi candle mode | — | ✅ |
@@ -265,27 +267,36 @@ READ:
   chart.getBarAtTime(ts)     → single bar by timestamp
 
 CONTROL:
-  chart.execute({ action, target?, params?, value? })
-    - setMode (target: 'priceScale'/'crosshair', value: 'linear'/'log')
-    - scrollTo (params: [timestamp, position?])
-    - fitContent, zoomIn, zoomOut (params: [factor?])
-    - setVisible (target: 'crosshair', value: true/false)
-    - setOptions (params: [{ ... }])
+  chart.execute({ type, ... })
+    - { type: 'setPriceScale', mode: 'linear'|'log' }
+    - { type: 'setCrosshair', mode: 'normal'|'magnet'|'none' }
+    - { type: 'scrollToTime', time: timestamp }
+    - { type: 'fitContent' }
+    - { type: 'zoomIn', factor?: number }
+    - { type: 'zoomOut', factor?: number }
+    - { type: 'setVisibleRange', from: number, to: number }
+
+  chart.setOptions({ ... })   → any ChartOptions field
 
 REACT:
   chart.onCrosshairMove(cb)           → fires on cursor move
   chart.onBarClick(cb)                → fires on bar click
   chart.onVisibleRangeChange(cb)      → fires on pan/zoom
 
-All options are documented in the ChartOptions interface.
+EXPORT:
+  chart.toDataURL()           → base64 PNG screenshot
+  chart.toBlob()              → Blob (async)
+  chart.saveState()           → full state JSON
+  chart.loadState(state)      → restore everything
 ```
 
 ---
 
 ## Performance Considerations
 
-- `getContext()` returns a new object on every call — cheap, no allocations beyond the object structure
-- `execute()` is a thin routing layer — no performance overhead
+- `getContext()` returns a new object on every call — cheap
+- `execute()` is a thin routing layer — no overhead
 - Event callbacks fire on every relevant interaction — keep handlers lightweight
-- `toDataURL()` is the most expensive operation (canvas → base64) — call sparingly (e.g., debounce to every 500ms)
-- `getBars()` returns a new array each call — the reference to the internal array is never exposed to prevent mutation
+- `toDataURL()` is the most expensive operation (canvas → base64) — debounce to every 500ms
+- `getBars()` returns a new array each call — internal array never exposed
+- `updateLastBarFast()` is ~10-20x faster than `updateLastBar()` for high-frequency streams

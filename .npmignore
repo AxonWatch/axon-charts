@@ -1,8 +1,8 @@
+# npm uses files field in package.json — this is just a safety net
 src/
 tests/
 docs/
 archive/
-*.test.ts
 tsconfig.json
 esbuild.config.js
 .gitignore
@@ -12,5 +12,11 @@ esbuild.config.js
 .idea/
 .claude/
 .hermes/
-*.md
-!README.md
+CONTRIBUTING.md
+ROADMAP.md
+STRATEGIC_PLAN.md
+IMPLEMENTATION_SUMMARY.md
+RELEASE_CHECKLIST.md
+RELEASE_WORK_PLAN.md
+RELEASE_WORK_PLAN.md.bak
+*.html
