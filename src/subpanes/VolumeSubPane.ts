@@ -1,131 +1,45 @@
-import { SubPane } from './SubPane.js';
+import { ScalePane } from './ScalePane.js';
 import { IChart, ChartState, Bar } from '../types/index.js';
 import { LAYOUT } from '../core/layout.js';
-import { indexToX, deriveVisibleStartIdx } from '../utils/projection.js';
-import { calculateTimeStep } from '../utils/math.js';
+import { indexToX } from '../utils/projection.js';
 
 /**
- * Volume bar sub-pane implementation
+ * Volume bar sub-pane implementation.
+ *
+ * Only implements the 6 abstract methods from ScalePane.
+ * All generic functionality (separator, grids, tooltip, axis labels,
+ * current value line, zoom/pan, precision detection) is provided
+ * by the ScalePane base class.
  */
-export class VolumeSubPane implements SubPane {
+export class VolumeSubPane extends ScalePane {
   readonly id = 'volume';
   readonly label = 'Volume';
-  readonly separatorThreshold = 6; // pixels for separator hit-testing
 
-  // Private state (moved from chart.state)
-  private state = {
-    scale: 1.0,
-    offset: 0,
-    detectedPrecision: null as number | null,
-    lastDataLength: -1
-  };
-
-  constructor(private chart: IChart) {}
+  constructor(chart: IChart) {
+    super(chart);
+  }
 
   getOptions() {
     return this.chart.options.volume || {};
   }
 
-  computeHeight(state: ChartState, options: any): number {
-    if (!options?.show) return 0;
-    const heightPercent = Math.max(0.05, Math.min(0.5, options.heightPercent ?? 0.2));
-    return Math.round(state.h * heightPercent);
-  }
-
-  render(ctx: CanvasRenderingContext2D, chart: IChart, subPaneTop: number): void {
-    const { w, h, data, barWidth, axisWidth, bottomMargin } = chart.state;
-    const subPaneHeight = this.computeHeight(chart.state, this.getOptions());
+  renderContent(
+    ctx: CanvasRenderingContext2D,
+    chart: IChart,
+    subPaneTop: number,
+    subPaneHeight: number,
+    firstVisibleIdx: number,
+    endIdx: number,
+    visibleMin: number,
+    visibleRange: number,
+    areaHeight: number,
+    areaTop: number
+  ): void {
+    const { data, barWidth, w, axisWidth } = chart.state;
     const options = this.getOptions();
-
-    if (!options?.show || subPaneHeight <= 0) return;
-    if (data.length === 0) return;
-
-    // Invalidate precision cache when data changes
-    if (data.length !== this.state.lastDataLength) {
-      this.state.detectedPrecision = null;
-      this.state.lastDataLength = data.length;
-    }
-
     const chartAreaWidth = w - axisWidth;
     const volUpColor = options.upColor || '#22c55e';
     const volDownColor = options.downColor || '#ef4444';
-
-    // Fill sub-pane background (only axis area — chart area keeps grid lines visible)
-    ctx.fillStyle = chart.options.layout.background;
-    ctx.fillRect(w - axisWidth, subPaneTop, axisWidth, subPaneHeight);
-
-    // Draw separator line (full width including axis column) — thicker for easy drag
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(0, subPaneTop);
-    ctx.lineTo(w, subPaneTop);
-    ctx.stroke();
-
-    // Re-draw vertical grid lines through sub-pane (background fill above erased them)
-    const vertOpts = chart.options.grid.vertLines || {};
-    const drawVertLines = chart.options.grid.show && vertOpts.show !== false;
-    if (drawVertLines) {
-      ctx.strokeStyle = vertOpts.color ?? '#2a2a2a';
-      ctx.lineWidth = vertOpts.width ?? 1;
-      ctx.setLineDash([]);
-      const interval = data.length > 1 ? data[1].time - data[0].time : 60000;
-      const step = calculateTimeStep(barWidth);
-      const stepTime = step * interval;
-      const refBar = data[data.length - 1];
-      const refIdx = data.length - 1;
-      const refTime = refBar.time;
-      const leftIdx = Math.max(0, Math.floor(-chart.state.offsetX / barWidth));
-      const leftTime = refTime + (leftIdx - refIdx) * interval;
-      const startSnapped = Math.floor(leftTime / stepTime) * stepTime;
-      for (let t = startSnapped; t < refTime + stepTime; t += stepTime) {
-        const virtualIdx = refIdx + (t - refTime) / interval;
-        const x = indexToX(virtualIdx, chart.state);
-        if (x < -100) continue;
-        if (x > chartAreaWidth) break;
-        ctx.beginPath();
-        ctx.moveTo(x, subPaneTop);
-        ctx.lineTo(x, subPaneTop + subPaneHeight);
-        ctx.stroke();
-      }
-    }
-
-    // Draw horizontal grid lines inside sub-pane at volume levels
-    // Style matches the main chart horizontal grid
-    const horzOpts = chart.options.grid.horzLines || {};
-    if (chart.options.grid.show && horzOpts.show !== false) {
-      ctx.strokeStyle = horzOpts.color ?? '#2a2a2a';
-      ctx.lineWidth = horzOpts.width ?? 1;
-      ctx.setLineDash([]);
-      // Draw 3 evenly spaced rows inside the sub-pane
-      for (let row = 1; row <= 3; row++) {
-        const gy = subPaneTop + (subPaneHeight / 4) * row;
-        ctx.beginPath();
-        ctx.moveTo(0, gy);
-        ctx.lineTo(chartAreaWidth, gy);
-        ctx.stroke();
-      }
-    }
-
-    // Find min/max volume across visible bars
-    const firstVisibleIdx = deriveVisibleStartIdx(chart.state, data.length);
-    const barsVisible = Math.ceil(chartAreaWidth / barWidth) + 2;
-    const endIdx = Math.min(firstVisibleIdx + barsVisible, data.length);
-
-    let maxVol = 0;
-    for (let i = firstVisibleIdx; i < endIdx; i++) {
-      const bar = data[i];
-      if (bar && bar.volume != null && bar.volume > maxVol) {
-        maxVol = bar.volume;
-      }
-    }
-    if (maxVol <= 0) maxVol = 1;
-
-    // Draw volume bars with 2px bottom margin and 10% top gap for visual comfort
-    const volTopGap = Math.max(4, Math.round(subPaneHeight * 0.1));
-    const volAreaHeight = subPaneHeight - 2 - volTopGap;
-    const volTop = subPaneTop + volTopGap;
 
     for (let i = firstVisibleIdx; i < endIdx; i++) {
       const bar = data[i];
@@ -137,263 +51,47 @@ export class VolumeSubPane implements SubPane {
 
       if (x + candleWidth < 0 || x > chartAreaWidth) continue;
 
-      const volScale = this.state.scale;
-      const volOffset = this.state.offset;
-      const visibleVolMax = maxVol / volScale;
-      const visibleVolMin = Math.max(0, volOffset);
-      const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
-      const volRatio = Math.max(0, Math.min(1, (bar.volume - visibleVolMin) / visibleRange));
-      const volBarHeight = Math.max(1, volRatio * volAreaHeight);
-      const y = volTop + (volAreaHeight - volBarHeight);
+      const volRatio = Math.max(0, Math.min(1, (bar.volume - visibleMin) / visibleRange));
+      const volBarHeight = Math.max(1, volRatio * areaHeight);
+      const y = areaTop + (areaHeight - volBarHeight);
 
       const isUp = bar.close >= bar.open;
       ctx.fillStyle = isUp ? volUpColor : volDownColor;
       ctx.fillRect(x, y, Math.max(1, candleWidth), volBarHeight);
     }
-
-    // Draw volume axis labels on the price axis area within sub-pane
-    ctx.fillStyle = '#666';
-    ctx.font = '10px system-ui';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    const volLabelPadding = LAYOUT.LABEL_OFFSET;
-
-    // Draw scaled volume axis ticks
-    const volScale = this.state.scale;
-    const volOffset = this.state.offset;
-    const visibleVolMax = maxVol / volScale;
-    const visibleVolMin = Math.max(0, volOffset);
-    const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
-    const volTicks = [
-      { ratio: 1.0, label: this.formatVolume(visibleVolMin + visibleRange) },
-      { ratio: 0.75, label: this.formatVolume(visibleVolMin + visibleRange * 0.75) },
-      { ratio: 0.5, label: this.formatVolume(visibleVolMin + visibleRange * 0.5) },
-      { ratio: 0.25, label: this.formatVolume(visibleVolMin + visibleRange * 0.25) },
-      { ratio: 0, label: this.formatVolume(visibleVolMin) }
-    ];
-    for (const tick of volTicks) {
-      const tickY = subPaneTop + 2 + (volAreaHeight * (1 - tick.ratio));
-      ctx.fillText(tick.label, w - volLabelPadding, tickY);
-    }
-    ctx.textAlign = 'left';
-
-    // Draw current value horizontal line and label (latest bar's volume)
-    if (data.length > 0) {
-      const lastBar = data[data.length - 1];
-      if (lastBar && lastBar.volume != null) {
-        const curVolRatio = Math.max(0, Math.min(1, (lastBar.volume - visibleVolMin) / visibleRange));
-        const curVolY = volTop + (volAreaHeight - curVolRatio * volAreaHeight);
-
-        // Horizontal line (dashed, across chart area)
-        ctx.strokeStyle = '#888';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath();
-        ctx.moveTo(0, curVolY);
-        ctx.lineTo(w, curVolY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Label background on axis column
-        ctx.fillStyle = chart.options.layout.background;
-        ctx.fillRect(w - axisWidth, curVolY - 10, axisWidth, 20);
-
-        // Label border
-        ctx.strokeStyle = '#888';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(w - axisWidth, curVolY - 10, axisWidth, 20);
-
-        // Label text
-        ctx.fillStyle = '#888';
-        ctx.font = 'bold 10px system-ui';
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.formatVolume(lastBar.volume), w - 5, curVolY);
-        ctx.textAlign = 'left';
-      }
-    }
   }
 
-  private formatVolume(value: number): string {
-    const precision = this.getVolumePrecision();
-
-    // Large number formatting with K/M suffixes (preserves precision)
-    if (value >= 1000000) return (value / 1000000).toFixed(precision) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(precision) + 'K';
-    return value.toFixed(precision);
+  getLatestValue(chart: IChart): number | null {
+    const { data } = chart.state;
+    if (data.length === 0) return null;
+    const lastBar = data[data.length - 1];
+    return lastBar?.volume ?? null;
   }
 
-  /**
-   * Get volume formatting precision with smart fallback:
-   * 1. Use explicit precision from options if set
-   * 2. Derive from minMove if set (e.g., 0.00000001 → 8 decimals)
-   * 3. Auto-detect from data (scan for smallest non-zero decimal)
-   * 4. Default to 2 decimals
-   */
-  private getVolumePrecision(): number {
-    const options = this.getOptions();
-
-    // 1. Explicit precision
-    if (options?.precision !== null && options?.precision !== undefined) {
-      return options.precision;
-    }
-
-    // 2. Derive from minMove
-    if (options?.minMove != null && options.minMove > 0) {
-      const minMoveStr = options.minMove.toString();
-      const decimalIdx = minMoveStr.indexOf('.');
-      if (decimalIdx !== -1) {
-        return minMoveStr.length - decimalIdx - 1;
-      }
-      return 0; // minMove is integer
-    }
-
-    // 3. Auto-detect from data (cached)
-    if (this.state.detectedPrecision === null) {
-      this.state.detectedPrecision = this.detectPrecisionFromData();
-    }
-
-    return this.state.detectedPrecision ?? 2;
-  }
-
-  /**
-   * Scan volume data to find the smallest non-zero decimal place
-   * Returns null if no data or all integers
-   */
-  private detectPrecisionFromData(): number | null {
-    const { data } = this.chart.state;
-    if (data.length === 0) return 2;
-
-    let maxDecimals = 0;
-
-    // Sample up to 100 bars for performance
-    const sampleSize = Math.min(100, data.length);
-    for (let i = 0; i < sampleSize; i++) {
-      const bar = data[i];
-      if (bar?.volume != null) {
-        const volStr = bar.volume.toString();
-        const decimalIdx = volStr.indexOf('.');
-        if (decimalIdx !== -1) {
-          const decimals = volStr.length - decimalIdx - 1;
-          maxDecimals = Math.max(maxDecimals, decimals);
-        }
-      }
-    }
-
-    return maxDecimals > 0 ? maxDecimals : 2;
-  }
-
-  renderTooltip(ctx: CanvasRenderingContext2D, chart: IChart, bar: Bar, subPaneTop: number, tooltipY: number): void {
-    if (!this.getOptions()?.show) return;
-
-    const isUp = bar.close >= bar.open;
-    const volUpColor = chart.options.volume?.upColor || '#22c55e';
-    const volDownColor = chart.options.volume?.downColor || '#ef4444';
-    const color = isUp ? volUpColor : volDownColor;
-
-    const volLabel = 'Volume:';
-    const volValue = bar.volume != null ? this.formatVolume(bar.volume) : '0';
-
-    const x = 10; // LAYOUT.TOOLTIP_MARGIN_X
-    const y = tooltipY;
-
-    ctx.font = 'bold 12px system-ui';
-    ctx.textBaseline = 'top';
-    ctx.textAlign = 'left';
-
-    // Label in neutral color
-    ctx.fillStyle = '#888';
-    ctx.fillText(volLabel, x, y);
-    const labelWidth = ctx.measureText(volLabel).width;
-
-    // Value in candle-direction color
-    ctx.fillStyle = color;
-    ctx.fillText(volValue, x + labelWidth + 5, y);
-  }
-
-  renderAxisLabel(ctx: CanvasRenderingContext2D, chart: IChart, barIndex: number, mouseY: number, subPaneTop: number, axisX: number): void {
-    const { data, axisWidth, w } = chart.state;
-    const subPaneHeight = this.computeHeight(chart.state, this.getOptions());
-
-    // Compute volume value at cursor Y
-    const maxVol = this.getMaxVisibleVolume(chart);
-    const visibleVolMax = maxVol / this.state.scale;
-    const visibleVolMin = Math.max(0, this.state.offset);
-    const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
-
-    const volTopGap = Math.max(4, Math.round(subPaneHeight * 0.1));
-    const volAreaHeight = subPaneHeight - 2 - volTopGap;
-    const volTop = subPaneTop + volTopGap;
-
-    const ratio = 1 - (mouseY - volTop) / volAreaHeight;
-    const volValue = Math.max(0, Math.min(1, ratio)) * visibleRange + visibleVolMin;
-
-    // Draw label box
-    const labelHeight = 20;
-    ctx.fillStyle = chart.options.layout.background;
-    ctx.fillRect(w - axisWidth, mouseY - labelHeight / 2, axisWidth, labelHeight);
-
-    // Draw label border
-    ctx.strokeStyle = chart.options.layout.textColor;
-    ctx.lineWidth = 1;
-    ctx.strokeRect(w - axisWidth, mouseY - labelHeight / 2, axisWidth, labelHeight);
-
-    // Draw label text (right-aligned with padding)
-    ctx.fillStyle = chart.options.layout.textColor;
-    ctx.font = '10px system-ui';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(this.formatVolume(volValue), w - 5, mouseY);
-  }
-
-  private getMaxVisibleVolume(chart: IChart): number {
+  getMaxVisible(chart: IChart): number {
     const { data, barWidth, w, axisWidth } = chart.state;
-    const firstVisibleIdx = deriveVisibleStartIdx(chart.state, data.length);
+    const firstVisibleIdx = Math.max(0, Math.ceil((-chart.state.offsetX) / barWidth - 1));
     const barsVisible = Math.ceil((w - axisWidth) / barWidth) + 2;
     const endIdx = Math.min(firstVisibleIdx + barsVisible, data.length);
-
-    let maxVol = 0;
+    let maxVal = 0;
     for (let i = firstVisibleIdx; i < endIdx; i++) {
       const bar = data[i];
-      if (bar && bar.volume != null && bar.volume > maxVol) {
-        maxVol = bar.volume;
-      }
+      if (bar && bar.volume != null && bar.volume > maxVal) maxVal = bar.volume;
     }
-
-    return maxVol || 1;
+    return maxVal || 1;
   }
 
-  getContextData(): Record<string, any> {
-    return {
-      show: this.chart.options.volume?.show,
-      heightPercent: this.chart.options.volume?.heightPercent,
-      scale: this.state.scale,
-      offset: this.state.offset
-    };
+  getTooltipColor(bar: Bar): string {
+    const isUp = bar.close >= bar.open;
+    const options = this.getOptions();
+    return isUp ? (options.upColor || '#22c55e') : (options.downColor || '#ef4444');
   }
 
-  handleWheel(chart: IChart, deltaY: number): boolean {
-    const PRICE_SCROLL_FACTOR_OUT = 0.87;
-    const PRICE_SCROLL_FACTOR_IN = 1.15;
-
-    this.state.scale *= (deltaY > 0 ? PRICE_SCROLL_FACTOR_OUT : PRICE_SCROLL_FACTOR_IN);
-    this.state.scale = Math.max(1.0, Math.min(this.state.scale, 10));
-    return true;
+  getTooltipValue(bar: Bar): number | null {
+    return bar.volume ?? null;
   }
 
-  handleDrag(chart: IChart, deltaY: number): void {
-    const DRAG_SCALE_DIVISOR = 200;
-    this.state.scale *= (1 - deltaY / (DRAG_SCALE_DIVISOR * 5));
-    this.state.scale = Math.max(1.0, Math.min(this.state.scale, 10));
-  }
-
-  handleDblClick(chart: IChart): void {
-    this.state.scale = 1.0;
-    this.state.offset = 0;
-  }
-
-  handleSeparatorDrag(chart: IChart, deltaY: number, totalHeight: number): void {
-    const hPct = chart.options.volume.heightPercent - (deltaY / totalHeight);
-    chart.options.volume.heightPercent = Math.max(0.05, Math.min(0.5, hPct));
+  getTooltipLabel(): string {
+    return 'Volume:';
   }
 }

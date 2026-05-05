@@ -363,6 +363,8 @@ interface ChartOptions {
     upColor?: string;               // default: '#22c55e'
     downColor?: string;             // default: '#ef4444'
     heightPercent?: number;         // default: 0.2 (20%, range 0.05-0.5)
+    precision?: number | null;    // default: null (auto-detect from data)
+    minMove?: number | null;       // default: null (infer precision from minMove)
   };
 
   // === Init-Only ===

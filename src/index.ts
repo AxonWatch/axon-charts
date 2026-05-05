@@ -13,6 +13,7 @@ export * from './utils/math.js';
 export * as Projection from './utils/projection.js';
 export { LAYOUT } from './core/layout.js';
 export { SubPane } from './subpanes/SubPane.js';
+export { ScalePane } from './subpanes/ScalePane.js';
 export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
 
 /**
