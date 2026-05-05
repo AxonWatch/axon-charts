@@ -174,7 +174,7 @@ export class Crosshair {
     if (this.visible && isOverChart && this.chart.options.crosshair.mode !== 'none') {
       // Draw Axis Labels (Only if enabled in options)
       if (this.chart.options.crosshair.showLabels) {
-        this.drawPriceLabel(this.getPriceAt(this.y));
+        this.drawPriceLabel(this.getPriceAt(this.y), barIndex);
         this.drawTimeLabel(displayTime, crosshairX);
       }
 
@@ -211,41 +211,20 @@ export class Crosshair {
       }
     }
 
-    // 5. Draw volume tooltip at top-left of sub-pane (always shows the latest/near bar's volume)
-    if (this.chart.options.volume.show && this.chart.options.crosshair.showTooltip) {
-      const bar = data[barIndex];
-      if (bar) {
-        this.drawVolumeTooltip(bar);
+    // 5. Draw sub-pane tooltips (volume, etc.)
+    if (this.chart.options.crosshair.showTooltip) {
+      let currentTop = this.chart.state.chartBottom;
+      let tooltipY = LAYOUT.TOOLTIP_MARGIN_Y + (this.chart.options.market?.show ? this.HEADER_HEIGHT : 0);
+
+      for (const pane of (this.chart as any).getActiveSubPanes()) {
+        const bar = data[barIndex];
+        if (bar) {
+          pane.renderTooltip(this.overlayCtx, this.chart, bar, currentTop, tooltipY);
+          tooltipY += 15;
+        }
+        currentTop += pane.computeHeight(this.chart.state, pane.getOptions());
       }
     }
-  }
-
-  /**
-   * Draw volume tooltip at top-left of the sub-pane
-   */
-  private drawVolumeTooltip(bar: Bar): void {
-    if (!this.chart.options.volume.show) return;
-    const { chartBottom, subPaneHeight } = this.chart.state;
-    if (subPaneHeight <= 0) return;
-
-    const isUp = bar.close >= bar.open;
-    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
-    const volLabel = 'Volume:';
-    const volValue = bar.volume != null ? this.formatVolume(bar.volume) : '0';
-
-    const x = LAYOUT.TOOLTIP_MARGIN_X;
-    const y = chartBottom + LAYOUT.TOOLTIP_MARGIN_Y;
-
-    this.overlayCtx.font = 'bold 12px system-ui';
-    this.overlayCtx.textBaseline = 'top';
-    this.overlayCtx.textAlign = 'left';
-
-    // Label in neutral color
-    this.overlayCtx.fillStyle = '#888';
-    this.overlayCtx.fillText(volLabel, x, y);
-    // Value in candle-direction color
-    this.overlayCtx.fillStyle = color;
-    this.overlayCtx.fillText(volValue, x + this.overlayCtx.measureText(volLabel).width + 5, y);
   }
 
   /**
@@ -334,62 +313,49 @@ export class Crosshair {
   /**
    * Format volume to human-readable string (K/M suffixes)
    */
-  private formatVolume(value: number): string {
-    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-    return value.toFixed(0);
-  }
-
   /**
    * Draw price label on Y axis
    */
-  private drawPriceLabel(price: number): void {
-    const { w, h, axisWidth, chartBottom, bottomMargin } = this.chart.state;
-
-    // 1. Draw price label box (Standard 20px height)
+  private drawPriceLabel(price: number, barIndex: number): void {
+    const { w, axisWidth, chartBottom } = this.chart.state;
     const labelHeight = LAYOUT.LABEL_HEIGHT;
-    this.overlayCtx.fillStyle = this.chart.options.layout.background;
-    this.overlayCtx.fillRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
 
-    // Draw price label border
-    this.overlayCtx.strokeStyle = this.chart.options.layout.textColor;
-    this.overlayCtx.lineWidth = 1;
-    this.overlayCtx.strokeRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
+    // === NEW: Generic sub-pane axis labels ===
+    // First check if we're over any sub-pane
+    let currentTop = chartBottom;
+    let isOverSubPane = false;
 
-    this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
-    this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
-    this.overlayCtx.textAlign = 'right';
-    this.overlayCtx.textBaseline = 'middle';
+    for (const pane of (this.chart as any).getActiveSubPanes()) {
+      const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
+      const isOverThisPane = this.y > currentTop && this.y <= currentTop + subPaneHeight;
 
-    // Check if we're over the volume sub-pane
-    const isOverVolume = this.chart.options.volume.show && chartBottom > 0 && this.y > chartBottom && this.y <= h - bottomMargin;
-
-    if (isOverVolume) {
-      // Show the volume level at the cursor's Y position within the sub-pane
-      const subPaneTop = chartBottom;
-      const volAreaHeight = this.chart.state.subPaneHeight - 4;
-      const volAreaTop = subPaneTop + 2;
-      const localY = this.y - volAreaTop;
-      const ratio = Math.max(0, Math.min(1, 1 - (localY / volAreaHeight)));
-      // Compute the visible max volume from data (same logic as renderer)
-      const data = this.chart.dataManager.data;
-      const firstVisibleIdx = deriveVisibleStartIdx(this.chart.state, data.length);
-      const barsVisible = Math.ceil((w - axisWidth) / this.chart.state.barWidth) + 2;
-      const endIdx = Math.min(firstVisibleIdx + barsVisible, data.length);
-      let maxVol = 0;
-      for (let i = firstVisibleIdx; i < endIdx; i++) {
-        if (data[i] && data[i].volume != null && data[i].volume > maxVol) maxVol = data[i].volume;
+      if (isOverThisPane) {
+        // Sub-pane handles its own label rendering (box + text)
+        pane.renderAxisLabel(this.overlayCtx, this.chart, barIndex, this.y, currentTop, this.chart.state.w - this.chart.state.axisWidth);
+        isOverSubPane = true;
+        break; // Only show label for topmost pane under cursor
       }
-      if (maxVol <= 0) maxVol = 1;
-      const volScale = this.chart.state.volumeScale;
-      const volOffset = this.chart.state.volumeOffset;
-      const visibleVolMax = maxVol / volScale;
-      const visibleVolMin = Math.max(0, volOffset);
-      const volValue = visibleVolMin + ratio * (visibleVolMax - visibleVolMin);
-      const volText = this.formatVolume(Math.round(volValue));
-      this.overlayCtx.fillText(volText, w - LAYOUT.LABEL_OFFSET, this.y);
-    } else {
-      // Show formatted price
+
+      currentTop += subPaneHeight;
+    }
+
+    // If not over any sub-pane, draw main chart price label
+    if (!isOverSubPane) {
+      // Draw price label box
+      this.overlayCtx.fillStyle = this.chart.options.layout.background;
+      this.overlayCtx.fillRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
+
+      // Draw price label border
+      this.overlayCtx.strokeStyle = this.chart.options.layout.textColor;
+      this.overlayCtx.lineWidth = 1;
+      this.overlayCtx.strokeRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
+
+      // Draw price label text
+      this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
+      this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+      this.overlayCtx.textAlign = 'right';
+      this.overlayCtx.textBaseline = 'middle';
+
       const formattedPrice = this.chart.priceFormatter.formatPrice(price);
       this.overlayCtx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, this.y);
     }

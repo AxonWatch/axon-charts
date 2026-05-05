@@ -171,7 +171,7 @@ export class Renderer {
 
   drawBackground(ctx: CanvasRenderingContext2D, force: boolean = false): void {
     if (!force) return;
-    const { w, h, axisWidth, bottomMargin, chartBottom, subPaneHeight } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
     ctx.fillStyle = this.chart.options.layout.background;
     ctx.fillRect(0, 0, w, h);
@@ -186,11 +186,6 @@ export class Renderer {
     this.axes.drawPriceAxis(ctx);
     this.drawCurrentPriceLine(ctx);
     this.drawWatermark(ctx);
-
-    // Volume sub-pane: background and bars
-    if (subPaneHeight > 0) {
-      this.drawVolumeSubPane(ctx);
-    }
   }
 
   drawViewport(mainCtx: CanvasRenderingContext2D): void {
@@ -376,150 +371,6 @@ export class Renderer {
     }
 
     ctx.restore();
-  }
-
-  private drawVolumeSubPane(ctx: CanvasRenderingContext2D): void {
-    const { w, h, data, barWidth, axisWidth, bottomMargin, chartBottom, subPaneHeight } = this.chart.state;
-    if (!this.chart.options.volume.show || subPaneHeight <= 0) return;
-    if (data.length === 0) return;
-
-    const chartAreaWidth = w - axisWidth;
-    const subPaneTop = chartBottom;
-    const volUpColor = this.chart.options.volume.upColor || '#22c55e';
-    const volDownColor = this.chart.options.volume.downColor || '#ef4444';
-
-    // Fill sub-pane background (only axis area — chart area keeps grid lines visible)
-    ctx.fillStyle = this.chart.options.layout.background;
-    ctx.fillRect(w - axisWidth, subPaneTop, axisWidth, subPaneHeight);
-
-    // Draw separator line (full width including axis column) — thicker for easy drag
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.moveTo(0, subPaneTop);
-    ctx.lineTo(w, subPaneTop);
-    ctx.stroke();
-
-    // Re-draw vertical grid lines through sub-pane (background fill above erased them)
-    const vertOpts = this.chart.options.grid.vertLines || {};
-    const drawVertLines = this.chart.options.grid.show && vertOpts.show !== false;
-    if (drawVertLines) {
-      ctx.strokeStyle = vertOpts.color ?? '#2a2a2a';
-      ctx.lineWidth = vertOpts.width ?? 1;
-      ctx.setLineDash([]);
-      const interval = data.length > 1 ? data[1].time - data[0].time : 60000;
-      const step = calculateTimeStep(barWidth);
-      const stepTime = step * interval;
-      const refBar = data[data.length - 1];
-      const refIdx = data.length - 1;
-      const refTime = refBar.time;
-      const leftIdx = Math.max(0, Math.floor(-this.chart.state.offsetX / barWidth));
-      const leftTime = refTime + (leftIdx - refIdx) * interval;
-      const startSnapped = Math.floor(leftTime / stepTime) * stepTime;
-      for (let t = startSnapped; t < refTime + stepTime; t += stepTime) {
-        const virtualIdx = refIdx + (t - refTime) / interval;
-        const x = indexToX(virtualIdx, this.chart.state);
-        if (x < -100) continue;
-        if (x > chartAreaWidth) break;
-        ctx.beginPath();
-        ctx.moveTo(x, subPaneTop);
-        ctx.lineTo(x, subPaneTop + subPaneHeight);
-        ctx.stroke();
-      }
-    }
-
-    // Draw horizontal grid lines inside sub-pane at volume levels
-    // Style matches the main chart horizontal grid
-    const horzOpts = this.chart.options.grid.horzLines || {};
-    if (this.chart.options.grid.show && horzOpts.show !== false) {
-      ctx.strokeStyle = horzOpts.color ?? '#2a2a2a';
-      ctx.lineWidth = horzOpts.width ?? 1;
-      ctx.setLineDash([]);
-      // Draw 3 evenly spaced rows inside the sub-pane
-      for (let row = 1; row <= 3; row++) {
-        const gy = subPaneTop + (subPaneHeight / 4) * row;
-        ctx.beginPath();
-        ctx.moveTo(0, gy);
-        ctx.lineTo(chartAreaWidth, gy);
-        ctx.stroke();
-      }
-    }
-
-    // Find min/max volume across visible bars
-    const firstVisibleIdx = deriveVisibleStartIdx(this.chart.state, data.length);
-    const barsVisible = Math.ceil(chartAreaWidth / barWidth) + 2;
-    const endIdx = Math.min(firstVisibleIdx + barsVisible, data.length);
-
-    let maxVol = 0;
-    for (let i = firstVisibleIdx; i < endIdx; i++) {
-      const bar = data[i];
-      if (bar && bar.volume != null && bar.volume > maxVol) {
-        maxVol = bar.volume;
-      }
-    }
-    if (maxVol <= 0) maxVol = 1;
-
-    // Draw volume bars with 2px bottom margin and 10% top gap for visual comfort
-    const volTopGap = Math.max(4, Math.round(subPaneHeight * 0.1));
-    const volAreaHeight = subPaneHeight - 2 - volTopGap;
-    const volTop = subPaneTop + volTopGap;
-
-    for (let i = firstVisibleIdx; i < endIdx; i++) {
-      const bar = data[i];
-      if (!bar || bar.volume == null) continue;
-
-      const centerX = indexToX(i, this.chart.state);
-      const candleWidth = Math.floor(barWidth * LAYOUT.CANDLE_GAP_RATIO);
-      const x = centerX - candleWidth / 2;
-
-      if (x + candleWidth < 0 || x > chartAreaWidth) continue;
-
-      const volScale = this.chart.state.volumeScale;
-      const volOffset = this.chart.state.volumeOffset;
-      const visibleVolMax = maxVol / volScale;
-      const visibleVolMin = Math.max(0, volOffset);
-      const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
-      const volRatio = Math.max(0, Math.min(1, (bar.volume - visibleVolMin) / visibleRange));
-      const volBarHeight = Math.max(1, volRatio * volAreaHeight);
-      const y = volTop + (volAreaHeight - volBarHeight);
-
-      const isUp = bar.close >= bar.open;
-      ctx.fillStyle = isUp ? volUpColor : volDownColor;
-      ctx.fillRect(x, y, Math.max(1, candleWidth), volBarHeight);
-    }
-
-    // Draw volume axis labels on the price axis area within sub-pane
-    ctx.fillStyle = '#666';
-    ctx.font = '10px system-ui';
-    ctx.textAlign = 'right';
-    ctx.textBaseline = 'middle';
-    const volLabelPadding = LAYOUT.LABEL_OFFSET;
-
-    // Draw scaled volume axis ticks
-    const volScale = this.chart.state.volumeScale;
-    const volOffset = this.chart.state.volumeOffset;
-    const visibleVolMax = maxVol / volScale;
-    const visibleVolMin = Math.max(0, volOffset);
-    const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
-    const volTicks = [
-      { ratio: 1.0, label: this.formatVolume(Math.round(visibleVolMin + visibleRange)) },
-      { ratio: 0.75, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.75)) },
-      { ratio: 0.5, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.5)) },
-      { ratio: 0.25, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.25)) },
-      { ratio: 0, label: this.formatVolume(Math.round(visibleVolMin)) }
-    ];
-    for (const tick of volTicks) {
-      const tickY = subPaneTop + 2 + (volAreaHeight * (1 - tick.ratio));
-      ctx.fillText(tick.label, w - volLabelPadding, tickY);
-    }
-    ctx.textAlign = 'left';
-  }
-
-  private formatVolume(value: number): string {
-    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-    return value.toFixed(0);
   }
 
   destroy(): void {

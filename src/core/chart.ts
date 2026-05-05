@@ -11,6 +11,8 @@ import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
 import { validateOptions } from '../utils/validation.js';
+import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
+import type { SubPane } from '../subpanes/SubPane.js';
 
 const DEFAULT_OPTIONS: Required<ChartOptions> = {
   layout: {
@@ -108,6 +110,10 @@ export class Chart {
   // UI modules
   public crosshair!: Crosshair;
 
+  // Sub-panes (indicators, volume, etc.)
+  private subPanes: Map<string, SubPane> = new Map();
+  public volumeSubPane!: VolumeSubPane;
+
   // Chart state
   public state: {
     w: number;
@@ -124,8 +130,6 @@ export class Chart {
     bottomMargin: number;
     chartBottom: number;
     subPaneHeight: number;
-    volumeScale: number;
-    volumeOffset: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
@@ -191,9 +195,7 @@ export class Chart {
       priceScaleMode: this.options.priceScale.mode,
       axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP,
       chartBottom: 0,
-      subPaneHeight: 0,
-      volumeScale: 1.0,
-      volumeOffset: 0
+      subPaneHeight: 0
     };
 
     // 4. Initialize core modules
@@ -207,6 +209,10 @@ export class Chart {
     this.eventManager = new EventManager(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
     this.timeScaleAPI = new TimeScaleAPI(this);
+
+    // Initialize sub-panes
+    this.volumeSubPane = new VolumeSubPane(this);
+    this.addSubPane(this.volumeSubPane);
 
     this.startCountdownTimer();
 
@@ -445,15 +451,14 @@ export class Chart {
   public render(): void {
     this.state.data = this.dataManager.data;
 
-    // Compute sub-pane geometry before any rendering
-    if (this.options.volume.show) {
-      const subPanePercent = Math.max(0.1, Math.min(0.5, this.options.volume.heightPercent));
-      this.state.subPaneHeight = Math.round(this.state.h * subPanePercent);
-      this.state.chartBottom = this.state.h - this.state.bottomMargin - this.state.subPaneHeight;
-    } else {
-      this.state.subPaneHeight = 0;
-      this.state.chartBottom = this.state.h - this.state.bottomMargin;
+    // === NEW: Generic sub-pane geometry ===
+    let totalHeight = 0;
+    for (const pane of this.getActiveSubPanes()) {
+      const paneHeight = pane.computeHeight(this.state, pane.getOptions());
+      totalHeight += paneHeight;
     }
+    this.state.subPaneHeight = totalHeight;
+    this.state.chartBottom = this.state.h - this.state.bottomMargin - totalHeight;
 
     const layoutChanged = this.updatePriceScale();
 
@@ -465,6 +470,14 @@ export class Chart {
     this.renderer.renderCandles();
     this.renderer.drawBackground(this.bgCtx, true);
     this.renderer.drawViewport(this.mainCtx);
+
+    // === NEW: Render all active sub-panes ===
+    let currentTop = this.state.chartBottom;
+    for (const pane of this.getActiveSubPanes()) {
+      pane.render(this.bgCtx, this, currentTop);
+      currentTop += pane.computeHeight(this.state, pane.getOptions());
+    }
+
     this.crosshair.draw();
   }
 
@@ -586,15 +599,22 @@ export class Chart {
     const pricePerPixel = (priceMax - priceMin) / (usableH || 1);
     const timePerBar = data.length > 1 ? data[1].time - data[0].time : 0;
 
+    // Auto-expose all active sub-panes
+    const subPanes: Record<string, any> = {};
+    for (const pane of this.getActiveSubPanes()) {
+      subPanes[pane.id] = pane.getContextData();
+    }
+
     return {
-      viewport: { width: w, height: h, rightGap, 
+      viewport: { width: w, height: h, rightGap,
         visibleRange: { fromIndex: startIdx, toIndex: endIdx, fromTime: data[startIdx]?.time, toTime: data[endIdx]?.time },
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
       state: { totalBars: data.length, isAutoScrolling: this.isAutoScrolling() },
       visibleBars,
-      latestBar: data[data.length - 1]
+      latestBar: data[data.length - 1],
+      subPanes
     };
   }
 
@@ -757,7 +777,7 @@ export class Chart {
   }
 
   public getOptions(): Readonly<ChartOptions> { return deepClone(this.options); }
-  public resetOptions(): void { this.options = deepClone(DEFAULT_OPTIONS); this.state.volumeScale = 1.0; this.state.volumeOffset = 0; this.render(); }
+  public resetOptions(): void { this.options = deepClone(DEFAULT_OPTIONS); this.render(); }
 
   /**
    * Start the real-time countdown timer loop
@@ -791,6 +811,36 @@ export class Chart {
   private restartCountdownTimer(): void {
     this.stopCountdownTimer();
     this.startCountdownTimer();
+  }
+
+  /**
+   * Add a sub-pane (indicator, volume, etc.)
+   */
+  public addSubPane(pane: SubPane): void {
+    this.subPanes.set(pane.id, pane);
+    this.render();
+  }
+
+  /**
+   * Remove a sub-pane by id
+   */
+  public removeSubPane(id: string): void {
+    this.subPanes.delete(id);
+    this.render();
+  }
+
+  /**
+   * Get a sub-pane by id
+   */
+  public getSubPane(id: string): SubPane | undefined {
+    return this.subPanes.get(id);
+  }
+
+  /**
+   * Get all active (visible) sub-panes
+   */
+  private getActiveSubPanes(): SubPane[] {
+    return Array.from(this.subPanes.values()).filter(p => p.getOptions()?.show);
   }
 
   public destroy(): void {
@@ -870,6 +920,16 @@ export class Chart {
         break;
       case 'setCrosshair':
         this.crosshairAPI().setMode(command.mode);
+        break;
+      case 'setSubPane':
+        const pane = this.getSubPane(command.id);
+        if (pane) {
+          const currentOpts = this.options[command.id as keyof ChartOptions] as any;
+          if (currentOpts) {
+            currentOpts.show = command.show;
+            this.render();
+          }
+        }
         break;
       default:
         const _exhaustive: never = command;

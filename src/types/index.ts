@@ -169,7 +169,8 @@ export type ChartCommand =
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
-  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' };
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
+  | { type: 'setSubPane'; id: string; show: boolean };
 
 /**
  * Chart state for serialization
@@ -210,8 +211,6 @@ export interface IChart {
     chartBottom: number;
     /** Height of the sub-pane area in pixels (0 if no sub-pane) */
     subPaneHeight: number;
-    volumeScale: number;
-    volumeOffset: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
