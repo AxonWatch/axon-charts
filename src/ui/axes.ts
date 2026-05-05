@@ -18,11 +18,12 @@ export class Axes {
    * VIRTUAL: Derives prices from the current viewport boundaries
    */
   public drawPriceAxis(ctx: CanvasRenderingContext2D): void {
-    const { w, h, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
 
     // 1. Calculate the price at the top and bottom of the visible chart area
+    const clipBottom = chartBottom || (h - bottomMargin);
     const topPrice = yToPrice(0, this.chart.state);
-    const bottomPrice = yToPrice(h - bottomMargin, this.chart.state);
+    const bottomPrice = yToPrice(clipBottom, this.chart.state);
 
     // 2. Feed THESE dynamic prices into the niceTicks algorithm
     const ticks = niceTicks(
@@ -46,7 +47,8 @@ export class Axes {
       const y = priceToY(price, this.chart.state);
 
       // Only draw if within visible chart area
-      if (y < 0 || y > h - bottomMargin) return;
+      const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
+      if (y < 0 || y > clipBottom) return;
 
       // Collision detection with live price label
       if (Math.abs(y - currentPriceY) < LAYOUT.COLLISION_THRESHOLD) return;
@@ -122,7 +124,7 @@ export class Axes {
       if (x > chartWidth) break;
       if (x < -100) continue; // Skip if far to the left
 
-      // Draw vertical grid line (Full Height) - only if enabled
+      // Draw vertical grid line through full height (including sub-pane)
       if (drawVertLines) {
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -178,7 +180,7 @@ export class Axes {
   public drawGrid(ctx: CanvasRenderingContext2D): void {
     if (!this.chart.options.grid.show) return;
 
-    const { w, h, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
 
     const horzOptions = this.chart.options.grid.horzLines || {};
 
@@ -200,10 +202,11 @@ export class Axes {
       10
     );
 
+    const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
     ticks.forEach(price => {
       const y = priceToY(price, this.chart.state);
 
-      if (y < 0 || y > h - bottomMargin) return;
+      if (y < 0 || y > clipBottom) return;
 
       ctx.beginPath();
       ctx.moveTo(0, y);

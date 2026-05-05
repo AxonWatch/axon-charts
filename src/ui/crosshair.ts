@@ -100,7 +100,7 @@ export class Crosshair {
    * Draw crosshair and tooltip
    */
   public draw(): void {
-    const { w, h, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
 
     // Clear overlay
     this.overlayCtx.clearRect(0, 0, w, h);
@@ -110,9 +110,10 @@ export class Crosshair {
       this.drawMarketHeader();
     }
 
-    // Check if over axes - FIXED: Use dynamic axisWidth for sidebar detection
+    // Check if over axes or sub-pane
     const isOverPriceAxis = this.x > w - axisWidth;
     const isOverTimeAxis = this.y > h - bottomMargin;
+    const isOverVolumePane = this.chart.options.volume.show && chartBottom > 0 && this.y > chartBottom && this.y <= h - bottomMargin;
     const isOverChart = !isOverPriceAxis && !isOverTimeAxis;
 
 
@@ -169,7 +170,7 @@ export class Crosshair {
       });
     }
 
-    // 3. Draw crosshair elements (only in chart area when visible)
+    // 3. Draw crosshair elements (only when visible and over chart area)
     if (this.visible && isOverChart && this.chart.options.crosshair.mode !== 'none') {
       // Draw Axis Labels (Only if enabled in options)
       if (this.chart.options.crosshair.showLabels) {
@@ -181,7 +182,7 @@ export class Crosshair {
       const vert = this.chart.options.crosshair.vertLine;
       const horz = this.chart.options.crosshair.horzLine;
 
-      // Vertical line
+      // Vertical line extends through sub-pane to full chart height
       this.overlayCtx.strokeStyle = vert.color;
       this.overlayCtx.lineWidth = vert.width;
       this.overlayCtx.setLineDash(vert.style === 'dashed' ? [4, 4] : []);
@@ -190,7 +191,7 @@ export class Crosshair {
       this.overlayCtx.lineTo(crosshairX, h - bottomMargin);
       this.overlayCtx.stroke();
 
-      // Horizontal line
+      // Horizontal line (full width, including sub-pane)
       this.overlayCtx.strokeStyle = horz.color;
       this.overlayCtx.lineWidth = horz.width;
       this.overlayCtx.setLineDash(horz.style === 'dashed' ? [4, 4] : []);
@@ -209,6 +210,42 @@ export class Crosshair {
         this.drawTooltip(bar);
       }
     }
+
+    // 5. Draw volume tooltip at top-left of sub-pane (always shows the latest/near bar's volume)
+    if (this.chart.options.volume.show && this.chart.options.crosshair.showTooltip) {
+      const bar = data[barIndex];
+      if (bar) {
+        this.drawVolumeTooltip(bar);
+      }
+    }
+  }
+
+  /**
+   * Draw volume tooltip at top-left of the sub-pane
+   */
+  private drawVolumeTooltip(bar: Bar): void {
+    if (!this.chart.options.volume.show) return;
+    const { chartBottom, subPaneHeight } = this.chart.state;
+    if (subPaneHeight <= 0) return;
+
+    const isUp = bar.close >= bar.open;
+    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
+    const volLabel = 'Volume:';
+    const volValue = bar.volume != null ? this.formatVolume(bar.volume) : '0';
+
+    const x = LAYOUT.TOOLTIP_MARGIN_X;
+    const y = chartBottom + LAYOUT.TOOLTIP_MARGIN_Y;
+
+    this.overlayCtx.font = 'bold 12px system-ui';
+    this.overlayCtx.textBaseline = 'top';
+    this.overlayCtx.textAlign = 'left';
+
+    // Label in neutral color
+    this.overlayCtx.fillStyle = '#888';
+    this.overlayCtx.fillText(volLabel, x, y);
+    // Value in candle-direction color
+    this.overlayCtx.fillStyle = color;
+    this.overlayCtx.fillText(volValue, x + this.overlayCtx.measureText(volLabel).width + 5, y);
   }
 
   /**
@@ -291,13 +328,23 @@ export class Crosshair {
     currentX += LAYOUT.TOOLTIP_LABEL_SPACING;
     this.overlayCtx.fillStyle = color;
     this.overlayCtx.fillText(close, currentX, startY);
+
+  }
+
+  /**
+   * Format volume to human-readable string (K/M suffixes)
+   */
+  private formatVolume(value: number): string {
+    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+    return value.toFixed(0);
   }
 
   /**
    * Draw price label on Y axis
    */
   private drawPriceLabel(price: number): void {
-    const { w, axisWidth } = this.chart.state;
+    const { w, h, axisWidth, chartBottom, bottomMargin } = this.chart.state;
 
     // 1. Draw price label box (Standard 20px height)
     const labelHeight = LAYOUT.LABEL_HEIGHT;
@@ -309,15 +356,43 @@ export class Crosshair {
     this.overlayCtx.lineWidth = 1;
     this.overlayCtx.strokeRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
 
-    // Draw price text
     this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
     this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
     this.overlayCtx.textAlign = 'right';
     this.overlayCtx.textBaseline = 'middle';
-    
-    // Use Professional Formatter
-    const formattedPrice = this.chart.priceFormatter.formatPrice(price);
-    this.overlayCtx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, this.y);
+
+    // Check if we're over the volume sub-pane
+    const isOverVolume = this.chart.options.volume.show && chartBottom > 0 && this.y > chartBottom && this.y <= h - bottomMargin;
+
+    if (isOverVolume) {
+      // Show the volume level at the cursor's Y position within the sub-pane
+      const subPaneTop = chartBottom;
+      const volAreaHeight = this.chart.state.subPaneHeight - 4;
+      const volAreaTop = subPaneTop + 2;
+      const localY = this.y - volAreaTop;
+      const ratio = Math.max(0, Math.min(1, 1 - (localY / volAreaHeight)));
+      // Compute the visible max volume from data (same logic as renderer)
+      const data = this.chart.dataManager.data;
+      const firstVisibleIdx = deriveVisibleStartIdx(this.chart.state, data.length);
+      const barsVisible = Math.ceil((w - axisWidth) / this.chart.state.barWidth) + 2;
+      const endIdx = Math.min(firstVisibleIdx + barsVisible, data.length);
+      let maxVol = 0;
+      for (let i = firstVisibleIdx; i < endIdx; i++) {
+        if (data[i] && data[i].volume != null && data[i].volume > maxVol) maxVol = data[i].volume;
+      }
+      if (maxVol <= 0) maxVol = 1;
+      const volScale = this.chart.state.volumeScale;
+      const volOffset = this.chart.state.volumeOffset;
+      const visibleVolMax = maxVol / volScale;
+      const visibleVolMin = Math.max(0, volOffset);
+      const volValue = visibleVolMin + ratio * (visibleVolMax - visibleVolMin);
+      const volText = this.formatVolume(Math.round(volValue));
+      this.overlayCtx.fillText(volText, w - LAYOUT.LABEL_OFFSET, this.y);
+    } else {
+      // Show formatted price
+      const formattedPrice = this.chart.priceFormatter.formatPrice(price);
+      this.overlayCtx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, this.y);
+    }
   }
 
   /**

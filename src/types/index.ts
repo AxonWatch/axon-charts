@@ -109,6 +109,15 @@ export interface ChartOptions {
     rotate?: boolean;
   };
 
+  // === Volume Sub-Pane ===
+  volume?: {
+    show?: boolean;            // default: false
+    upColor?: string;          // default: '#22c55e'
+    downColor?: string;        // default: '#ef4444'
+    /** Percentage of total chart height (0.1-0.5). Default: 0.2 (20%) */
+    heightPercent?: number;
+  };
+
   // === Init-Only ===
   /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
   devicePixelRatio?: number;
@@ -197,6 +206,12 @@ export interface IChart {
     rightGap: number;
     topMargin: number;
     bottomMargin: number;
+    /** Bottom edge of the main chart area (above sub-pane if visible) */
+    chartBottom: number;
+    /** Height of the sub-pane area in pixels (0 if no sub-pane) */
+    subPaneHeight: number;
+    volumeScale: number;
+    volumeOffset: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';

@@ -438,7 +438,7 @@ These are accepted for backward compatibility but mapped to the hierarchical str
 
 
 
-### Planned Options (v1.0.1)
+### Implemented v1.0.1+ Options
 
 These will be added in the next release:
 

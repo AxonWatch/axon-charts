@@ -68,6 +68,11 @@ export function validateOptions(options: Partial<ChartOptions>): void {
     validateData(options.data);
   }
 
+  // === VOLUME ===
+  if (options.volume) {
+    validateVolume(options.volume);
+  }
+
   // === INIT-ONLY ===
   if (options.devicePixelRatio !== undefined) {
     validateDevicePixelRatio(options.devicePixelRatio);
@@ -361,6 +366,26 @@ function validateData(data: any, path: string = 'data'): void {
 
   if (data.autoCleanup !== undefined && typeof data.autoCleanup !== 'boolean') {
     throw new ValidationError(`${path}.autoCleanup`, 'Auto cleanup must be a boolean', data.autoCleanup);
+  }
+}
+
+function validateVolume(volume: any, path: string = "volume"): void {
+  if (typeof volume !== "object" || volume === null) {
+    throw new ValidationError(path, "Volume must be an object", volume);
+  }
+  if (volume.show !== undefined && typeof volume.show !== "boolean") {
+    throw new ValidationError(path + ".show", "Show must be a boolean", volume.show);
+  }
+  if (volume.upColor !== undefined) {
+    validateColor(volume.upColor, path + ".upColor");
+  }
+  if (volume.downColor !== undefined) {
+    validateColor(volume.downColor, path + ".downColor");
+  }
+  if (volume.heightPercent !== undefined) {
+    if (typeof volume.heightPercent !== "number" || volume.heightPercent < 0.05 || volume.heightPercent > 0.5) {
+      throw new ValidationError(path + ".heightPercent", "Height percent must be a number between 0.05 and 0.5", volume.heightPercent);
+    }
   }
 }
 

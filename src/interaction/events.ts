@@ -15,7 +15,7 @@ export class EventManager {
   private contextMenuActive: boolean = false;
   private _contextMenu: HTMLDivElement | undefined;
   private _contextMenuDismiss: ((e: MouseEvent) => void) | undefined;
-  private dragMode: 'chart' | 'price' | 'time' = 'chart';
+  private dragMode: 'chart' | 'price' | 'time' | 'volume' | 'separator' = 'chart';
   private rafId: number | null = null;
 
   constructor(chart: IChart) {
@@ -58,7 +58,7 @@ export class EventManager {
    * Handle double click
    */
   private handleDblClick = (e: MouseEvent): void => {
-    const { w, h, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
 
     // Use client coordinates for consistency
@@ -66,10 +66,17 @@ export class EventManager {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // If double-clicked on Price Axis, reset vertical zoom AND offset
-    if (mouseX > chartAreaWidth) {
+    // If double-clicked on Price Axis (main chart area only, not sub-pane axis), reset vertical zoom AND offset
+    if (mouseX > chartAreaWidth && mouseY <= chartBottom) {
       this.chart.state.priceScale = 1.0;
       this.chart.state.priceOffset = 0;
+      this.chart.render();
+    }
+
+    // If double-clicked on Volume axis (sub-pane axis area), reset volume zoom AND offset
+    if (mouseX > chartAreaWidth && mouseY > chartBottom && mouseY <= h - bottomMargin) {
+      this.chart.state.volumeScale = 1.0;
+      this.chart.state.volumeOffset = 0;
       this.chart.render();
     }
 
@@ -257,23 +264,32 @@ export class EventManager {
 
     e.preventDefault();
     const factor = e.deltaY > 0 ? LAYOUT.ZOOM_FACTOR_OUT : LAYOUT.ZOOM_FACTOR_IN;
-    const { w, h, rightGap, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, rightGap, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
+    const chartBottomEdge = chartBottom || (h - bottomMargin);
 
     // Use client coordinates for consistency
     const rect = this.chart.mainCanvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Price Axis Zoom
-    if (mouseX > chartAreaWidth) {
+    // Price Axis Zoom (only on main chart price axis, not sub-pane axis)
+    if (mouseX > chartAreaWidth && mouseY <= chartBottomEdge) {
       this.chart.state.priceScale *= (e.deltaY > 0 ? LAYOUT.PRICE_SCROLL_FACTOR_IN : LAYOUT.PRICE_SCROLL_FACTOR_OUT);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
       this.chart.render();
       return;
     }
 
-    // Horizontal Zoom
+    // Volume Axis Zoom (on sub-pane axis area)
+    if (mouseX > chartAreaWidth && mouseY > chartBottomEdge && mouseY <= h - bottomMargin) {
+      this.chart.state.volumeScale *= (e.deltaY > 0 ? LAYOUT.PRICE_SCROLL_FACTOR_OUT : LAYOUT.PRICE_SCROLL_FACTOR_IN);
+      this.chart.state.volumeScale = Math.max(1.0, Math.min(this.chart.state.volumeScale, 10));
+      this.chart.render();
+      return;
+    }
+
+    // Horizontal Zoom (time axis only, not sub-pane)
     const isTimeAxis = mouseY > h - bottomMargin;
     const oldWidth = this.chart.state.barWidth;
     const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
@@ -300,8 +316,9 @@ export class EventManager {
   }
 
   private handleMouseDown = (e: MouseEvent): void => {
-    const { w, h, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
+    const chartBottomEdge = chartBottom || (h - bottomMargin);
 
     // Use client coordinates for consistency
     const rect = this.chart.mainCanvas.getBoundingClientRect();
@@ -312,8 +329,19 @@ export class EventManager {
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
 
-    if (mouseX > chartAreaWidth) {
+    if (mouseX > chartAreaWidth && mouseY <= chartBottomEdge) {
       this.dragMode = 'price';
+    } else if (mouseX > chartAreaWidth && mouseY > chartBottomEdge && mouseY <= h - bottomMargin) {
+      // Volume axis pan (drag on sub-pane axis area)
+      this.dragMode = 'volume';
+    } else if (mouseY > chartBottomEdge && mouseY <= h - bottomMargin) {
+      // Check if near the separator line (within 6px) for drag-to-resize
+      const SEPARATOR_DRAG_THRESHOLD = 6;
+      if (Math.abs(mouseY - chartBottomEdge) < SEPARATOR_DRAG_THRESHOLD) {
+        this.dragMode = 'separator';
+      } else {
+        this.dragMode = 'chart';
+      }
     } else if (mouseY > h - bottomMargin) {
       this.dragMode = 'time';
     } else {
@@ -336,8 +364,9 @@ export class EventManager {
   }
 
   private handleMouseMove = (e: MouseEvent): void => {
-    const { w, h, rightGap, barWidth, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, rightGap, barWidth, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const chartAreaWidth = w - axisWidth;
+    const chartBottomEdge = chartBottom || (h - bottomMargin);
 
     // Use client coordinates with getBoundingClientRect for consistent positioning
     // even when mouse is outside the chart area
@@ -345,13 +374,21 @@ export class EventManager {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const isOverPrice = mouseX > chartAreaWidth;
+    const isOverPrice = mouseX > chartAreaWidth && mouseY <= chartBottomEdge;
+    const isOverVolumeAxis = mouseX > chartAreaWidth && mouseY > chartBottomEdge && mouseY <= h - bottomMargin;
+    const isOverSubPane = mouseY > chartBottomEdge && mouseY <= h - bottomMargin;
     const isOverTime = mouseY > h - bottomMargin;
+    const SEPARATOR_HIT_THRESHOLD = 6;
+    const isNearSeparator = isOverSubPane && !isOverVolumeAxis && Math.abs(mouseY - chartBottomEdge) < SEPARATOR_HIT_THRESHOLD;
 
     // Update cursor based on enabled behaviors
     if (isOverPrice) {
       // Only show resize cursor if dragPriceScale is enabled
       this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragPriceScale ? 'ns-resize' : 'default';
+    } else if (isOverVolumeAxis) {
+      this.chart.mainCanvas.style.cursor = 'ns-resize';
+    } else if (isNearSeparator) {
+      this.chart.mainCanvas.style.cursor = 'ns-resize';
     } else if (isOverTime) {
       // Only show resize cursor if dragToZoom is enabled
       this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragToZoom ? 'ew-resize' : 'default';
@@ -368,6 +405,19 @@ export class EventManager {
       const deltaY = mouseY - this.lastMouseY;
       this.chart.state.priceScale *= (1 + deltaY / LAYOUT.DRAG_SCALE_DIVISOR);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
+    } else if (this.dragMode === 'volume') {
+      // Volume axis drag: scale volume Y-axis (same direction as price axis)
+      // Drag up (negative deltaY) = zoom out (scale decreases, see more range)
+      // Drag down (positive deltaY) = zoom in (scale increases, magnify lower values)
+      const deltaY = mouseY - this.lastMouseY;
+      this.chart.state.volumeScale *= (1 - deltaY / (LAYOUT.DRAG_SCALE_DIVISOR * 5));
+      this.chart.state.volumeScale = Math.max(1.0, Math.min(this.chart.state.volumeScale, 10));
+    } else if (this.dragMode === 'separator') {
+      // Dragging separator resizes the volume sub-pane height percent
+      const deltaY = mouseY - this.lastMouseY;
+      // Drag up (negative deltaY) = increase height; drag down (positive) = decrease
+      const hPct = this.chart.options.volume.heightPercent - (deltaY / this.chart.state.h);
+      this.chart.options.volume.heightPercent = Math.max(0.05, Math.min(0.5, hPct));
     } else if (this.dragMode === 'time') {
       // Guard: Check if drag-to-zoom is disabled
       if (!this.chart.options.behavior.dragToZoom) return;

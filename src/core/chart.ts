@@ -83,6 +83,12 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     opacity: 0.07,
     show: false,
     rotate: false
+  },
+  volume: {
+    show: false,
+    upColor: '#22c55e',
+    downColor: '#ef4444',
+    heightPercent: 0.2
   }
 };
 
@@ -116,6 +122,10 @@ export class Chart {
     rightGap: number;
     topMargin: number;
     bottomMargin: number;
+    chartBottom: number;
+    subPaneHeight: number;
+    volumeScale: number;
+    volumeOffset: number;
     priceScale: number;
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
@@ -179,7 +189,11 @@ export class Chart {
       priceScale: 1.0,
       priceOffset: 0,
       priceScaleMode: this.options.priceScale.mode,
-      axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP
+      axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP,
+      chartBottom: 0,
+      subPaneHeight: 0,
+      volumeScale: 1.0,
+      volumeOffset: 0
     };
 
     // 4. Initialize core modules
@@ -430,6 +444,17 @@ export class Chart {
 
   public render(): void {
     this.state.data = this.dataManager.data;
+
+    // Compute sub-pane geometry before any rendering
+    if (this.options.volume.show) {
+      const subPanePercent = Math.max(0.1, Math.min(0.5, this.options.volume.heightPercent));
+      this.state.subPaneHeight = Math.round(this.state.h * subPanePercent);
+      this.state.chartBottom = this.state.h - this.state.bottomMargin - this.state.subPaneHeight;
+    } else {
+      this.state.subPaneHeight = 0;
+      this.state.chartBottom = this.state.h - this.state.bottomMargin;
+    }
+
     const layoutChanged = this.updatePriceScale();
 
     // Recreate buffer ONLY if layout changed
@@ -696,6 +721,16 @@ export class Chart {
       needsRender = true;
     }
 
+    // === VOLUME ===
+    if (normalizedPartial.volume) {
+      // Volume sub-pane visibility, colors, height
+      // Always recreate buffer when show changes (old buffer may be wrong height)
+      if (normalizedPartial.volume.show !== undefined || this.options.volume.show) {
+        this.renderer.createBuffer();
+      }
+      needsRender = true;
+    }
+
     // === APPLY CHANGES ===
     if (needsResize) {
       this.resize();
@@ -722,7 +757,7 @@ export class Chart {
   }
 
   public getOptions(): Readonly<ChartOptions> { return deepClone(this.options); }
-  public resetOptions(): void { this.options = deepClone(DEFAULT_OPTIONS); this.render(); }
+  public resetOptions(): void { this.options = deepClone(DEFAULT_OPTIONS); this.state.volumeScale = 1.0; this.state.volumeOffset = 0; this.render(); }
 
   /**
    * Start the real-time countdown timer loop

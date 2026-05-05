@@ -1,0 +1,16 @@
+src/
+tests/
+docs/
+archive/
+*.test.ts
+tsconfig.json
+esbuild.config.js
+.gitignore
+.npmignore
+.DS_Store
+.vscode/
+.idea/
+.claude/
+.hermes/
+*.md
+!README.md
