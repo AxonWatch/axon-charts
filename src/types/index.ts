@@ -116,6 +116,10 @@ export interface ChartOptions {
     downColor?: string;        // default: '#ef4444'
     /** Percentage of total chart height (0.1-0.5). Default: 0.2 (20%) */
     heightPercent?: number;
+    /** Number of decimal places for volume formatting. If null, auto-detects from data. */
+    precision?: number | null;
+    /** Minimum volume increment - if set, derives precision from it. Example: 0.00000001 for crypto with 8 decimals */
+    minMove?: number | null;
   };
 
   // === Init-Only ===

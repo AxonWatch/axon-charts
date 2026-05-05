@@ -15,7 +15,7 @@ export class EventManager {
   private contextMenuActive: boolean = false;
   private _contextMenu: HTMLDivElement | undefined;
   private _contextMenuDismiss: ((e: MouseEvent) => void) | undefined;
-  private dragMode: 'chart' | 'price' | 'time' | 'subPane' = 'chart';
+  private dragMode: 'chart' | 'price' | 'time' | 'subPane' | 'separator' = 'chart';
   private activePane?: import('../subpanes/SubPane.js').SubPane;
   private rafId: number | null = null;
 
@@ -455,9 +455,16 @@ export class EventManager {
       this.chart.state.priceScale *= (1 + deltaY / LAYOUT.DRAG_SCALE_DIVISOR);
       this.chart.state.priceScale = Math.max(0.1, Math.min(this.chart.state.priceScale, 10));
     } else if (this.dragMode === 'subPane' && this.activePane) {
-      // === NEW: Generic sub-pane drag ===
+      // Generic sub-pane drag (zoom/scale)
       const deltaY = mouseY - this.lastMouseY;
       this.activePane.handleDrag(this.chart, deltaY);
+    } else if (this.dragMode === 'separator') {
+      // Dragging separator resizes the first active sub-pane
+      const deltaY = mouseY - this.lastMouseY;
+      const firstPane = (this.chart as any).getActiveSubPanes()[0];
+      if (firstPane) {
+        firstPane.handleSeparatorDrag(this.chart, deltaY, this.chart.state.h);
+      }
     } else if (this.dragMode === 'time') {
       // Guard: Check if drag-to-zoom is disabled
       if (!this.chart.options.behavior.dragToZoom) return;

@@ -15,7 +15,9 @@ export class VolumeSubPane implements SubPane {
   // Private state (moved from chart.state)
   private state = {
     scale: 1.0,
-    offset: 0
+    offset: 0,
+    detectedPrecision: null as number | null,
+    lastDataLength: -1
   };
 
   constructor(private chart: IChart) {}
@@ -37,6 +39,12 @@ export class VolumeSubPane implements SubPane {
 
     if (!options?.show || subPaneHeight <= 0) return;
     if (data.length === 0) return;
+
+    // Invalidate precision cache when data changes
+    if (data.length !== this.state.lastDataLength) {
+      this.state.detectedPrecision = null;
+      this.state.lastDataLength = data.length;
+    }
 
     const chartAreaWidth = w - axisWidth;
     const volUpColor = options.upColor || '#22c55e';
@@ -157,23 +165,122 @@ export class VolumeSubPane implements SubPane {
     const visibleVolMin = Math.max(0, volOffset);
     const visibleRange = Math.max(1, visibleVolMax - visibleVolMin);
     const volTicks = [
-      { ratio: 1.0, label: this.formatVolume(Math.round(visibleVolMin + visibleRange)) },
-      { ratio: 0.75, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.75)) },
-      { ratio: 0.5, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.5)) },
-      { ratio: 0.25, label: this.formatVolume(Math.round(visibleVolMin + visibleRange * 0.25)) },
-      { ratio: 0, label: this.formatVolume(Math.round(visibleVolMin)) }
+      { ratio: 1.0, label: this.formatVolume(visibleVolMin + visibleRange) },
+      { ratio: 0.75, label: this.formatVolume(visibleVolMin + visibleRange * 0.75) },
+      { ratio: 0.5, label: this.formatVolume(visibleVolMin + visibleRange * 0.5) },
+      { ratio: 0.25, label: this.formatVolume(visibleVolMin + visibleRange * 0.25) },
+      { ratio: 0, label: this.formatVolume(visibleVolMin) }
     ];
     for (const tick of volTicks) {
       const tickY = subPaneTop + 2 + (volAreaHeight * (1 - tick.ratio));
       ctx.fillText(tick.label, w - volLabelPadding, tickY);
     }
     ctx.textAlign = 'left';
+
+    // Draw current value horizontal line and label (latest bar's volume)
+    if (data.length > 0) {
+      const lastBar = data[data.length - 1];
+      if (lastBar && lastBar.volume != null) {
+        const curVolRatio = Math.max(0, Math.min(1, (lastBar.volume - visibleVolMin) / visibleRange));
+        const curVolY = volTop + (volAreaHeight - curVolRatio * volAreaHeight);
+
+        // Horizontal line (dashed, across chart area)
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, curVolY);
+        ctx.lineTo(w, curVolY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Label background on axis column
+        ctx.fillStyle = chart.options.layout.background;
+        ctx.fillRect(w - axisWidth, curVolY - 10, axisWidth, 20);
+
+        // Label border
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(w - axisWidth, curVolY - 10, axisWidth, 20);
+
+        // Label text
+        ctx.fillStyle = '#888';
+        ctx.font = 'bold 10px system-ui';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(this.formatVolume(lastBar.volume), w - 5, curVolY);
+        ctx.textAlign = 'left';
+      }
+    }
   }
 
   private formatVolume(value: number): string {
-    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-    return value.toFixed(0);
+    const precision = this.getVolumePrecision();
+
+    // Large number formatting with K/M suffixes (preserves precision)
+    if (value >= 1000000) return (value / 1000000).toFixed(precision) + 'M';
+    if (value >= 1000) return (value / 1000).toFixed(precision) + 'K';
+    return value.toFixed(precision);
+  }
+
+  /**
+   * Get volume formatting precision with smart fallback:
+   * 1. Use explicit precision from options if set
+   * 2. Derive from minMove if set (e.g., 0.00000001 → 8 decimals)
+   * 3. Auto-detect from data (scan for smallest non-zero decimal)
+   * 4. Default to 2 decimals
+   */
+  private getVolumePrecision(): number {
+    const options = this.getOptions();
+
+    // 1. Explicit precision
+    if (options?.precision !== null && options?.precision !== undefined) {
+      return options.precision;
+    }
+
+    // 2. Derive from minMove
+    if (options?.minMove != null && options.minMove > 0) {
+      const minMoveStr = options.minMove.toString();
+      const decimalIdx = minMoveStr.indexOf('.');
+      if (decimalIdx !== -1) {
+        return minMoveStr.length - decimalIdx - 1;
+      }
+      return 0; // minMove is integer
+    }
+
+    // 3. Auto-detect from data (cached)
+    if (this.state.detectedPrecision === null) {
+      this.state.detectedPrecision = this.detectPrecisionFromData();
+    }
+
+    return this.state.detectedPrecision ?? 2;
+  }
+
+  /**
+   * Scan volume data to find the smallest non-zero decimal place
+   * Returns null if no data or all integers
+   */
+  private detectPrecisionFromData(): number | null {
+    const { data } = this.chart.state;
+    if (data.length === 0) return 2;
+
+    let maxDecimals = 0;
+
+    // Sample up to 100 bars for performance
+    const sampleSize = Math.min(100, data.length);
+    for (let i = 0; i < sampleSize; i++) {
+      const bar = data[i];
+      if (bar?.volume != null) {
+        const volStr = bar.volume.toString();
+        const decimalIdx = volStr.indexOf('.');
+        if (decimalIdx !== -1) {
+          const decimals = volStr.length - decimalIdx - 1;
+          maxDecimals = Math.max(maxDecimals, decimals);
+        }
+      }
+    }
+
+    return maxDecimals > 0 ? maxDecimals : 2;
   }
 
   renderTooltip(ctx: CanvasRenderingContext2D, chart: IChart, bar: Bar, subPaneTop: number, tooltipY: number): void {
@@ -236,7 +343,7 @@ export class VolumeSubPane implements SubPane {
     ctx.font = '10px system-ui';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.formatVolume(Math.round(volValue)), w - 5, mouseY);
+    ctx.fillText(this.formatVolume(volValue), w - 5, mouseY);
   }
 
   private getMaxVisibleVolume(chart: IChart): number {
@@ -252,6 +359,7 @@ export class VolumeSubPane implements SubPane {
         maxVol = bar.volume;
       }
     }
+
     return maxVol || 1;
   }
 

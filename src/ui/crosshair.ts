@@ -214,7 +214,7 @@ export class Crosshair {
     // 5. Draw sub-pane tooltips (volume, etc.)
     if (this.chart.options.crosshair.showTooltip) {
       let currentTop = this.chart.state.chartBottom;
-      let tooltipY = LAYOUT.TOOLTIP_MARGIN_Y + (this.chart.options.market?.show ? this.HEADER_HEIGHT : 0);
+      let tooltipY = this.chart.state.chartBottom + LAYOUT.TOOLTIP_MARGIN_Y;
 
       for (const pane of (this.chart as any).getActiveSubPanes()) {
         const bar = data[barIndex];
