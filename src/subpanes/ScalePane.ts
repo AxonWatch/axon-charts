@@ -160,7 +160,7 @@ export abstract class ScalePane implements SubPane {
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
     // Top gap for visual comfort
-    const topGap = Math.max(4, Math.round(subPaneHeight * 0.1));
+    const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
     const areaHeight = subPaneHeight - 2 - topGap;
     const areaTop = subPaneTop + topGap;
 
@@ -181,7 +181,7 @@ export abstract class ScalePane implements SubPane {
       { ratio: 0,    label: this.formatValue(visibleMin) }
     ];
     for (const tick of ticks) {
-      const tickY = subPaneTop + 2 + (areaHeight * (1 - tick.ratio));
+      const tickY = subPaneTop + 14 + (areaHeight * (1 - tick.ratio));
       ctx.fillText(tick.label, w - labelPadding, tickY);
     }
     ctx.textAlign = 'left';
@@ -244,7 +244,7 @@ export abstract class ScalePane implements SubPane {
     const visibleMin = Math.max(0, this.paneState.offset);
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
-    const topGap = Math.max(4, Math.round(subPaneHeight * 0.1));
+    const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
     const areaHeight = subPaneHeight - 2 - topGap;
     const areaTop = subPaneTop + topGap;
 

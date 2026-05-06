@@ -74,10 +74,20 @@ export class EventManager {
       this.chart.render();
     }
 
-    // If double-clicked on any sub-pane axis area, reset that pane
+    // If double-clicked on separator line, reset sub-pane height to default (20%)
     let currentTop = chartBottom;
     for (const pane of (this.chart as any).getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
+      const SEPARATOR_HIT = 6;
+      const isOverSeparator = mouseY > currentTop - SEPARATOR_HIT && mouseY < currentTop + SEPARATOR_HIT;
+      if (isOverSeparator) {
+        const opts = pane.getOptions();
+        if (opts) opts.heightPercent = 0.2;
+        this.chart.render();
+        return;
+      }
+
+      // If double-clicked on sub-pane axis area, reset zoom/scale
       const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
       const isOverAxis = mouseX > chartAreaWidth;
 
