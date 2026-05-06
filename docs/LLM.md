@@ -55,7 +55,7 @@ Returns everything an LLM needs to reason about the current chart state:
 - The current (latest) candle
 - Volume data is included on each bar if available
 
-**Note:** Volume sub-pane state (show/hide, zoom level) is not yet exposed via getContext(). This will be added in v1.1.0.
+**Note:** All active sub-panes (volume, RSI, etc.) are auto-exposed via `getContext().subPanes`. Each sub-pane reports `show`, `heightPercent`, `scale`, and `offset` through the generic SubPane interface.
 
 ### getData() / getBars() — Full Data Access
 
@@ -105,10 +105,9 @@ type ChartCommand =
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
-  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' };
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
+  | { type: 'setSubPane'; id: string; show: boolean };
 ```
-
-**Note:** Volume sub-pane is not yet controllable via execute(). Use `setOptions({ volume: { show: true/false } })` directly until v1.1.0 adds volume commands.
 
 ### Direct API Access
 
@@ -244,7 +243,7 @@ See [docs/STREAMING.md](./docs/STREAMING.md) for detailed patterns and throttlin
 | Screenshot capture | ✅ | ✅ |
 | State save/restore | ✅ | ✅ |
 | Volume sub-pane (render, tooltip, zoom) | ✅ | ✅ |
-| Volume state in getContext | ❌ v1.1.0 | — |
+| Volume state in getContext | ✅ | ✅ |
 | Series types (line, area, bar) | ❌ v1.1.0 | — |
 | Trend / volatility helpers | — | ✅ |
 | Support/resistance detection | — | ✅ |
@@ -275,6 +274,7 @@ CONTROL:
     - { type: 'zoomIn', factor?: number }
     - { type: 'zoomOut', factor?: number }
     - { type: 'setVisibleRange', from: number, to: number }
+    - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
 
@@ -300,3 +300,4 @@ EXPORT:
 - `toDataURL()` is the most expensive operation (canvas → base64) — debounce to every 500ms
 - `getBars()` returns a new array each call — internal array never exposed
 - `updateLastBarFast()` is ~10-20x faster than `updateLastBar()` for high-frequency streams
+

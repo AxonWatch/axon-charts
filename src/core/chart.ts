@@ -443,9 +443,28 @@ export class Chart {
   private ensureRightGapAndRoll(): void {
     if (!this.options.behavior.autoScroll || !this.isAutoScrolling()) return;
     const { barWidth, axisWidth, w, rightGap } = this.state;
-    if (this.dataManager.length === 0) return;
+    const totalBars = this.dataManager.length;
+    if (totalBars === 0) return;
+
+    // Compute where the right edge WOULD be for the current data length
+    const chartAreaWidth = w - axisWidth;
+    const rightEdgeOffset = chartAreaWidth - rightGap - 1 - (totalBars * barWidth);
+
+    // Compute how far the user has pushed the latest bar from the right edge
+    const userGapPx = this.state.offsetX - rightEdgeOffset;
+
+    // Shift left by one bar to make room for the new bar
     this.state.offsetX -= barWidth;
-    this.state.offsetX = clampOffsetX(this.state.offsetX, barWidth, this.dataManager.length, w, rightGap, axisWidth);
+
+    // Re-compute right edge with the new bar count
+    const newRightEdgeOffset = chartAreaWidth - rightGap - 1 - (totalBars * barWidth) - barWidth;
+
+    // Re-apply the user's gap — preserves their chosen empty space exactly
+    this.state.offsetX = newRightEdgeOffset + userGapPx;
+
+    // Only clamp LEFT (bar 0 off-screen right)
+    const maxOffsetX = chartAreaWidth - (barWidth * 2);
+    this.state.offsetX = Math.min(maxOffsetX, this.state.offsetX);
   }
 
   public render(): void {

@@ -394,6 +394,12 @@ export class EventManager {
 
   private handleMouseUp = (): void => {
     this.isDragging = false;
+
+    // After drag ends, update auto-scroll state based on where the user
+    // left the chart. Do NOT snap the latest bar back to the right edge —
+    // the user chose this position. `ensureRightGapAndRoll` handles
+    // auto-scroll forward when new data arrives.
+    this.chart.render();
     this.checkAutoScrollState();
   }
 
@@ -500,12 +506,23 @@ export class EventManager {
       if (this.chart.state.priceScale !== 1.0) {
         this.chart.state.priceOffset += mouseY - this.lastMouseY;
       }
+
+      // During active drag: only clamp LEFT (bar 0 off-screen right).
+      // The right-edge clamp is deferred to mouse-up so the user can
+      // freely place the latest bar anywhere (e.g. to create empty space
+      // on the right for text labels).
+      const maxOffsetX = chartAreaWidth - (barWidth * 2);
+      this.chart.state.offsetX = Math.min(maxOffsetX, this.chart.state.offsetX);
     }
 
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
 
-    this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+    // Only re-clamp both sides on mouse-up. During drag, the left-only
+    // clamp above is enough — don't snap the latest bar back yet.
+    if (this.dragMode !== 'chart') {
+      this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+    }
     this.checkAutoScrollState();
     this.requestRender();
     this.chart.triggerVisibleRangeChange();
@@ -573,11 +590,18 @@ export class EventManager {
   }
 
   private checkAutoScrollState(): void {
-    const { w, barWidth, axisWidth } = this.chart.state;
+    const { w, barWidth, axisWidth, offsetX } = this.chart.state;
     const dataLength = this.chart.dataManager.length;
-    const firstVisibleIdx = deriveVisibleStartIdx(this.chart.state, dataLength);
     const barsVisible = Math.ceil((w - axisWidth) / barWidth);
-    const atRightEdge = firstVisibleIdx + barsVisible >= dataLength - 8;
+
+    // Use RAW first-visible index (before clamping) to detect when the
+    // latest bar is genuinely off-screen. The clamped deriveVisibleStartIdx
+    // would say "firstVisible = dataLength-1" even when the entire data
+    // range is to the left of the viewport, making it impossible to
+    // distinguish "at right edge" from "scrolled way past it."
+    const rawFirstVisible = Math.floor(-offsetX / barWidth);
+    const latestBarVisible = rawFirstVisible < dataLength;
+    const atRightEdge = latestBarVisible && (rawFirstVisible + barsVisible >= dataLength - 8);
 
     const wasAutoScrolling = this.autoScrollEnabled;
     this.autoScrollEnabled = atRightEdge;
