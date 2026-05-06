@@ -310,9 +310,6 @@ export class Crosshair {
   }
 
   /**
-   * Format volume to human-readable string (K/M suffixes)
-   */
-  /**
    * Draw price label on Y axis
    */
   private drawPriceLabel(price: number, barIndex: number): void {

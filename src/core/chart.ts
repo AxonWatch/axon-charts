@@ -145,7 +145,7 @@ export class Chart {
   private priceFormatter: PriceFormatter;
   private priceScaleAPI: PriceScaleAPI;
   private timeScaleAPI: TimeScaleAPI;
-  private crosshairAPI: CrosshairAPI;
+  private _crosshairAPI: CrosshairAPI;
 
   // Real-time Countdown management
   private countdownRafId: number | null = null;
@@ -208,7 +208,7 @@ export class Chart {
     this.renderer = new Renderer(this);
     this.initCanvases();
     this.crosshair = new Crosshair(this);
-    this.crosshairAPI = new CrosshairAPI(this, this.crosshair);
+    this._crosshairAPI = new CrosshairAPI(this, this.crosshair);
     this.eventManager = new EventManager(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
     this.timeScaleAPI = new TimeScaleAPI(this);
@@ -803,7 +803,13 @@ export class Chart {
   }
 
   public getOptions(): Readonly<ChartOptions> { return deepClone(this.options); }
-  public resetOptions(): void { this.options = deepClone(DEFAULT_OPTIONS); this.render(); }
+  public resetOptions(): void {
+    this.options = deepClone(DEFAULT_OPTIONS);
+    this.state.reverse = false;
+    this.state.priceScale = 1.0;
+    this.state.priceOffset = 0;
+    this.render();
+  }
 
   /**
    * Start the real-time countdown timer loop
@@ -1068,6 +1074,6 @@ export class Chart {
    * Provides methods to control the crosshair overlay behavior and appearance
    */
   public crosshairAPI(): CrosshairAPI {
-    return this.crosshairAPI;
+    return this._crosshairAPI;
   }
 }

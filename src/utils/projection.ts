@@ -1,4 +1,4 @@
-import { LAYOUT, getUsableHeight } from '../core/layout.js';
+import { LAYOUT } from '../core/layout.js';
 
 /**
  * Chart state interface for projection calculations

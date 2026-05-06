@@ -1,5 +1,5 @@
 import { niceTicks, getPriceDecimals, calculateTimeStep } from '../utils/math.js';
-import { LAYOUT, getUsableHeight } from '../core/layout.js';
+import { LAYOUT } from '../core/layout.js';
 import { priceToY, yToPrice, deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
 import { IChart } from '../types/index.js';
 

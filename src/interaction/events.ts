@@ -325,7 +325,8 @@ export class EventManager {
     const centeredOffset = (chartAreaWidth / 2) - (mouseIdx * newWidth) - (newWidth / 2);
 
     this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
-    this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+    const maxOffsetX = chartAreaWidth - (this.chart.state.barWidth * 2);
+    this.chart.state.offsetX = Math.min(maxOffsetX, this.chart.state.offsetX);
 
     this.checkAutoScrollState();
     this.requestRender();
@@ -496,7 +497,8 @@ export class EventManager {
         this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
       }
 
-      this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+      const maxOffsetX_time = chartAreaWidth - (this.chart.state.barWidth * 2);
+      this.chart.state.offsetX = Math.min(maxOffsetX_time, this.chart.state.offsetX);
       this.checkAutoScrollState();
       this.requestRender();
       this.chart.triggerVisibleRangeChange();
@@ -573,7 +575,8 @@ export class EventManager {
         const naturalOffset = anchorX - (mouseIdx * newWidth) - (newWidth / 2);
         const centeredOffset = (chartAreaWidth / 2) - (mouseIdx * newWidth) - (newWidth / 2);
         this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
-        this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
+        const maxOffsetX_pinch = chartAreaWidth - (this.chart.state.barWidth * 2);
+        this.chart.state.offsetX = Math.min(maxOffsetX_pinch, this.chart.state.offsetX);
         this.lastTouchDistance = currentDistance;
         this.requestRender();
         this.chart.triggerVisibleRangeChange();

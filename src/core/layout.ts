@@ -58,9 +58,3 @@ export function getUsableHeight(height: number): number {
   return height - LAYOUT.TOP_MARGIN - LAYOUT.BOTTOM_MARGIN;
 }
 
-/**
- * Calculate usable chart width
- */
-export function getUsableWidth(width: number): number {
-  return width - LAYOUT.RIGHT_GAP;
-}
