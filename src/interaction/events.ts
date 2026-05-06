@@ -502,7 +502,8 @@ export class EventManager {
 
       const maxOffsetX_time = chartAreaWidth - (this.chart.state.barWidth * 2);
       this.chart.state.offsetX = Math.min(maxOffsetX_time, this.chart.state.offsetX);
-      this.chart.state.offsetX = Math.min(maxOffsetX_time, this.chart.state.offsetX);
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
       this.checkAutoScrollState();
       this.requestRender();
       this.chart.triggerVisibleRangeChange();
