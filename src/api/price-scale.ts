@@ -74,6 +74,24 @@ export class PriceScaleAPI {
   }
 
   /**
+   * Reverse the price axis: high prices appear at bottom, low at top.
+   * Common in crypto markets (reverse chart).
+   * @param reverse - true for inverted axis, false for normal
+   */
+  setReverse(reverse: boolean): void {
+    this.chart.state.reverse = reverse;
+    this.chart.options.priceScale.reverse = reverse;
+    this.chart.render();
+  }
+
+  /**
+   * Get current reverse state
+   */
+  getReverse(): boolean {
+    return this.chart.state.reverse ?? false;
+  }
+
+  /**
    * Apply price scale options
    * @param options - Partial price scale options to apply
    */

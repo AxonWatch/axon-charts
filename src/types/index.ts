@@ -48,6 +48,8 @@ export interface ChartOptions {
       showCountdown?: boolean;
       countdownColor?: string;
     };
+    /** Reverse price axis: false = normal (high at top), true = inverted (high at bottom) */
+    reverse?: boolean;
   };
 
   // === Time Scale ===
@@ -174,7 +176,8 @@ export type ChartCommand =
   | { type: 'fitContent' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
   | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
-  | { type: 'setSubPane'; id: string; show: boolean };
+  | { type: 'setSubPane'; id: string; show: boolean }
+  | { type: 'setReverse'; reverse: boolean };
 
 /**
  * Chart state for serialization
@@ -219,6 +222,7 @@ export interface IChart {
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
     axisWidth: number;
+    reverse: boolean;
   };
   dataManager: {
     readonly data: Bar[];

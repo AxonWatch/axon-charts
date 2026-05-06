@@ -128,6 +128,7 @@ Updates chart options at runtime using deep merge. Validates all inputs before a
 | `timeScale.minBarSpacing` / `maxBarSpacing` | Stored in options (enforced in events.ts) |
 | `priceScale.mode` | State update + render |
 | `priceScale.priceFormat` | PriceFormatter recreate + render |
+|| `priceScale.reverse` | State update + render |
 | `priceScale.currentPrice` | Countdown timer restart + render |
 | `layout.width` / `height` | Full resize |
 | `layout.background` / `textColor` / `fontSize` / `fontFamily` | Render |
@@ -163,6 +164,8 @@ chart.priceScale().setMode('linear' | 'logarithmic'): void
 chart.priceScale().getMode(): 'linear' | 'logarithmic'
 chart.priceScale().setMargins({ top: number, bottom: number }): void
 chart.priceScale().getMargins(): { top: number; bottom: number }
+chart.priceScale().setReverse(reverse: boolean): void
+chart.priceScale().getReverse(): boolean
 chart.priceScale().setOptions(options: Partial<ChartOptions['priceScale']>): void
 chart.priceScale().getOptions(): PriceScaleOptions
 ```
@@ -290,6 +293,7 @@ interface ChartOptions {
   };
 
   // === Price Scale ===
+    reverse?: boolean;             // default: false (true = inverted, high at bottom)
   priceScale?: {
     mode?: 'linear' | 'logarithmic';  // default: 'linear'
     scaleMargins?: { top?: number; bottom?: number };  // 0-1 range
@@ -442,6 +446,7 @@ chart.setOptions({ watermark: { text: 'AXON CHARTS', show: true, opacity: 0.05 }
 const context = chart.getContext();
 chart.execute({ type: 'scrollToTime', time: 1704067200000 });
 chart.execute({ type: 'setCrosshair', mode: 'none' });
+chart.execute({ type: 'setReverse', reverse: true });
 
 // Events
 chart.onCrosshairMove(({ time, price, bar }) => {

@@ -181,6 +181,12 @@ function validatePriceScale(priceScale: any, path: string = 'priceScale'): void 
   if (priceScale.currentPrice !== undefined) {
     validateCurrentPrice(priceScale.currentPrice, `${path}.currentPrice`);
   }
+
+  if (priceScale.reverse !== undefined) {
+    if (typeof priceScale.reverse !== 'boolean') {
+      throw new ValidationError(`${path}.reverse`, 'Reverse must be a boolean', priceScale.reverse);
+    }
+  }
 }
 
 function validateMargins(margins: any, path: string): void {

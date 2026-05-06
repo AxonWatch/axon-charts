@@ -447,6 +447,9 @@ export class EventManager {
     } else if (isOverTime) {
       // Only show resize cursor if dragToZoom is enabled
       this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragToZoom ? 'ew-resize' : 'default';
+    } else if (this.chart.options.crosshair.mode === 'none') {
+      // Crosshair disabled → regular cursor
+      this.chart.mainCanvas.style.cursor = 'default';
     } else {
       this.chart.mainCanvas.style.cursor = 'crosshair';
     }

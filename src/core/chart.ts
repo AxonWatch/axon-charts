@@ -39,7 +39,8 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     currentPrice: {
       showCountdown: true,
       countdownColor: 'rgba(255, 255, 255, 0.8)'
-    }
+    },
+    reverse: false
   },
   timeScale: {
     visible: true,
@@ -134,6 +135,7 @@ export class Chart {
     priceOffset: number;
     priceScaleMode: 'linear' | 'logarithmic';
     axisWidth: number;
+    reverse: boolean;
   };
 
   // Core modules
@@ -195,7 +197,8 @@ export class Chart {
       priceScaleMode: this.options.priceScale.mode,
       axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP,
       chartBottom: 0,
-      subPaneHeight: 0
+      subPaneHeight: 0,
+      reverse: this.options.priceScale.reverse ?? false
     };
 
     // 4. Initialize core modules
@@ -683,6 +686,10 @@ export class Chart {
         this.restartCountdownTimer();
         needsRender = true;
       }
+      if (normalizedPartial.priceScale.reverse !== undefined) {
+        this.state.reverse = normalizedPartial.priceScale.reverse;
+        needsRender = true;
+      }
     }
 
     // === LAYOUT ===
@@ -949,6 +956,11 @@ export class Chart {
             this.render();
           }
         }
+        break;
+      case 'setReverse':
+        this.state.reverse = command.reverse;
+        this.options.priceScale.reverse = command.reverse;
+        this.render();
         break;
       default:
         const _exhaustive: never = command;

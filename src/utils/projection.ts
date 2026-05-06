@@ -41,6 +41,11 @@ export function priceToY(price: number, state: ChartState): number {
     ratio = (price - state.priceMin) / priceRange;
   }
 
+  // Reverse: flip ratio so low prices map to top of chart
+  if (state.reverse) {
+    ratio = 1 - ratio;
+  }
+
   const baseY = chartBottom - (ratio * usableH);
   return baseY + state.priceOffset;
 }
@@ -52,7 +57,12 @@ export function yToPrice(y: number, state: ChartState): number {
   const chartBottom = state.chartBottom ?? (state.h - state.bottomMargin);
   const usableH = chartBottom - state.topMargin;
   const adjustedY = y - state.priceOffset;
-  const ratio = (chartBottom - adjustedY) / usableH;
+  let ratio = (chartBottom - adjustedY) / usableH;
+
+  // Reverse: flip ratio back so user sees correct price at cursor
+  if (state.reverse) {
+    ratio = 1 - ratio;
+  }
 
   if (state.priceScaleMode === 'logarithmic') {
     const minLog = Math.log10(Math.max(state.priceMin, 0.01));
