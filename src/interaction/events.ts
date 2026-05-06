@@ -126,12 +126,21 @@ export class EventManager {
     // Remove any existing context menu first
     this.removeContextMenu();
 
-    const container = this.chart.container;
-    const rect = container.getBoundingClientRect();
-
-    // Create menu element
     const menu = document.createElement('div');
     menu.id = 'axon-context-menu';
+
+    // Smart positioning: stay within viewport bounds
+    const menuWidth = 200;
+    const approxMenuHeight = 210;
+    let leftPos = e.clientX;
+    let topPos = e.clientY;
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    if (leftPos + menuWidth > winW) leftPos = winW - menuWidth - 10;
+    if (topPos + approxMenuHeight > winH) topPos = winH - approxMenuHeight - 10;
+    if (leftPos < 10) leftPos = 10;
+    if (topPos < 10) topPos = 10;
+
     menu.style.cssText = [
       'position: fixed',
       'z-index: 99999',
@@ -139,72 +148,58 @@ export class EventManager {
       'border: 1px solid #444',
       'border-radius: 6px',
       'padding: 4px 0',
-      'min-width: 190px',
+      'min-width: ' + menuWidth + 'px',
       'box-shadow: 0 4px 16px rgba(0,0,0,0.4)',
       'font-family: system-ui, sans-serif',
       'font-size: 13px',
-      'left: ' + e.clientX + 'px',
-      'top: ' + e.clientY + 'px'
+      'left: ' + leftPos + 'px',
+      'top: ' + topPos + 'px'
     ].join(';');
 
-    // Copy Image option
-    const copyItem = document.createElement('div');
-    copyItem.textContent = '📋 Copy Chart Image';
-    copyItem.style.cssText = [
-      'padding: 8px 16px',
-      'cursor: pointer',
-      'color: #ccc',
-      'display: flex',
-      'align-items: center',
-      'gap: 8px',
-      'white-space: nowrap'
-    ].join(';');
-    copyItem.addEventListener('mouseenter', () => { copyItem.style.background = '#333'; });
-    copyItem.addEventListener('mouseleave', () => { copyItem.style.background = 'transparent'; });
-    copyItem.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      this.copyChartToClipboard();
-      this.removeContextMenu();
-    });
+    // Helper to create menu items
+    function makeItem(text, fn) {
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.style.cssText = [
+        'padding: 8px 16px',
+        'cursor: pointer',
+        'color: #ccc',
+        'display: flex',
+        'align-items: center',
+        'gap: 8px',
+        'white-space: nowrap'
+      ].join(';');
+      el.addEventListener('mouseenter', () => { el.style.background = '#333'; });
+      el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; });
+      el.addEventListener('click', (ev2) => {
+        ev2.stopPropagation();
+        fn();
+        this.removeContextMenu();
+      });
+      return el;
+    }
+    function makeDivider() {
+      const d = document.createElement('div');
+      d.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
+      return d;
+    }
+    function makeLabel(text) {
+      const l = document.createElement('div');
+      l.textContent = text;
+      l.style.cssText = 'padding: 4px 16px 6px; font-size: 11px; color: #666; font-style: italic;';
+      return l;
+    }
 
-    // Save Image option
-    const saveItem = document.createElement('div');
-    saveItem.textContent = '💾 Save Chart Image As...';
-    saveItem.style.cssText = [
-      'padding: 8px 16px',
-      'cursor: pointer',
-      'color: #ccc',
-      'display: flex',
-      'align-items: center',
-      'gap: 8px',
-      'white-space: nowrap'
-    ].join(';');
-    saveItem.addEventListener('mouseenter', () => { saveItem.style.background = '#333'; });
-    saveItem.addEventListener('mouseleave', () => { saveItem.style.background = 'transparent'; });
-    saveItem.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      this.saveChartImage();
-      this.removeContextMenu();
-    });
+    menu.appendChild(makeItem('Copy Chart Image', () => this.copyChartToClipboard()));
+    menu.appendChild(makeItem('Save Chart Image As...', () => this.saveChartImage()));
+    menu.appendChild(makeDivider());
+    menu.appendChild(makeLabel('Export full chart with background, grid, and axes'));
 
-    // Divider
-    const divider = document.createElement('div');
-    divider.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
+    // Fullscreen toggle
+    menu.appendChild(makeDivider());
+    const isFull = !!document.fullscreenElement;
+    menu.appendChild(makeItem(isFull ? 'Exit Fullscreen' : 'Fullscreen', () => this.toggleFullscreen()));
 
-    // Separator label
-    const sepLabel = document.createElement('div');
-    sepLabel.textContent = 'Export full chart with background, grid, and axes';
-    sepLabel.style.cssText = [
-      'padding: 4px 16px 6px',
-      'font-size: 11px',
-      'color: #666',
-      'font-style: italic'
-    ].join(';');
-
-    menu.appendChild(copyItem);
-    menu.appendChild(saveItem);
-    menu.appendChild(divider);
-    menu.appendChild(sepLabel);
     document.body.appendChild(menu);
 
     // Track for cleanup
@@ -239,6 +234,19 @@ export class EventManager {
   /**
    * Copy chart image to clipboard
    */
+  private toggleFullscreen(): void {
+    if (!document.fullscreenElement) {
+      const el = this.chart.container;
+      if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }
+
   private copyChartToClipboard(): void {
     try {
       const chart = (this.chart as any);
