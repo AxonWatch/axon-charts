@@ -26,7 +26,10 @@ import { calculateTimeStep } from '../utils/math.js';
  *   getTooltipLabel() – e.g. "Volume:" or "RSI:"
  */
 export abstract class ScalePane implements SubPane {
-  readonly separatorThreshold = 6; // pixels for separator hit-testing
+  readonly separatorThreshold = 6;
+
+  /** Set by events.ts on mousemove — changes separator highlight color */
+  separatorHovered: boolean = false; // pixels for separator hit-testing
 
   // Internal scale state (zoom/pan)
   protected paneState = {
@@ -99,8 +102,8 @@ export abstract class ScalePane implements SubPane {
     ctx.fillRect(w - axisWidth, subPaneTop, axisWidth, subPaneHeight);
 
     // Separator line (full width including axis column)
-    ctx.strokeStyle = '#555';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = this.separatorHovered ? '#4a9eff' : '#555';
+    ctx.lineWidth = this.separatorHovered ? 2 : 1;
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.moveTo(0, subPaneTop);

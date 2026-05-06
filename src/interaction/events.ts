@@ -12,6 +12,7 @@ export class EventManager {
   private lastMouseY: number = 0;
   private lastTouchDistance: number = 0;
   private autoScrollEnabled: boolean = true;
+  private _separatorWasHovered: boolean = false;
   private contextMenuActive: boolean = false;
   private _contextMenu: HTMLDivElement | undefined;
   private _contextMenuDismiss: ((e: MouseEvent) => void) | undefined;
@@ -53,6 +54,7 @@ export class EventManager {
     mainCanvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
     mainCanvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
     mainCanvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+    mainCanvas.addEventListener('mouseleave', this.handleMouseLeave);
   }
 
   /**
@@ -434,9 +436,14 @@ export class EventManager {
     const SEPARATOR_HIT_THRESHOLD = 6;
     const isNearSeparator = isOverSubPane && Math.abs(mouseY - chartBottomEdge) < SEPARATOR_HIT_THRESHOLD;
 
-    // Check if over any sub-pane axis
+    // Check if over any sub-pane axis, and update separator hover state
     let isOverSubPaneAxis = false;
+    let separatorHovered = false;
     let currentTop = chartBottomEdge;
+    // Reset all pane separator hover states before checking
+    for (const pane of (this.chart as any).getActiveSubPanes()) {
+      pane.separatorHovered = false;
+    }
     for (const pane of (this.chart as any).getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
       const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
@@ -444,10 +451,23 @@ export class EventManager {
 
       if (isOverThisPane && isOverAxis) {
         isOverSubPaneAxis = true;
-        break;
       }
 
+      // Check if mouse is near the separator line (6px hit zone above the pane)
+      const SEP_HIT = 6;
+      if (Math.abs(mouseY - currentTop) < SEP_HIT && mouseY >= 0) {
+        pane.separatorHovered = true;
+      }
+
+      if (isOverThisPane && isOverAxis) break;
+
       currentTop += subPaneHeight;
+    }
+
+    // Trigger render when separator hover state changes (highlight on/off)
+    if (separatorHovered !== this._separatorWasHovered) {
+      this._separatorWasHovered = separatorHovered;
+      this.requestRender();
     }
 
     // Update cursor based on enabled behaviors
@@ -546,6 +566,17 @@ export class EventManager {
     this.checkAutoScrollState();
     this.requestRender();
     this.chart.triggerVisibleRangeChange();
+  }
+
+  private handleMouseLeave = (): void => {
+    // Reset separator hover state when mouse leaves chart
+    if (this._separatorWasHovered) {
+      this._separatorWasHovered = false;
+      for (const pane of (this.chart as any).getActiveSubPanes()) {
+        pane.separatorHovered = false;
+      }
+      this.requestRender();
+    }
   }
 
   private handleTouchStart = (e: TouchEvent): void => {
@@ -653,6 +684,7 @@ export class EventManager {
     mainCanvas.removeEventListener('contextmenu', this.handleContextMenu);
     window.removeEventListener('mouseup', this.handleMouseUp);
     window.removeEventListener('mousemove', this.handleMouseMove);
+    mainCanvas.removeEventListener('mouseleave', this.handleMouseLeave);
     mainCanvas.removeEventListener('touchstart', this.handleTouchStart);
     mainCanvas.removeEventListener('touchmove', this.handleTouchMove);
     mainCanvas.removeEventListener('touchend', this.handleTouchEnd);
