@@ -314,15 +314,18 @@ export class EventManager {
 
     if (newWidth < LAYOUT.MIN_BAR_WIDTH || newWidth > maxBarWidth) return;
 
-    const mouseIdx = isTimeAxis ? this.chart.dataManager.length - 1 : xToIndex(mouseX, this.chart.state);
-    const anchorX = isTimeAxis ? indexToX(this.chart.dataManager.length - 1, this.chart.state) : mouseX;
+    // Use raw unclamped index so zoom stays smooth when mouse is in empty gap.
+    // For naturalOffset: keep pixel under mouse fixed (raw index - smooth across gaps).
+    // For centeredOffset: use clamped index so at max zoom the edge candle centers.
+    const rawMouseIdx = isTimeAxis ? this.chart.dataManager.length - 1 : xToIndex(mouseX, this.chart.state);
+    const clampedMouseIdx = Math.max(0, Math.min(rawMouseIdx, this.chart.dataManager.length - 1));
 
     this.chart.state.barWidth = newWidth;
 
     const zoomStart = 50; 
     const weight = Math.max(0, (newWidth - zoomStart) / Math.max(1, maxBarWidth - zoomStart));
-    const naturalOffset = anchorX - (mouseIdx * newWidth) - (newWidth / 2);
-    const centeredOffset = (chartAreaWidth / 2) - (mouseIdx * newWidth) - (newWidth / 2);
+    const naturalOffset = mouseX - (rawMouseIdx * newWidth) - (newWidth / 2);
+    const centeredOffset = (chartAreaWidth / 2) - (clampedMouseIdx * newWidth) - (newWidth / 2);
 
     this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
     const maxOffsetX = chartAreaWidth - (this.chart.state.barWidth * 2);
@@ -479,11 +482,11 @@ export class EventManager {
       // Guard: Check if drag-to-zoom is disabled
       if (!this.chart.options.behavior.dragToZoom) return;
 
-      const deltaX = mouseX - this.lastMouseX;
-      const factor = Math.pow(LAYOUT.ZOOM_FACTOR_IN, -deltaX / LAYOUT.ZOOM_SENSITIVITY);
-      const oldWidth = this.chart.state.barWidth;
+            const deltaX = mouseX - this.lastMouseX;
       const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
-      const newWidth = oldWidth * factor;
+      // Linear additive: symmetric zoom in/out, instant direction reversal
+      const dragSpeed = 0.15;
+      const newWidth = this.chart.state.barWidth - deltaX * dragSpeed;
 
       if (newWidth >= LAYOUT.MIN_BAR_WIDTH && newWidth <= maxBarWidth) {
         const lastIdx = this.chart.dataManager.length - 1;
@@ -498,6 +501,7 @@ export class EventManager {
       }
 
       const maxOffsetX_time = chartAreaWidth - (this.chart.state.barWidth * 2);
+      this.chart.state.offsetX = Math.min(maxOffsetX_time, this.chart.state.offsetX);
       this.chart.state.offsetX = Math.min(maxOffsetX_time, this.chart.state.offsetX);
       this.checkAutoScrollState();
       this.requestRender();
@@ -566,14 +570,14 @@ export class EventManager {
         const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const rect = this.chart.mainCanvas.getBoundingClientRect();
         const screenX = centerX - rect.left;
-        const mouseIdx = xToIndex(screenX, this.chart.state);
-        const anchorX = screenX;
+        const rawMouseIdx = xToIndex(screenX, this.chart.state);
+        const clampedMouseIdx = Math.max(0, Math.min(rawMouseIdx, this.chart.dataManager.length - 1));
 
         this.chart.state.barWidth = newWidth;
         const zoomStart = 50;
         const weight = Math.max(0, (newWidth - zoomStart) / Math.max(1, maxBarWidth - zoomStart));
-        const naturalOffset = anchorX - (mouseIdx * newWidth) - (newWidth / 2);
-        const centeredOffset = (chartAreaWidth / 2) - (mouseIdx * newWidth) - (newWidth / 2);
+        const naturalOffset = screenX - (rawMouseIdx * newWidth) - (newWidth / 2);
+        const centeredOffset = (chartAreaWidth / 2) - (clampedMouseIdx * newWidth) - (newWidth / 2);
         this.chart.state.offsetX = (naturalOffset * (1 - weight)) + (centeredOffset * weight);
         const maxOffsetX_pinch = chartAreaWidth - (this.chart.state.barWidth * 2);
         this.chart.state.offsetX = Math.min(maxOffsetX_pinch, this.chart.state.offsetX);
