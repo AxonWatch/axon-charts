@@ -71,7 +71,12 @@ export interface ChartOptions {
     showTooltip?: boolean;
     vertLine?: { color?: string; width?: number; style?: 'solid' | 'dashed' };
     horzLine?: { color?: string; width?: number; style?: 'solid' | 'dashed' };
-    rightClickMenu?: boolean;
+  };
+
+  // === Right-Click Context Menu ===
+  menu?: {
+    /** Master toggle for the right-click context menu. Default: true */
+    enabled?: boolean;
   };
 
   // === Behavior ===

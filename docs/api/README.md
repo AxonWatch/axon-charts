@@ -321,9 +321,13 @@ interface ChartOptions {
     mode?: 'normal' | 'magnet' | 'none';  // default: 'magnet'
     showLabels?: boolean;           // default: true
     showTooltip?: boolean;          // default: true
-    rightClickMenu?: boolean;       // default: true
     vertLine?: { color?, width?, style? };
     horzLine?: { color?, width?, style? };
+  };
+
+  // === Right-Click Context Menu ===
+  menu?: {
+    enabled?: boolean;              // default: true
   };
 
   // === Behavior ===

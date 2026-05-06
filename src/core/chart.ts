@@ -58,7 +58,9 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     showTooltip: true,
     vertLine: { color: '#555555', width: 1, style: 'dashed' },
     horzLine: { color: '#555555', width: 1, style: 'dashed' },
-    rightClickMenu: true
+  },
+  menu: {
+    enabled: true
   },
   behavior: {
     dragToZoom: true,

@@ -83,6 +83,12 @@ export interface ChartOptions {
         };
         rightClickMenu?: boolean;
     };
+
+    // === Right-Click Context Menu ===
+    menu?: {
+        /** Master toggle for the right-click context menu. Default: true */
+        enabled?: boolean;
+    };
     behavior?: {
         dragToZoom?: boolean;
         scrollToZoom?: boolean;

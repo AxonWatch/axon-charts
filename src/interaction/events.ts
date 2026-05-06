@@ -120,7 +120,7 @@ export class EventManager {
     e.preventDefault();
 
     // Check if right-click menu is disabled
-    if (!this.chart.options.crosshair.rightClickMenu) {
+    if (!this.chart.options.menu.enabled) {
       return;
     }
 
@@ -184,20 +184,55 @@ export class EventManager {
       d.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
       return d;
     }
-    const makeLabel = (text) => {
-      const l = document.createElement('div');
-      l.textContent = text;
-      l.style.cssText = 'padding: 4px 16px 6px; font-size: 11px; color: #666; font-style: italic;';
-      return l;
-    }
 
     menu.appendChild(makeItem('Copy Chart Image', () => this.copyChartToClipboard()));
     menu.appendChild(makeItem('Save Chart Image As...', () => this.saveChartImage()));
     menu.appendChild(makeDivider());
-    menu.appendChild(makeLabel('Export full chart with background, grid, and axes'));
+
+    const opts = this.chart.options;
+
+    // Toggle view states using setOptions — menu auto-updates on re-open
+    const makeToggle = (text, checked, partial) => {
+      const el = document.createElement('div');
+      el.textContent = (checked ? '✓ ' : '  ') + text;
+      el.style.cssText = [
+        'padding: 8px 16px',
+        'cursor: pointer',
+        'color: #ccc',
+        'display: flex',
+        'align-items: center',
+        'gap: 8px',
+        'white-space: nowrap',
+        'font-family: monospace'
+      ].join(';');
+      el.addEventListener('mouseenter', () => { el.style.background = '#333'; });
+      el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; });
+      el.addEventListener('click', (ev2) => {
+        ev2.stopPropagation();
+        this.removeContextMenu();
+        this.chart.setOptions(partial);
+      });
+      return el;
+    };
+
+    menu.appendChild(makeToggle('Grid', opts.grid.show, { grid: { show: !opts.grid.show } }));
+    menu.appendChild(makeToggle('Volume', opts.volume.show, { volume: { show: !opts.volume.show } }));
+    menu.appendChild(makeToggle('Crosshair', opts.crosshair.mode !== 'none', { crosshair: { mode: opts.crosshair.mode !== 'none' ? 'none' : 'magnet' } }));
+    menu.appendChild(makeToggle('Market Header', opts.market.show, { market: { show: !opts.market.show } }));
+    menu.appendChild(makeToggle('Watermark', opts.watermark.show, { watermark: { show: !opts.watermark.show } }));
+    menu.appendChild(makeDivider());
+    menu.appendChild(makeItem('Fit Content', () => {
+      this.chart.timeScale().fitContent();
+    }));
+    menu.appendChild(makeItem('Reset Price Scale', () => {
+      this.chart.state.priceScale = 1.0;
+      this.chart.state.priceOffset = 0;
+      this.chart.render();
+    }));
+    menu.appendChild(makeToggle('Reverse Price Scale', opts.priceScale.reverse, { priceScale: { reverse: !opts.priceScale.reverse } }));
+    menu.appendChild(makeDivider());
 
     // Fullscreen toggle
-    menu.appendChild(makeDivider());
     const isFull = !!document.fullscreenElement;
     menu.appendChild(makeItem(isFull ? 'Exit Fullscreen' : 'Fullscreen', () => {
       this.removeContextMenu();
