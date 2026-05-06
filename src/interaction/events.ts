@@ -55,6 +55,7 @@ export class EventManager {
     mainCanvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
     mainCanvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
     mainCanvas.addEventListener('mouseleave', this.handleMouseLeave);
+    document.addEventListener('fullscreenchange', this.handleFullscreenChange);
   }
 
   /**
@@ -157,7 +158,7 @@ export class EventManager {
     ].join(';');
 
     // Helper to create menu items
-    function makeItem(text, fn) {
+    const makeItem = (text, fn) => {
       const el = document.createElement('div');
       el.textContent = text;
       el.style.cssText = [
@@ -178,12 +179,12 @@ export class EventManager {
       });
       return el;
     }
-    function makeDivider() {
+    const makeDivider = () => {
       const d = document.createElement('div');
       d.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
       return d;
     }
-    function makeLabel(text) {
+    const makeLabel = (text) => {
       const l = document.createElement('div');
       l.textContent = text;
       l.style.cssText = 'padding: 4px 16px 6px; font-size: 11px; color: #666; font-style: italic;';
@@ -198,7 +199,10 @@ export class EventManager {
     // Fullscreen toggle
     menu.appendChild(makeDivider());
     const isFull = !!document.fullscreenElement;
-    menu.appendChild(makeItem(isFull ? 'Exit Fullscreen' : 'Fullscreen', () => this.toggleFullscreen()));
+    menu.appendChild(makeItem(isFull ? 'Exit Fullscreen' : 'Fullscreen', () => {
+      this.removeContextMenu();
+      this.toggleFullscreen();
+    }));
 
     document.body.appendChild(menu);
 
@@ -568,12 +572,21 @@ export class EventManager {
 
     // Only re-clamp both sides on mouse-up. During drag, the left-only
     // clamp above is enough — don't snap the latest bar back yet.
-    if (this.dragMode !== 'chart') {
+    if (this.dragMode !== 'chart' && this.dragMode !== 'subPane' && this.dragMode !== 'separator') {
       this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
     }
     this.checkAutoScrollState();
     this.requestRender();
     this.chart.triggerVisibleRangeChange();
+  }
+
+  private handleFullscreenChange = (): void => {
+    this.removeContextMenu();
+    this._separatorWasHovered = false;
+    for (const pane of (this.chart as any).getActiveSubPanes()) {
+      pane.separatorHovered = false;
+    }
+    this.chart.render();
   }
 
   private handleMouseLeave = (): void => {
@@ -696,5 +709,6 @@ export class EventManager {
     mainCanvas.removeEventListener('touchstart', this.handleTouchStart);
     mainCanvas.removeEventListener('touchmove', this.handleTouchMove);
     mainCanvas.removeEventListener('touchend', this.handleTouchEnd);
+    document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
   }
 }
