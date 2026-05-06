@@ -204,7 +204,8 @@ export class EventManager {
       this.toggleFullscreen();
     }));
 
-    document.body.appendChild(menu);
+    // Append to container (not document.body) so menu is visible in fullscreen mode
+    this.chart.container.appendChild(menu);
 
     // Track for cleanup
     this._contextMenu = menu;
