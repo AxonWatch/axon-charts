@@ -4,7 +4,7 @@
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](package.json)
-[![Bundle Size](https://img.shields.io/badge/bundle%20size-17.6%20KB-brightgreen.svg)](dist/chart.js)
+[![Bundle Size](https://img.shields.io/badge/bundle%20size-19.4%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 
@@ -12,8 +12,8 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 
 - ⚡ **Performance** - <8ms first render, <0.2ms tick updates
 - 🤖 **AI-First** - Native LLM integration with structured context export
-- 📦 **Lightweight** - Only 17.6KB gzipped (zero external dependencies)
-- 🎨 **Customizable** - Comprehensive configuration API with 82+ options
+- 📦 **Lightweight** - Only 19.4KB gzipped (zero external dependencies)
+- 🎨 **Customizable** - Comprehensive configuration API with 72+ options
 - 🔒 **Type-Safe** - Full TypeScript support
 
 ## Features
@@ -21,7 +21,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 ### Core Charting
 - ✅ Candlestick charts with OHLCV data
 - ✅ Volume histogram sub-pane with independent Y-axis
-- ✅ Line, area, bar series types (planned for v1.1.0)
+- 🚧 Line, area, bar series types (v1.1.0 in progress)
 - ✅ Real-time updates with sub-millisecond rendering
 - ✅ Smooth pan and zoom (mouse + touch)
 - ✅ Multiple price scales (linear/logarithmic)
@@ -31,7 +31,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 
 ### Developer Experience
 - ✅ Clean, intuitive API
-- ✅ Comprehensive configuration system (82 options across 12 categories)
+- ✅ Comprehensive configuration system (72 options across 13 categories)
 - ✅ Component APIs (priceScale, timeScale, crosshair)
 - ✅ Runtime option updates with validation
 - ✅ Draggable volume sub-pane separator
@@ -175,7 +175,7 @@ interface Bar {
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Minified bundle | <25 KB gzipped | **17.6 KB gzipped** ✅ |
+| Minified bundle | <25 KB gzipped | **19.4 KB gzipped** ✅ |
 | First render (500 bars) | <16ms | ~8ms ✅ |
 | Live tick update | <2ms | **<0.2ms** 🚀 |
 | Mousemove overlay | <1ms | <0.3ms ✅ |
