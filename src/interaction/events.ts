@@ -130,9 +130,11 @@ export class EventManager {
     const menu = document.createElement('div');
     menu.id = 'axon-context-menu';
 
+    const opts = this.chart.options;
+
     // Smart positioning: stay within viewport bounds
     const menuWidth = 200;
-    const approxMenuHeight = 210;
+    const approxMenuHeight = Math.max(210, (opts.menu.items?.length || 11) * 30 + 40);
     let leftPos = e.clientX;
     let topPos = e.clientY;
     const winW = window.innerWidth;
@@ -150,6 +152,8 @@ export class EventManager {
       'border-radius: 6px',
       'padding: 4px 0',
       'min-width: ' + menuWidth + 'px',
+      'max-height: ' + Math.min(approxMenuHeight, winH - 40) + 'px',
+      'overflow-y: auto',
       'box-shadow: 0 4px 16px rgba(0,0,0,0.4)',
       'font-family: system-ui, sans-serif',
       'font-size: 13px',
@@ -157,8 +161,6 @@ export class EventManager {
       'top: ' + topPos + 'px'
     ].join(';');
 
-
-    const opts = this.chart.options;
 
     // Build menu from items list if provided, otherwise use defaults
     const items = opts.menu.items;
