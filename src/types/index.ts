@@ -77,6 +77,11 @@ export interface ChartOptions {
   menu?: {
     /** Master toggle for the right-click context menu. Default: true */
     enabled?: boolean;
+    /** Array of item IDs to show in the menu, in order.
+     *  Available IDs: 'copy', 'save', 'grid', 'volume', 'crosshair', 'market',
+     *  'watermark', 'fit-content', 'reset-price', 'reverse', 'fullscreen'
+     *  Omit or set to null/undefined to show all defaults. */
+    items?: string[];
   };
 
   // === Behavior ===

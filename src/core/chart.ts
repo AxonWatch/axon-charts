@@ -60,7 +60,8 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     horzLine: { color: '#555555', width: 1, style: 'dashed' },
   },
   menu: {
-    enabled: true
+    enabled: true,
+    items: null
   },
   behavior: {
     dragToZoom: true,

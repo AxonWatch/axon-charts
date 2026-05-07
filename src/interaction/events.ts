@@ -157,41 +157,35 @@ export class EventManager {
       'top: ' + topPos + 'px'
     ].join(';');
 
-    // Helper to create menu items
-    const makeItem = (text, fn) => {
-      const el = document.createElement('div');
-      el.textContent = text;
-      el.style.cssText = [
-        'padding: 8px 16px',
-        'cursor: pointer',
-        'color: #ccc',
-        'display: flex',
-        'align-items: center',
-        'gap: 8px',
-        'white-space: nowrap'
-      ].join(';');
-      el.addEventListener('mouseenter', () => { el.style.background = '#333'; });
-      el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; });
-      el.addEventListener('click', (ev2) => {
-        ev2.stopPropagation();
-        fn();
-        this.removeContextMenu();
-      });
-      return el;
-    }
-    const makeDivider = () => {
-      const d = document.createElement('div');
-      d.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
-      return d;
-    }
-
-    menu.appendChild(makeItem('Copy Chart Image', () => this.copyChartToClipboard()));
-    menu.appendChild(makeItem('Save Chart Image As...', () => this.saveChartImage()));
-    menu.appendChild(makeDivider());
 
     const opts = this.chart.options;
 
-    // Toggle view states using setOptions — menu auto-updates on re-open
+    // Build menu from items list if provided, otherwise use defaults
+    const items = opts.menu.items;
+
+    // Item definitions: [id, type, label, action]
+    const itemDefs = {
+      copy: ['item', 'Copy Chart Image', () => this.copyChartToClipboard()],
+      save: ['item', 'Save Chart Image As...', () => this.saveChartImage()],
+      grid: ['toggle', 'Grid', opts.grid.show, { grid: { show: !opts.grid.show } }],
+      volume: ['toggle', 'Volume', opts.volume.show, { volume: { show: !opts.volume.show } }],
+      crosshair: ['toggle', 'Crosshair', opts.crosshair.mode !== 'none', { crosshair: { mode: opts.crosshair.mode !== 'none' ? 'none' : 'magnet' } }],
+      market: ['toggle', 'Market Header', opts.market.show, { market: { show: !opts.market.show } }],
+      watermark: ['toggle', 'Watermark', opts.watermark.show, { watermark: { show: !opts.watermark.show } }],
+      'fit-content': ['item', 'Fit Content', () => this.chart.timeScale().fitContent()],
+      'reset-price': ['item', 'Reset Price Scale', () => { this.chart.state.priceScale = 1.0; this.chart.state.priceOffset = 0; this.chart.render(); }],
+      reverse: ['toggle', 'Reverse Price Scale', opts.priceScale.reverse, { priceScale: { reverse: !opts.priceScale.reverse } }],
+      fullscreen: ['item', document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen', () => {
+        this.removeContextMenu();
+        this.toggleFullscreen();
+      }],
+    };
+
+    // Determine order: use items list if set, otherwise default order
+    const orderedIds = Array.isArray(items) && items.length > 0
+      ? items
+      : ['copy', 'save', 'divider1', 'grid', 'volume', 'crosshair', 'market', 'watermark', 'divider2', 'fit-content', 'reset-price', 'reverse', 'divider3', 'fullscreen'];
+
     const makeToggle = (text, checked, partial) => {
       const el = document.createElement('div');
       el.textContent = (checked ? '✓ ' : '  ') + text;
@@ -214,30 +208,47 @@ export class EventManager {
       });
       return el;
     };
+    const makeItem = (text, fn) => {
+      const el = document.createElement('div');
+      el.textContent = text;
+      el.style.cssText = [
+        'padding: 8px 16px',
+        'cursor: pointer',
+        'color: #ccc',
+        'display: flex',
+        'align-items: center',
+        'gap: 8px',
+        'white-space: nowrap'
+      ].join(';');
+      el.addEventListener('mouseenter', () => { el.style.background = '#333'; });
+      el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; });
+      el.addEventListener('click', (ev2) => {
+        ev2.stopPropagation();
+        fn();
+        this.removeContextMenu();
+      });
+      return el;
+    };
+    const makeDivider = () => {
+      const d = document.createElement('div');
+      d.style.cssText = 'height: 1px; background: #333; margin: 4px 0;';
+      return d;
+    };
 
-    menu.appendChild(makeToggle('Grid', opts.grid.show, { grid: { show: !opts.grid.show } }));
-    menu.appendChild(makeToggle('Volume', opts.volume.show, { volume: { show: !opts.volume.show } }));
-    menu.appendChild(makeToggle('Crosshair', opts.crosshair.mode !== 'none', { crosshair: { mode: opts.crosshair.mode !== 'none' ? 'none' : 'magnet' } }));
-    menu.appendChild(makeToggle('Market Header', opts.market.show, { market: { show: !opts.market.show } }));
-    menu.appendChild(makeToggle('Watermark', opts.watermark.show, { watermark: { show: !opts.watermark.show } }));
-    menu.appendChild(makeDivider());
-    menu.appendChild(makeItem('Fit Content', () => {
-      this.chart.timeScale().fitContent();
-    }));
-    menu.appendChild(makeItem('Reset Price Scale', () => {
-      this.chart.state.priceScale = 1.0;
-      this.chart.state.priceOffset = 0;
-      this.chart.render();
-    }));
-    menu.appendChild(makeToggle('Reverse Price Scale', opts.priceScale.reverse, { priceScale: { reverse: !opts.priceScale.reverse } }));
-    menu.appendChild(makeDivider());
-
-    // Fullscreen toggle
-    const isFull = !!document.fullscreenElement;
-    menu.appendChild(makeItem(isFull ? 'Exit Fullscreen' : 'Fullscreen', () => {
-      this.removeContextMenu();
-      this.toggleFullscreen();
-    }));
+    // Build the menu from ordered IDs
+    for (const id of orderedIds) {
+      if (id.startsWith('divider')) {
+        menu.appendChild(makeDivider());
+        continue;
+      }
+      const def = itemDefs[id];
+      if (!def) continue;
+      if (def[0] === 'item') {
+        menu.appendChild(makeItem(def[1], def[2]));
+      } else if (def[0] === 'toggle') {
+        menu.appendChild(makeToggle(def[1], def[2], def[3]));
+      }
+    }
 
     // Append to container (not document.body) so menu is visible in fullscreen mode
     this.chart.container.appendChild(menu);
