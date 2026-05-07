@@ -188,7 +188,7 @@ export class EventManager {
 
     const makeToggle = (text, checked, partial) => {
       const el = document.createElement('div');
-      el.textContent = (checked ? '✓ ' : '  ') + text;
+      el.textContent = text;
       el.style.cssText = [
         'padding: 8px 16px',
         'cursor: pointer',
@@ -197,7 +197,7 @@ export class EventManager {
         'align-items: center',
         'gap: 8px',
         'white-space: nowrap',
-        'font-family: monospace'
+        'font-weight: ' + (checked ? '700' : '400')
       ].join(';');
       el.addEventListener('mouseenter', () => { el.style.background = '#333'; });
       el.addEventListener('mouseleave', () => { el.style.background = 'transparent'; });
