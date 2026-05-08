@@ -166,6 +166,31 @@ export class PriceFormatter {
   /**
    * Check if two timestamps fall on different calendar days in a given timezone.
    */
+  /**
+   * Smart percentage formatting with adaptive display.
+   *
+   * - < 1000%  : standard percentage (±2.45%, ±245.8%)
+   * - 1K-9.9K  : compact K% suffix (±8.5K%)
+   * - 10K+     : multiplier format (±805.0x)
+   */
+  static formatPercentage(value: number): string {
+    if (!isFinite(value)) return '—';
+    const abs = Math.abs(value);
+    const prefix = value >= 0 ? '+' : '';
+
+    if (abs >= 10000) {
+      // Extreme moves → × multiplier (e.g. +805.0×)
+      return prefix + (value / 100).toFixed(1) + '×';
+    }
+
+    // Standard: Intl.NumberFormat with commas (e.g. +2.45%, +8,450%)
+    const formatted = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: abs < 10 ? 2 : 0,
+      maximumFractionDigits: abs < 10 ? 2 : 0
+    }).format(abs);
+    return prefix + formatted + '%';
+  }
+
   static isDifferentDay(ts1: number, ts2: number, timezone?: string): boolean {
     const d1 = new Date(ts1);
     const d2 = new Date(ts2);

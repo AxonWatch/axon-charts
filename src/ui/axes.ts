@@ -59,7 +59,7 @@ export class Axes {
       let label = this.chart.priceFormatter.formatPrice(price);
       // In percentage mode, display with +/- prefix and % suffix
       if (this.chart.state.priceScaleMode === 'percentage') {
-        label = (price >= 0 ? '+' : '') + price.toFixed(2) + '%';
+          label = PriceFormatter.formatPercentage(price);
       }
       ctx.fillText(label, w - LAYOUT.LABEL_OFFSET, y);
     });

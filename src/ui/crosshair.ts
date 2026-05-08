@@ -354,7 +354,11 @@ export class Crosshair {
       this.overlayCtx.textAlign = 'right';
       this.overlayCtx.textBaseline = 'middle';
 
-      const formattedPrice = this.chart.priceFormatter.formatPrice(price);
+      let formattedPrice = this.chart.priceFormatter.formatPrice(price);
+      if (this.chart.state.priceScaleMode === 'percentage' && this.chart.state.referencePrice > 0) {
+        const pct = ((price - this.chart.state.referencePrice) / this.chart.state.referencePrice) * 100;
+          formattedPrice = PriceFormatter.formatPercentage(pct);
+      }
       this.overlayCtx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, this.y);
     }
   }

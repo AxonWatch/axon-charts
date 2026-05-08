@@ -3,6 +3,7 @@ import { priceToY, indexToX, deriveVisibleStartIdx } from '../utils/projection.j
 import { calculateTimeStep } from '../utils/math.js';
 import { IChart, Bar } from '../types/index.js';
 import { Axes } from '../ui/axes.js';
+import { PriceFormatter } from '../utils/formatter.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -278,7 +279,7 @@ export class Renderer {
     let formattedPrice = this.chart.priceFormatter.formatPrice(currentPrice);
     if (this.chart.state.priceScaleMode === 'percentage' && this.chart.state.referencePrice > 0) {
       const pct = ((currentPrice - this.chart.state.referencePrice) / this.chart.state.referencePrice) * 100;
-      formattedPrice = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+      formattedPrice = PriceFormatter.formatPercentage(pct);
     }
     
     if (showCountdown) {
