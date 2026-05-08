@@ -495,7 +495,7 @@ export class EventManager {
     const isOverTime = mouseY > h - bottomMargin;
     const isOverSubPane = mouseY > chartBottomEdge && mouseY <= h - bottomMargin;
     const SEPARATOR_HIT_THRESHOLD = 6;
-    const isNearSeparator = isOverSubPane && Math.abs(mouseY - chartBottomEdge) < SEPARATOR_HIT_THRESHOLD;
+    const isNearSeparator = Math.abs(mouseY - chartBottomEdge) < SEPARATOR_HIT_THRESHOLD;
 
     // Check if over any sub-pane axis, and update separator hover state
     let isOverSubPaneAxis = false;
