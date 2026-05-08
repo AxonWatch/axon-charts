@@ -27,11 +27,29 @@ export class Axes {
     const bottomPrice = yToPrice(clipBottom, this.chart.state);
 
     // 2. Feed THESE dynamic prices into the niceTicks algorithm
-    const ticks = niceTicks(
+    let ticks = niceTicks(
       Math.min(topPrice, bottomPrice),
       Math.max(topPrice, bottomPrice),
       10
     );
+
+    // === ALWAYS SHOW 0% LABEL IN PERCENTAGE MODE ===
+    // Inject the reference price if not already in the tick array
+    if (this.chart.state.priceScaleMode === 'percentage' &&
+        this.chart.state.referencePrice > 0) {
+      const refPrice = this.chart.state.referencePrice;
+      // Check with floating-point tolerance if already present
+      const refIncluded = ticks.some(tick => Math.abs(tick - refPrice) < 0.01);
+      if (!refIncluded) {
+        const refY = priceToY(refPrice, this.chart.state);
+        const clipBottom = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
+        // Only inject if reference is within or slightly outside visible range
+        if (refY >= -50 && refY <= clipBottom + 50) {
+          ticks.push(refPrice);
+          ticks.sort((a, b) => a - b);
+        }
+      }
+    }
 
     // Get live price to avoid overlapping labels (only if price line is visible)
     const data = this.chart.dataManager.data;
@@ -57,9 +75,15 @@ export class Axes {
 
       // Use Professional Formatter
       let label = this.chart.priceFormatter.formatPrice(price);
-      // In percentage mode, display with +/- prefix and % suffix
+      // In percentage mode, display as +/-% deviation from reference price
       if (this.chart.state.priceScaleMode === 'percentage') {
-        label = PriceFormatter.formatPercentage(price);
+        const ref = this.chart.state.referencePrice;
+        if (ref > 0) {
+          const pct = ((price - ref) / ref) * 100;
+          label = PriceFormatter.formatPercentage(pct);
+        } else {
+          label = PriceFormatter.formatPercentage(price);
+        }
       }
       ctx.fillText(label, w - LAYOUT.LABEL_OFFSET, y);
     });

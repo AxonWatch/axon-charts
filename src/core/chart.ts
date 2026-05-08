@@ -442,7 +442,7 @@ export class Chart {
     if (this.options.priceScale.mode === 'percentage') {
       const firstVisibleBar = this.dataManager.data[firstVisibleIdx];
       if (firstVisibleBar) {
-        this.state.referencePrice = firstVisibleBar.close;
+        this.state.referencePrice = firstVisibleBar.open;
         const ref = this.state.referencePrice;
         if (ref > 0) {
           this.state.priceMin = ((mid - halfRange - ref) / ref) * 100;

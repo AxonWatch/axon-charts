@@ -187,6 +187,9 @@ export class Renderer {
     this.axes.drawPriceAxis(ctx);
     this.drawCurrentPriceLine(ctx);
     this.drawWatermark(ctx);
+
+    // Draw 0% reference line in percentage mode
+    this.drawPercentageReferenceLine(ctx);
   }
 
   drawViewport(mainCtx: CanvasRenderingContext2D): void {
@@ -385,6 +388,36 @@ export class Renderer {
     }
 
     ctx.restore();
+  }
+
+  /**
+   * Draw horizontal line at 0% reference level in percentage mode.
+   * Anchors the visual where percentage deviation calculations are relative to
+   * (first visible candle's open price).
+   */
+  private drawPercentageReferenceLine(ctx: CanvasRenderingContext2D): void {
+    const { w, axisWidth, bottomMargin, chartBottom } = this.chart.state;
+
+    // Only draw in percentage mode with valid reference price
+    if (this.chart.state.priceScaleMode !== 'percentage') return;
+    if (this.chart.state.referencePrice <= 0) return;
+
+    const clipBottom = chartBottom || (this.chart.state.h - bottomMargin);
+
+    // Calculate Y position of 0% level (the reference price)
+    const refPriceY = priceToY(this.chart.state.referencePrice, this.chart.state);
+
+    // Don't draw if outside visible chart area
+    if (refPriceY < 0 || refPriceY > clipBottom) return;
+
+    // Draw solid horizontal line using axis text color
+    ctx.strokeStyle = this.chart.options.layout.textColor;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(0, refPriceY);
+    ctx.lineTo(w - axisWidth, refPriceY);
+    ctx.stroke();
   }
 
   destroy(): void {

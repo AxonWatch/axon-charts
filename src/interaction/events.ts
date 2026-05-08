@@ -518,6 +518,7 @@ export class EventManager {
       const SEP_HIT = 6;
       if (Math.abs(mouseY - currentTop) < SEP_HIT && mouseY >= 0) {
         pane.separatorHovered = true;
+        separatorHovered = true;
       }
 
       if (isOverThisPane && isOverAxis) break;

@@ -164,26 +164,26 @@ export class PriceFormatter {
   }
 
   /**
-   * Check if two timestamps fall on different calendar days in a given timezone.
-   */
-  /**
    * Smart percentage formatting with adaptive display.
    *
-   * - < 1000%  : standard percentage (±2.45%, ±245.8%)
-   * - 1K-9.9K  : compact K% suffix (±8.5K%)
-   * - 10K+     : multiplier format (±805.0x)
+   * - < 10,000% : standard percentage with Intl.NumberFormat commas
+   *   - < 10% : 2 decimal places (±2.45%, +8.2%)
+   *   - ≥ 10% : 0 decimal places (±8,450%)
+   * - ≥ 10,000% : multiplier format for extreme moves (±805.0×, -305.2×)
    */
   static formatPercentage(value: number): string {
     if (!isFinite(value)) return '—';
     const abs = Math.abs(value);
-    const prefix = value >= 0 ? '+' : '';
 
     if (abs >= 10000) {
-      // Extreme moves → × multiplier (e.g. +805.0×)
-      return prefix + (value / 100).toFixed(1) + '×';
+      // Extreme moves → × multiplier (e.g. +805.0×, -305.2×)
+      // value/100 carries the negative sign — prefix is cosmetic for positive (non-zero) only
+      return (value > 0 ? '+' : '') + (value / 100).toFixed(1) + '×';
     }
 
-    // Standard: Intl.NumberFormat with commas (e.g. +2.45%, +8,450%)
+    // Standard: Intl.NumberFormat with commas (e.g. +2.45%, -9.09%, +8,450%)
+    // Math.abs strips the sign — must re-add explicitly; 0.00% has no prefix
+    const prefix = value > 0 ? '+' : (value < 0 ? '-' : '');
     const formatted = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: abs < 10 ? 2 : 0,
       maximumFractionDigits: abs < 10 ? 2 : 0
