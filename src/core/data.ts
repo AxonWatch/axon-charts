@@ -117,15 +117,6 @@ export class DataManager {
   }
 
   /**
-   * Get visible range of data
-   */
-  getVisibleRange(startIdx: number, count: number): { from: number; to: number } {
-    const from = Math.max(0, startIdx);
-    const to = Math.min(this._data.length, from + count);
-    return { from, to };
-  }
-
-  /**
    * Calculate price range for visible bars
    */
   getPriceRange(startIdx: number, count: number, scaleMargins?: { top?: number; bottom?: number }): { min: number; max: number } {

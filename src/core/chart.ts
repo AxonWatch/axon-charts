@@ -814,12 +814,7 @@ export class Chart {
   }
 
   private normalizePartialOptions(options: Partial<ChartOptions>): Partial<ChartOptions> {
-    // Series legacy mapping: accept 'colors' keys and map to 'series'
-    const normalized = deepClone(options);
-    if (options.series) {
-      // No mapping needed — direct pass-through
-    }
-    return normalized;
+    return options;
   }
 
   private normalizeOptions(options: ChartOptions): Required<ChartOptions> {

@@ -98,13 +98,3 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/**
- * Get appropriate number of decimal places for price
- */
-export function getPriceDecimals(price: number): number {
-  if (price >= 1000) return 2;
-  if (price >= 100) return 2;
-  if (price >= 10) return 2;
-  if (price >= 1) return 2;
-  return 4;
-}

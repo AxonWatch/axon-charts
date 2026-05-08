@@ -1,6 +1,5 @@
 import { LAYOUT } from '../core/layout.js';
 import { xToIndex, yToPrice, deriveVisibleStartIdx, indexToX } from '../utils/projection.js';
-import { getPriceDecimals } from '../utils/math.js';
 import { IChart } from '../types/index.js';
 import { PriceFormatter } from '../utils/formatter.js';
 
@@ -357,7 +356,7 @@ export class Crosshair {
       let formattedPrice = this.chart.priceFormatter.formatPrice(price);
       if (this.chart.state.priceScaleMode === 'percentage' && this.chart.state.referencePrice > 0) {
         const pct = ((price - this.chart.state.referencePrice) / this.chart.state.referencePrice) * 100;
-          formattedPrice = PriceFormatter.formatPercentage(pct);
+        formattedPrice = PriceFormatter.formatPercentage(pct);
       }
       this.overlayCtx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, this.y);
     }

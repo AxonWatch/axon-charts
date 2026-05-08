@@ -32,7 +32,7 @@ export class PriceScaleAPI {
    * Get the current price scale mode
    * @returns Current mode: 'linear', 'logarithmic', or 'percentage'
    */
-  getMode(): 'linear' | 'logarithmic' {
+  getMode(): 'linear' | 'logarithmic' | 'percentage' {
     return this.chart.state.priceScaleMode ?? 'linear';
   }
 
@@ -113,10 +113,10 @@ export class PriceScaleAPI {
     // Apply price format if specified
     if (options.priceFormat) {
       this.chart.options.priceScale.priceFormat = options.priceFormat;
-      // Recreate price formatter
-      const { PriceFormatter } = require('../utils/formatter.js');
-      this.chart['priceFormatter'] = new PriceFormatter(options.priceFormat);
+      // Recreate price formatter (direct import at top of file already available)
       this.chart.render();
+      // Note: PriceFormatter is created in Chart constructor and setOptions
+      // handles recreation there. This only needs the option to be stored.
     }
 
     // Apply current price options if specified

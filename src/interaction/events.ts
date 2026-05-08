@@ -619,9 +619,11 @@ export class EventManager {
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
 
-    // Only re-clamp both sides on mouse-up. During drag, the left-only
-    // clamp above is enough — don't snap the latest bar back yet.
-    if (this.dragMode !== 'chart' && this.dragMode !== 'subPane' && this.dragMode !== 'separator') {
+    // During drag, only clamp the left edge. Defer full (both sides) clamping
+    // to mouse-up so chart panning can preserve the user's visible gap on
+    // the right side. Price zoom, separator, and sub-pane don't modify
+    // offsetX at all, so full clamping here would snap the preserved gap.
+    if (this.dragMode !== 'chart' && this.dragMode !== 'subPane' && this.dragMode !== 'separator' && this.dragMode !== 'price') {
       this.chart.state.offsetX = clampOffsetX(this.chart.state.offsetX, this.chart.state.barWidth, this.chart.dataManager.length, w, rightGap, axisWidth);
     }
     this.checkAutoScrollState();
