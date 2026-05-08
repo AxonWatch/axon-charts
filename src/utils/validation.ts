@@ -279,6 +279,18 @@ function validateTimeScale(timeScale: any, path: string = 'timeScale'): void {
     throw new ValidationError(path, 'Time scale must be an object', timeScale);
   }
 
+  if (timeScale.showDayOfWeek !== undefined && typeof timeScale.showDayOfWeek !== 'boolean') {
+    throw new ValidationError(`${path}.showDayOfWeek`, 'Show day of week must be a boolean', timeScale.showDayOfWeek);
+  }
+
+  if (timeScale.dateFormat !== undefined && typeof timeScale.dateFormat !== 'string') {
+    throw new ValidationError(`${path}.dateFormat`, 'Date format must be a string', timeScale.dateFormat);
+  }
+
+  if (timeScale.timezone !== undefined && typeof timeScale.timezone !== 'string') {
+    throw new ValidationError(`${path}.timezone`, 'Timezone must be a string (IANA name)', timeScale.timezone);
+  }
+
   if (timeScale.visible !== undefined && typeof timeScale.visible !== 'boolean') {
     throw new ValidationError(`${path}.visible`, 'Visible must be a boolean', timeScale.visible);
   }

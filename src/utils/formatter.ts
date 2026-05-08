@@ -98,6 +98,71 @@ export class PriceFormatter {
     return s.split('.')[1].length;
   }
 
+  /**
+   * Format a date for display with timezone and pattern support.
+   * @param ts - Timestamp in milliseconds
+   * @param timezone - IANA timezone (undefined = browser local)
+   * @param dateFormat - Pattern string with tokens (yyyy, yy, MMM, MM, dd)
+   * @param showDayOfWeek - Whether to prefix with weekday abbreviation
+   */
+  static formatDate(ts: number, timezone?: string, dateFormat?: string, showDayOfWeek?: boolean): string {
+    const date = new Date(ts);
+    let year: string, monthShort: string, monthNum: string, day: string, weekday: string;
+
+    if (timezone) {
+      const parts = new Intl.DateTimeFormat('en', {
+        timeZone: timezone,
+        year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
+      }).formatToParts(date);
+      const map: Record<string, string> = {};
+      for (const p of parts) map[p.type] = p.value;
+      year = map.year;
+      monthShort = map.month;
+      day = map.day;
+      weekday = map.weekday;
+      // Get numeric month as well (for MM token)
+      const numParts = new Intl.DateTimeFormat('en', {
+        timeZone: timezone, month: '2-digit'
+      }).formatToParts(date);
+      for (const p of numParts) if (p.type === 'month') monthNum = p.value;
+    } else {
+      year = date.getFullYear().toString();
+      monthShort = date.toLocaleDateString('en', { month: 'short' });
+      monthNum = (date.getMonth() + 1).toString();
+      day = date.getDate().toString();
+      weekday = date.toLocaleDateString('en', { weekday: 'short' });
+    }
+
+    let prefix = '';
+    if (showDayOfWeek !== false) {
+      prefix = weekday + ' ';
+    }
+
+    const fmt = dateFormat || 'MMM dd, yyyy';
+    let result = prefix + fmt;
+    result = result.replace('yyyy', year);
+    result = result.replace('yy', year.slice(-2));
+    result = result.replace('MMM', monthShort);
+    result = result.replace('MM', monthNum.padStart(2, '0'));
+    result = result.replace('dd', day.padStart(2, '0'));
+    return result;
+  }
+
+  /**
+   * Check if two timestamps fall on different calendar days in a given timezone.
+   */
+  static isDifferentDay(ts1: number, ts2: number, timezone?: string): boolean {
+    const d1 = new Date(ts1);
+    const d2 = new Date(ts2);
+    if (timezone) {
+      const opts: Intl.DateTimeFormatOptions = { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' };
+      const f1 = new Intl.DateTimeFormat('en', opts).format(d1);
+      const f2 = new Intl.DateTimeFormat('en', opts).format(d2);
+      return f1 !== f2;
+    }
+    return d1.getDate() !== d2.getDate() || d1.getMonth() !== d2.getMonth() || d1.getFullYear() !== d2.getFullYear();
+  }
+
   private formatVolume(price: number): string {
     if (price >= 1000000) return (price / 1000000).toFixed(2) + 'M';
     if (price >= 1000) return (price / 1000).toFixed(2) + 'K';

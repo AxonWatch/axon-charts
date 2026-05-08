@@ -71,6 +71,10 @@ export interface ChartOptions {
     timeVisible?: boolean;
     secondsVisible?: boolean;
     showFullDate?: boolean;
+    showDayOfWeek?: boolean;
+    dateFormat?: string;
+    /** IANA timezone (e.g. 'America/New_York', 'UTC'). Omit for browser local. */
+    timezone?: string;
     rightOffset?: number;
     barSpacing?: number;
     minBarSpacing?: number;

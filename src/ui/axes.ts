@@ -1,5 +1,6 @@
 import { niceTicks, getPriceDecimals, calculateTimeStep } from '../utils/math.js';
 import { LAYOUT } from '../core/layout.js';
+import { PriceFormatter } from '../utils/formatter.js';
 import { priceToY, yToPrice, deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
 import { IChart } from '../types/index.js';
 
@@ -149,29 +150,31 @@ export class Axes {
    * Format time label with date rollover
    */
   private formatTimeLabel(time: number, index: number, step: number, interval: number): string {
-    const date = new Date(time);
+    const ts = this.chart.options.timeScale;
+    const tz = ts.timezone;
+
     const prevTime = time - (step * interval);
-    const prevDate = new Date(prevTime);
 
     // Check if we should show date (first bar or day change)
-    const isNewDay = date.getDate() !== prevDate.getDate() ||
-                     date.getMonth() !== prevDate.getMonth() ||
-                     date.getFullYear() !== prevDate.getFullYear();
+    const isNewDay = PriceFormatter.isDifferentDay(time, prevTime, tz);
 
     // If timeVisible is false, always show date
-    if (!this.chart.options.timeScale.timeVisible) {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    if (!ts.timeVisible) {
+      return PriceFormatter.formatDate(time, tz, ts.dateFormat, false);
     }
 
     if (isNewDay) {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return PriceFormatter.formatDate(time, tz, ts.dateFormat, false);
     } else {
-      // Check if seconds should be shown
-      if (this.chart.options.timeScale.secondsVisible) {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+      const date = new Date(time);
+      let formatter: Intl.DateTimeFormat;
+      const baseOpts: Intl.DateTimeFormatOptions = { hour12: false, timeZone: tz };
+      if (ts.secondsVisible) {
+        formatter = new Intl.DateTimeFormat([], { ...baseOpts, hour: '2-digit', minute: '2-digit', second: '2-digit' });
       } else {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+        formatter = new Intl.DateTimeFormat([], { ...baseOpts, hour: '2-digit', minute: '2-digit' });
       }
+      return formatter.format(date);
     }
   }
 

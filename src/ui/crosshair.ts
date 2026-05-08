@@ -2,6 +2,7 @@ import { LAYOUT } from '../core/layout.js';
 import { xToIndex, yToPrice, deriveVisibleStartIdx, indexToX } from '../utils/projection.js';
 import { getPriceDecimals } from '../utils/math.js';
 import { IChart } from '../types/index.js';
+import { PriceFormatter } from '../utils/formatter.js';
 
 /**
  * Crosshair overlay with OHLC tooltip
@@ -363,37 +364,35 @@ export class Crosshair {
    */
   private drawTimeLabel(time: number, x: number): void {
     const { h, bottomMargin } = this.chart.state;
-    const date = new Date(time);
+    const ts = this.chart.options.timeScale;
 
     // Format based on options
     let timeStr: string;
-    if (this.chart.options.timeScale.showFullDate) {
-      // Full date format: "Fri 03 Jan'26 17:55"
-      const day = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const dateNum = date.getDate().toString().padStart(2, '0');
-      const month = date.toLocaleDateString('en-US', { month: 'short' });
-      const year = date.getFullYear().toString().slice(-2);
-      const time = date.toLocaleTimeString('en-US', {
+    if (ts.showFullDate) {
+      // Full date format with configurable dateFormat and timezone
+      const dateStr = PriceFormatter.formatDate(time, ts.timezone, ts.dateFormat, ts.showDayOfWeek);
+      const date = new Date(time);
+      const formatter = new Intl.DateTimeFormat([], {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false
+        hour12: false,
+        timeZone: ts.timezone
       });
-      timeStr = `${day} ${dateNum} ${month}'${year} ${time}`;
-    } else if (!this.chart.options.timeScale.timeVisible) {
-      timeStr = date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-    } else if (this.chart.options.timeScale.secondsVisible) {
-      timeStr = date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
+      timeStr = dateStr + ' ' + formatter.format(date);
+    } else if (!ts.timeVisible) {
+      timeStr = PriceFormatter.formatDate(time, ts.timezone, ts.dateFormat, false);
+    } else if (ts.secondsVisible) {
+      const formatter = new Intl.DateTimeFormat([], {
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        timeZone: ts.timezone
       });
+      timeStr = formatter.format(new Date(time));
     } else {
-      timeStr = date.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
+      const formatter = new Intl.DateTimeFormat([], {
+        hour: '2-digit', minute: '2-digit', hour12: false,
+        timeZone: ts.timezone
       });
+      timeStr = formatter.format(new Date(time));
     }
 
     this.overlayCtx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
