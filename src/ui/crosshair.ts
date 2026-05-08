@@ -365,6 +365,7 @@ export class Crosshair {
   private drawTimeLabel(time: number, x: number): void {
     const { h, bottomMargin } = this.chart.state;
     const ts = this.chart.options.timeScale;
+    const tz = PriceFormatter.isValidTimezone(ts.timezone) ? ts.timezone : undefined;
 
     // Format based on options
     let timeStr: string;
@@ -376,7 +377,7 @@ export class Crosshair {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
-        timeZone: ts.timezone
+        timeZone: tz
       });
       timeStr = dateStr + ' ' + formatter.format(date);
     } else if (!ts.timeVisible) {
@@ -384,13 +385,13 @@ export class Crosshair {
     } else if (ts.secondsVisible) {
       const formatter = new Intl.DateTimeFormat([], {
         hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
-        timeZone: ts.timezone
+        timeZone: tz
       });
       timeStr = formatter.format(new Date(time));
     } else {
       const formatter = new Intl.DateTimeFormat([], {
         hour: '2-digit', minute: '2-digit', hour12: false,
-        timeZone: ts.timezone
+        timeZone: tz
       });
       timeStr = formatter.format(new Date(time));
     }

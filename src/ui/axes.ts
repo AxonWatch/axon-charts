@@ -151,7 +151,7 @@ export class Axes {
    */
   private formatTimeLabel(time: number, index: number, step: number, interval: number): string {
     const ts = this.chart.options.timeScale;
-    const tz = ts.timezone;
+    const tz = PriceFormatter.isValidTimezone(ts.timezone) ? ts.timezone : undefined;
 
     const prevTime = time - (step * interval);
 

@@ -105,13 +105,28 @@ export class PriceFormatter {
    * @param dateFormat - Pattern string with tokens (yyyy, yy, MMM, MM, dd)
    * @param showDayOfWeek - Whether to prefix with weekday abbreviation
    */
+  /**
+   * Check if a timezone string is valid for use with Intl.DateTimeFormat.
+   * Returns false for invalid IANA names without throwing.
+   */
+  static isValidTimezone(tz?: string): boolean {
+    if (!tz) return false;
+    try {
+      new Intl.DateTimeFormat('en', { timeZone: tz });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   static formatDate(ts: number, timezone?: string, dateFormat?: string, showDayOfWeek?: boolean): string {
     const date = new Date(ts);
     let year: string, monthShort: string, monthNum: string, day: string, weekday: string;
 
-    if (timezone) {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    if (tz) {
       const parts = new Intl.DateTimeFormat('en', {
-        timeZone: timezone,
+        timeZone: tz,
         year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
       }).formatToParts(date);
       const map: Record<string, string> = {};
@@ -122,7 +137,7 @@ export class PriceFormatter {
       weekday = map.weekday;
       // Get numeric month as well (for MM token)
       const numParts = new Intl.DateTimeFormat('en', {
-        timeZone: timezone, month: '2-digit'
+        timeZone: tz, month: '2-digit'
       }).formatToParts(date);
       for (const p of numParts) if (p.type === 'month') monthNum = p.value;
     } else {
@@ -154,7 +169,8 @@ export class PriceFormatter {
   static isDifferentDay(ts1: number, ts2: number, timezone?: string): boolean {
     const d1 = new Date(ts1);
     const d2 = new Date(ts2);
-    if (timezone) {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    if (tz) {
       const opts: Intl.DateTimeFormatOptions = { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' };
       const f1 = new Intl.DateTimeFormat('en', opts).format(d1);
       const f2 = new Intl.DateTimeFormat('en', opts).format(d2);
