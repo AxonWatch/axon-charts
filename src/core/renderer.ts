@@ -228,27 +228,38 @@ export class Renderer {
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {
     const { w, h, data, axisWidth, bottomMargin } = this.chart.state;
     if (data.length === 0) return;
+    if (this.chart.options.priceScale.currentPrice?.show === false) return;
 
     const lastBar = data[data.length - 1];
     const currentPrice = lastBar.close;
     const yClose = priceToY(currentPrice, this.chart.state);
 
     const isUp = lastBar.close >= lastBar.open;
-    const lineColor = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
+    const cp = this.chart.options.priceScale.currentPrice;
+    const layout = this.chart.options.layout;
+
+    // Cascading colors: explicit currentPrice value > series/layout defaults
+    const lineColor = isUp
+      ? (cp?.upColor || this.chart.options.series.upColor)
+      : (cp?.downColor || this.chart.options.series.downColor);
+    const textColor = cp?.textColor || layout.textColor;
 
     const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
     // Clamp the line Y to chart area — don't let it go diagonal
     const lineY = Math.min(yClose, clipBottom);
-    ctx.strokeStyle = lineColor;
-    ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(0, lineY);
-    ctx.lineTo(w - axisWidth, lineY);
-    ctx.stroke();
-    ctx.setLineDash([]);
 
-    const showCountdown = this.chart.options.priceScale.currentPrice?.showCountdown;
+    if (cp?.showLine !== false) {
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash(cp?.lineStyle === 'solid' ? [] : [4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, lineY);
+      ctx.lineTo(w - axisWidth, lineY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    const showCountdown = cp?.showCountdown;
     const labelHeight = showCountdown ? LAYOUT.CURRENT_PRICE_LABEL_HEIGHT : LAYOUT.LABEL_HEIGHT;
     
     // Use the same clamped Y for the label so it stays in the chart area
@@ -260,8 +271,8 @@ export class Renderer {
     ctx.lineWidth = 1;
     ctx.strokeRect(w - axisWidth, labelY - labelHeight / 2, axisWidth, labelHeight);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.fillStyle = textColor;
+    ctx.font = `${layout.fontSize}px ${layout.fontFamily}`;
     ctx.textAlign = 'right';
     
     const formattedPrice = this.chart.priceFormatter.formatPrice(currentPrice);
@@ -277,8 +288,8 @@ export class Renderer {
 
       if (remainingMs > 0) {
         const countdownText = this.formatCountdown(remainingMs, interval);
-        ctx.fillStyle = this.chart.options.priceScale.currentPrice?.countdownColor || 'rgba(255, 255, 255, 0.8)';
-        ctx.font = `10px ${this.chart.options.layout.fontFamily}`;
+        ctx.fillStyle = cp?.countdownColor || textColor;
+        ctx.font = `10px ${layout.fontFamily}`;
         ctx.textBaseline = 'top';
         ctx.fillText(countdownText, w - LAYOUT.LABEL_OFFSET, labelY + 3);
       }
@@ -346,10 +357,8 @@ export class Renderer {
       const measuredWidth = ctx.measureText(wmText).width;
       if (measuredWidth === 0) return;
 
-      // For rotated text the effective visible width is smaller (cos45° ≈ 0.707)
-      // For horizontal text the visible width is the full measured width
-      const scaleFactor = isRotated ? 0.707 : 1.0;
-      const targetMeasuredWidth = (chartAreaWidth * 0.30) / scaleFactor;
+      // Use same target width regardless of rotation — both modes get equal font size
+      const targetMeasuredWidth = chartAreaWidth * 0.30;
 
       fontSize = Math.round(baseFontSize * (targetMeasuredWidth / measuredWidth));
       fontSize = Math.max(12, Math.min(fontSize, 128));

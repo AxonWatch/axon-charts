@@ -189,20 +189,24 @@ export abstract class ScalePane implements SubPane {
     }
     ctx.textAlign = 'left';
 
-    // Current value horizontal line and axis label
+    // Current value horizontal line and axis label (synced with main chart currentPrice.show/showLine)
+    const showPriceLine = chart.options.priceScale.currentPrice?.show !== false;
+    const showPriceLineOnly = chart.options.priceScale.currentPrice?.showLine !== false;
     const latestVal = this.getLatestValue(chart);
-    if (latestVal != null) {
+    if (latestVal != null && showPriceLine) {
       const curRatio = Math.max(0, Math.min(1, (latestVal - visibleMin) / visibleRange));
       const curY = areaTop + (areaHeight - curRatio * areaHeight);
 
-      ctx.strokeStyle = '#888';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(0, curY);
-      ctx.lineTo(w, curY);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      if (showPriceLineOnly) {
+        ctx.strokeStyle = '#888';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, curY);
+        ctx.lineTo(w, curY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
 
       ctx.fillStyle = chart.options.layout.background;
       ctx.fillRect(w - axisWidth, curY - 10, axisWidth, 20);

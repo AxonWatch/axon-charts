@@ -241,12 +241,36 @@ function validateCurrentPrice(currentPrice: any, path: string): void {
     throw new ValidationError(path, 'Current price must be an object', currentPrice);
   }
 
+  if (currentPrice.show !== undefined && typeof currentPrice.show !== 'boolean') {
+    throw new ValidationError(`${path}.show`, 'Show must be a boolean', currentPrice.show);
+  }
+
+  if (currentPrice.showLine !== undefined && typeof currentPrice.showLine !== 'boolean') {
+    throw new ValidationError(`${path}.showLine`, 'Show line must be a boolean', currentPrice.showLine);
+  }
+
   if (currentPrice.showCountdown !== undefined && typeof currentPrice.showCountdown !== 'boolean') {
     throw new ValidationError(`${path}.showCountdown`, 'Show countdown must be a boolean', currentPrice.showCountdown);
   }
 
   if (currentPrice.countdownColor !== undefined) {
     validateColor(currentPrice.countdownColor, `${path}.countdownColor`);
+  }
+
+  if (currentPrice.upColor !== undefined) {
+    validateColor(currentPrice.upColor, `${path}.upColor`);
+  }
+
+  if (currentPrice.downColor !== undefined) {
+    validateColor(currentPrice.downColor, `${path}.downColor`);
+  }
+
+  if (currentPrice.lineStyle !== undefined && !['dashed', 'solid'].includes(currentPrice.lineStyle)) {
+    throw new ValidationError(`${path}.lineStyle`, 'Line style must be "dashed" or "solid"', currentPrice.lineStyle);
+  }
+
+  if (currentPrice.textColor !== undefined) {
+    validateColor(currentPrice.textColor, `${path}.textColor`);
   }
 }
 

@@ -37,8 +37,11 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     mode: 'linear',
     scaleMargins: { top: 0.1, bottom: 0.1 },
     currentPrice: {
+      show: true,
+      showLine: true,
       showCountdown: true,
-      countdownColor: 'rgba(255, 255, 255, 0.8)'
+      countdownColor: 'rgba(255, 255, 255, 0.8)',
+      lineStyle: 'dashed'
     },
     reverse: false
   },
@@ -80,7 +83,8 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
     quoteAsset: 'USDT',
     timeframe: '1m',
     source: '',
-    show: false
+    show: false,
+    fontSize: 20
   },
   watermark: {
     text: '',

@@ -45,8 +45,21 @@ export interface ChartOptions {
     priceFormat?: PriceFormat;
     /** Current price line options */
     currentPrice?: {
+      /** Show/hide the current price line and label. Default: true */
+      show?: boolean;
+      /** Show/hide only the dashed line across the chart (label stays visible). Default: true */
+      showLine?: boolean;
       showCountdown?: boolean;
+      /** Color for the countdown text. If null, falls back to currentPrice.textColor, then layout.textColor */
       countdownColor?: string;
+      /** Bullish line color. Falls back to series.upColor if not set */
+      upColor?: string;
+      /** Bearish line color. Falls back to series.downColor if not set */
+      downColor?: string;
+      /** Line style: 'dashed' or 'solid'. Default: 'dashed' */
+      lineStyle?: 'dashed' | 'solid';
+      /** Price label text color. Falls back to layout.textColor if not set */
+      textColor?: string;
     };
     /** Reverse price axis: false = normal (high at top), true = inverted (high at bottom) */
     reverse?: boolean;
@@ -107,6 +120,8 @@ export interface ChartOptions {
     timeframe?: string;
     source?: string;
     show?: boolean;
+    /** Font size for the header label. Default: 20 (tooltip is 12, so header stands out) */
+    fontSize?: number;
   };
 
   // === Watermark ===

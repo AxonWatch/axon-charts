@@ -32,9 +32,10 @@ export class Axes {
       10
     );
 
-    // Get live price to avoid overlapping labels
+    // Get live price to avoid overlapping labels (only if price line is visible)
     const data = this.chart.dataManager.data;
-    const currentPrice = data.length > 0 ? data[data.length - 1].close : null;
+    const showPriceLine = this.chart.options.priceScale.currentPrice?.show !== false;
+    const currentPrice = showPriceLine && data.length > 0 ? data[data.length - 1].close : null;
     const currentPriceY = currentPrice !== null ? priceToY(currentPrice, this.chart.state) : LAYOUT.OFFSCREEN_PRICE_FALLBACK;
 
     // Draw price labels

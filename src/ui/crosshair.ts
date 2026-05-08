@@ -242,7 +242,7 @@ export class Crosshair {
     const headerText = parts.join(' | ');
 
     this.overlayCtx.fillStyle = '#888';
-    this.overlayCtx.font = 'bold ' + (this.chart.options.layout.fontSize + 2) + 'px ' + this.chart.options.layout.fontFamily;
+    this.overlayCtx.font = 'bold ' + (this.chart.options.market.fontSize || 20) + 'px ' + this.chart.options.layout.fontFamily;
     this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
     this.overlayCtx.fillText(headerText, LAYOUT.TOOLTIP_MARGIN_X, LAYOUT.TOOLTIP_MARGIN_Y);
@@ -264,7 +264,8 @@ export class Crosshair {
 
     // 3. Position: Top Left with small margin
     // Account for market header line if shown (one line of bold 14px text ≈ 18px)
-    const headerOffset = this.chart.options.market?.show ? 18 : 0;
+    const headerFontSize = (this.chart.options.market.fontSize || 20);
+    const headerOffset = this.chart.options.market?.show ? (headerFontSize + 4) : 0;
     const startX = LAYOUT.TOOLTIP_MARGIN_X;
     const startY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset;
 
