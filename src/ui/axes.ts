@@ -56,7 +56,11 @@ export class Axes {
       if (Math.abs(y - currentPriceY) < LAYOUT.COLLISION_THRESHOLD) return;
 
       // Use Professional Formatter
-      const label = this.chart.priceFormatter.formatPrice(price);
+      let label = this.chart.priceFormatter.formatPrice(price);
+      // In percentage mode, display with +/- prefix and % suffix
+      if (this.chart.state.priceScaleMode === 'percentage') {
+        label = (price >= 0 ? '+' : '') + price.toFixed(2) + '%';
+      }
       ctx.fillText(label, w - LAYOUT.LABEL_OFFSET, y);
     });
 

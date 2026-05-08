@@ -161,10 +161,10 @@ function validatePriceScale(priceScale: any, path: string = 'priceScale'): void 
   }
 
   if (priceScale.mode !== undefined) {
-    if (priceScale.mode !== 'linear' && priceScale.mode !== 'logarithmic') {
+    if (priceScale.mode !== 'linear' && priceScale.mode !== 'logarithmic' && priceScale.mode !== 'percentage') {
       throw new ValidationError(
         `${path}.mode`,
-        'Mode must be either "linear" or "logarithmic"',
+        'Mode must be "linear", "logarithmic", or "percentage"',
         priceScale.mode
       );
     }

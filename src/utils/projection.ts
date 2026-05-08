@@ -17,7 +17,9 @@ export interface ChartState {
   devicePixelRatio: number;
   priceScale: number;   // Vertical zoom factor
   priceOffset: number;  // Manual vertical pan offset
-  priceScaleMode: 'linear' | 'logarithmic';
+  priceScaleMode: 'linear' | 'logarithmic' | 'percentage';
+  /** Reference price for percentage mode (first visible bar close) */
+  referencePrice: number;
   chartBottom: number;
 }
 
@@ -36,6 +38,10 @@ export function priceToY(price: number, state: ChartState): number {
     const maxLog = Math.log10(Math.max(state.priceMax, 0.02));
     const priceLog = Math.log10(Math.max(price, 0.01));
     ratio = (priceLog - minLog) / (maxLog - minLog || 1);
+  } else if (state.priceScaleMode === 'percentage' && state.referencePrice > 0) {
+    const pct = ((price - state.referencePrice) / state.referencePrice) * 100;
+    const priceRange = state.priceMax - state.priceMin || 1;
+    ratio = (pct - state.priceMin) / priceRange;
   } else {
     const priceRange = state.priceMax - state.priceMin || 1;
     ratio = (price - state.priceMin) / priceRange;
@@ -69,6 +75,10 @@ export function yToPrice(y: number, state: ChartState): number {
     const maxLog = Math.log10(Math.max(state.priceMax, 0.02));
     const priceLog = minLog + ratio * (maxLog - minLog || 1);
     return Math.pow(10, priceLog);
+  } else if (state.priceScaleMode === 'percentage' && state.referencePrice > 0) {
+    const priceRange = state.priceMax - state.priceMin || 1;
+    const pct = state.priceMin + (ratio * priceRange);
+    return state.referencePrice * (1 + pct / 100);
   } else {
     const priceRange = state.priceMax - state.priceMin || 1;
     return state.priceMin + (ratio * priceRange);

@@ -275,7 +275,11 @@ export class Renderer {
     ctx.font = `${layout.fontSize}px ${layout.fontFamily}`;
     ctx.textAlign = 'right';
     
-    const formattedPrice = this.chart.priceFormatter.formatPrice(currentPrice);
+    let formattedPrice = this.chart.priceFormatter.formatPrice(currentPrice);
+    if (this.chart.state.priceScaleMode === 'percentage' && this.chart.state.referencePrice > 0) {
+      const pct = ((currentPrice - this.chart.state.referencePrice) / this.chart.state.referencePrice) * 100;
+      formattedPrice = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+    }
     
     if (showCountdown) {
       ctx.textBaseline = 'alphabetic';

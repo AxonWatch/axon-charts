@@ -143,7 +143,7 @@ export class Chart {
     subPaneHeight: number;
     priceScale: number;
     priceOffset: number;
-    priceScaleMode: 'linear' | 'logarithmic';
+    priceScaleMode: 'linear' | 'logarithmic' | 'percentage';
     axisWidth: number;
     reverse: boolean;
   };
@@ -208,7 +208,8 @@ export class Chart {
       axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP,
       chartBottom: 0,
       subPaneHeight: 0,
-      reverse: this.options.priceScale.reverse ?? false
+      reverse: this.options.priceScale.reverse ?? false,
+      referencePrice: 0
     };
 
     // 4. Initialize core modules
@@ -436,6 +437,19 @@ export class Chart {
 
     this.state.priceMin = mid - halfRange;
     this.state.priceMax = mid + halfRange;
+
+    // In percentage mode, convert priceMin/Max to percentage space and set reference price
+    if (this.options.priceScale.mode === 'percentage') {
+      const firstVisibleBar = this.dataManager.data[firstVisibleIdx];
+      if (firstVisibleBar) {
+        this.state.referencePrice = firstVisibleBar.close;
+        const ref = this.state.referencePrice;
+        if (ref > 0) {
+          this.state.priceMin = ((mid - halfRange - ref) / ref) * 100;
+          this.state.priceMax = ((mid + halfRange - ref) / ref) * 100;
+        }
+      }
+    }
 
     // --- DYNAMIC AXIS WIDTH ---
     // Ensure font is set before measuring (context state can be lost)

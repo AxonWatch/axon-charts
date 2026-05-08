@@ -14,10 +14,10 @@ export class PriceScaleAPI {
    * Set the price scale mode
    * @param mode - 'linear' for standard linear scale, 'logarithmic' for log scale
    */
-  setMode(mode: 'linear' | 'logarithmic'): void {
+  setMode(mode: 'linear' | 'logarithmic' | 'percentage'): void {
     // Validate
-    if (mode !== 'linear' && mode !== 'logarithmic') {
-      throw new Error(`PriceScaleAPI.setMode: invalid mode "${mode}". Must be 'linear' or 'logarithmic'.`);
+    if (mode !== 'linear' && mode !== 'logarithmic' && mode !== 'percentage') {
+      throw new Error(`PriceScaleAPI.setMode: invalid mode "${mode}". Must be 'linear', 'logarithmic', or 'percentage'.`);
     }
 
     // Update state
@@ -30,7 +30,7 @@ export class PriceScaleAPI {
 
   /**
    * Get the current price scale mode
-   * @returns Current mode: 'linear' or 'logarithmic'
+   * @returns Current mode: 'linear', 'logarithmic', or 'percentage'
    */
   getMode(): 'linear' | 'logarithmic' {
     return this.chart.state.priceScaleMode ?? 'linear';
