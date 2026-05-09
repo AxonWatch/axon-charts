@@ -3,6 +3,7 @@ src/
 tests/
 docs/
 archive/
+design/
 tsconfig.json
 esbuild.config.js
 .gitignore
@@ -15,8 +16,8 @@ esbuild.config.js
 CONTRIBUTING.md
 ROADMAP.md
 STRATEGIC_PLAN.md
-IMPLEMENTATION_SUMMARY.md
 RELEASE_CHECKLIST.md
-RELEASE_WORK_PLAN.md
-RELEASE_WORK_PLAN.md.bak
 *.html
+!demo.html
+!docs.html
+!index.html

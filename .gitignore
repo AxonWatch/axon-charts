@@ -11,3 +11,8 @@ yarn-debug.log*
 yarn-error.log*
 .claude/
 .hermes/
+archive/
+*.html
+!demo.html
+!docs.html
+!index.html

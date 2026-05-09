@@ -3,38 +3,46 @@
 **A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration.**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](package.json)
-[![Bundle Size](https://img.shields.io/badge/bundle%20size-19.4%20KB-brightgreen.svg)](dist/chart.js)
+[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](package.json)
+[![Bundle Size](https://img.shields.io/badge/bundle%20size-21.8%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 
-Axon Charts is a high-performance, minimal-dependency candlestick charting library designed for modern web applications. Built with a focus on:
+Axon Charts is a high-performance, minimal-dependency candlestick charting library designed for modern web applications and AI agents. Built with a focus on:
 
-- ⚡ **Performance** - <8ms first render, <0.2ms tick updates
-- 🤖 **AI-First** - Native LLM integration with structured context export
-- 📦 **Lightweight** - Only 19.4KB gzipped (zero external dependencies)
-- 🎨 **Customizable** - Comprehensive configuration API with 72+ options
-- 🔒 **Type-Safe** - Full TypeScript support
+- ⚡ **Performance** — <8ms first render, <0.2ms tick updates
+- 🤖 **AI-First** — Native LLM integration with structured context export
+- 📦 **Lightweight** — Only 21.8KB gzipped (zero external dependencies)
+- 🎨 **Customizable** — 82 configuration options across 12 categories
+- 🔒 **Type-Safe** — Full TypeScript support
 
 ## Features
 
 ### Core Charting
 - ✅ Candlestick charts with OHLCV data
-- ✅ Volume histogram sub-pane with independent Y-axis
-- 🚧 Line, area, bar series types (v1.1.0 in progress)
+- ✅ Volume histogram sub-pane with independent Y-axis (ScalePane architecture)
 - ✅ Real-time updates with sub-millisecond rendering
 - ✅ Smooth pan and zoom (mouse + touch)
-- ✅ Multiple price scales (linear/logarithmic)
+- ✅ Multiple price scales (linear, logarithmic, percentage)
 - ✅ Crosshair with magnetic snapping, volume tooltip, full-date labels
 - ✅ Auto-scroll with scroll-lock detection
 - ✅ Market info header + auto-scaling watermark
+- ✅ Percentage mode with 0% reference line and smart formatting
+
+### Sub-Pane Architecture (ScalePane)
+- ✅ `ScalePane` abstract class — ready for RSI, MACD, and custom indicators
+- ✅ Draggable separator with 6px hit zone and ns-resize cursor
+- ✅ Independent Y-axis with zoom/pan and double-click reset
+- ✅ `computeValues()` hook — computation cached once per render
+- ✅ `getMinVisible()` override for oscillators with negative values
+- ✅ Precision auto-detection with explicit and minMove overrides
+- ✅ Auto-exposed via `getContext()` for LLM consumption
 
 ### Developer Experience
 - ✅ Clean, intuitive API
-- ✅ Comprehensive configuration system (72 options across 13 categories)
+- ✅ Comprehensive configuration system (82 options across 12 categories)
 - ✅ Component APIs (priceScale, timeScale, crosshair)
 - ✅ Runtime option updates with validation
-- ✅ Draggable volume sub-pane separator
 - ✅ Zero external dependencies
 
 ### AI Integration
@@ -89,6 +97,10 @@ const chart = createChart('#chart', { layout: { background: '#1a1a1a' } });
 chart.setData(data);
 ```
 
+## Try It Live
+
+Check out the [interactive demo](demo.html) — explore all 82 settings in real-time.
+
 ## API Reference
 
 ### Core Methods
@@ -105,7 +117,7 @@ chart.updateLastBarFast(bar: Bar): void   // High-frequency streaming
 chart.render(): void
 
 // Lifecycle
-chart.resize(width?: number, height?: number): void
+chart.resize(width?, height?): void
 chart.destroy(): void
 
 // Get context (for AI integration)
@@ -132,7 +144,7 @@ chart.onVisibleRangeChange(cb): void
 
 ```typescript
 // Price Scale API
-chart.priceScale().setMode('logarithmic')
+chart.priceScale().setMode('logarithmic' | 'percentage')
 chart.priceScale().setMargins({ top: 0.2, bottom: 0.1 })
 
 // Time Scale API
@@ -150,7 +162,7 @@ chart.crosshairAPI().setShowLabels(true)
 ```typescript
 chart.setOptions({
   layout: { background: '#1a1a1a', textColor: '#ffffff', fontSize: 14 },
-  grid: { show: true, vertLines: { color: '#333333', width: 1 }, horzLines: { color: '#333333', width: 1 } },
+  grid: { show: true, vertLines: { color: '#333333' }, horzLines: { color: '#333333' } },
   crosshair: { mode: 'magnet', showLabels: true, showTooltip: true },
   volume: { show: true, heightPercent: 0.2 },
   market: { baseAsset: 'BTC', quoteAsset: 'USDT', show: true },
@@ -175,7 +187,7 @@ interface Bar {
 
 | Metric | Target | Actual |
 |--------|--------|--------|
-| Minified bundle | <25 KB gzipped | **19.4 KB gzipped** ✅ |
+| Minified bundle | <25 KB gzipped | **21.8 KB gzipped** ✅ |
 | First render (500 bars) | <16ms | ~8ms ✅ |
 | Live tick update | <2ms | **<0.2ms** 🚀 |
 | Mousemove overlay | <1ms | <0.3ms ✅ |
@@ -192,20 +204,10 @@ interface Bar {
 
 Apache-2.0 — See [LICENSE](LICENSE) file for details.
 
-## Changelog
-
-### v1.0.0 (2026-05-04)
-- Core candlestick rendering engine with dual-canvas architecture
-- Volume histogram sub-pane with draggable separator and zoom/pan
-- Market info header and auto-scaling watermark
-- Component APIs (priceScale, timeScale, crosshair)
-- LLM integration (execute, getContext, events, screenshot, state)
-- Streaming support (updateLastBarFast)
-- 82 configuration options across 12 categories
-
 ## Links
 
-- **Documentation:** [Full docs](docs/)
+- **Demo:** [Interactive Settings](demo.html)
+- **Documentation:** [Full docs](docs.html)
 - **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 - **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md)
 
