@@ -1,6 +1,6 @@
 import { LAYOUT } from '../core/layout.js';
 import { xToIndex, yToPrice, deriveVisibleStartIdx, indexToX } from '../utils/projection.js';
-import { IChart } from '../types/index.js';
+import { IChart, Bar } from '../types/index.js';
 import { PriceFormatter } from '../utils/formatter.js';
 
 /**
@@ -182,18 +182,18 @@ export class Crosshair {
       const horz = this.chart.options.crosshair.horzLine;
 
       // Vertical line extends through sub-pane to full chart height
-      this.overlayCtx.strokeStyle = vert.color;
-      this.overlayCtx.lineWidth = vert.width;
-      this.overlayCtx.setLineDash(vert.style === 'dashed' ? [4, 4] : []);
+      this.overlayCtx.strokeStyle = vert?.color ?? '#888';
+      this.overlayCtx.lineWidth = vert?.width ?? 1;
+      this.overlayCtx.setLineDash(vert?.style === 'dashed' ? [4, 4] : []);
       this.overlayCtx.beginPath();
       this.overlayCtx.moveTo(crosshairX, 0);
       this.overlayCtx.lineTo(crosshairX, h - bottomMargin);
       this.overlayCtx.stroke();
 
       // Horizontal line (full width, including sub-pane)
-      this.overlayCtx.strokeStyle = horz.color;
-      this.overlayCtx.lineWidth = horz.width;
-      this.overlayCtx.setLineDash(horz.style === 'dashed' ? [4, 4] : []);
+      this.overlayCtx.strokeStyle = horz?.color ?? '#888';
+      this.overlayCtx.lineWidth = horz?.width ?? 1;
+      this.overlayCtx.setLineDash(horz?.style === 'dashed' ? [4, 4] : []);
       this.overlayCtx.beginPath();
       this.overlayCtx.moveTo(0, this.y);
       this.overlayCtx.lineTo(w - axisWidth, this.y); 
@@ -260,7 +260,7 @@ export class Crosshair {
 
     // 2. Determine color based on bar direction
     const isUp = bar.close >= bar.open;
-    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
+    const color = isUp ? (this.chart.options.series.upColor ?? '#26a69a') : (this.chart.options.series.downColor ?? '#ef5350');
 
     // 3. Position: Top Left with small margin
     // Account for market header line if shown (one line of bold 14px text ≈ 18px)
@@ -339,17 +339,17 @@ export class Crosshair {
     // If not over any sub-pane, draw main chart price label
     if (!isOverSubPane) {
       // Draw price label box
-      this.overlayCtx.fillStyle = this.chart.options.layout.background;
+      this.overlayCtx.fillStyle = this.chart.options.layout.background ?? '#1e1e1e';
       this.overlayCtx.fillRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
 
       // Draw price label border
-      this.overlayCtx.strokeStyle = this.chart.options.layout.textColor;
+      this.overlayCtx.strokeStyle = this.chart.options.layout.textColor ?? '#888';
       this.overlayCtx.lineWidth = 1;
       this.overlayCtx.strokeRect(w - axisWidth, this.y - labelHeight / 2, axisWidth, labelHeight);
 
       // Draw price label text
-      this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
-      this.overlayCtx.font = this.chart.options.layout.fontSize + 'px ' + this.chart.options.layout.fontFamily;
+      this.overlayCtx.fillStyle = this.chart.options.layout.textColor ?? '#888';
+      this.overlayCtx.font = (this.chart.options.layout.fontSize ?? 12) + 'px ' + (this.chart.options.layout.fontFamily ?? 'system-ui');
       this.overlayCtx.textAlign = 'right';
       this.overlayCtx.textBaseline = 'middle';
 
@@ -410,17 +410,17 @@ export class Crosshair {
     const boxY = textY - boxHeight / 2;
 
     // Background (Match layout background)
-    this.overlayCtx.fillStyle = this.chart.options.layout.background;
+    this.overlayCtx.fillStyle = this.chart.options.layout.background ?? '#1e1e1e';
     this.overlayCtx.fillRect(x - boxWidth / 2, boxY, boxWidth, boxHeight);
 
     // Border
-    this.overlayCtx.strokeStyle = this.chart.options.layout.textColor;
+    this.overlayCtx.strokeStyle = this.chart.options.layout.textColor ?? '#888';
     this.overlayCtx.lineWidth = 1;
     this.overlayCtx.strokeRect(x - boxWidth / 2, boxY, boxWidth, boxHeight);
 
 
     // Text
-    this.overlayCtx.fillStyle = this.chart.options.layout.textColor;
+    this.overlayCtx.fillStyle = this.chart.options.layout.textColor ?? '#888';
     this.overlayCtx.textAlign = 'center';
     this.overlayCtx.textBaseline = 'middle';
     this.overlayCtx.fillText(timeStr, x, textY);

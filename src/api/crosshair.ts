@@ -1,5 +1,6 @@
 import { Chart } from '../core/chart.js';
 import { Crosshair } from '../ui/crosshair.js';
+import { ChartOptions } from '../types/index.js';
 
 /**
  * Crosshair API
@@ -103,12 +104,10 @@ export class CrosshairAPI {
    * Can update mode, labels, tooltip, and line styles.
    */
   setOptions(options: Partial<ChartOptions['crosshair']>): void {
-    // Merge with existing options
-    const currentOptions = this.chart.options.crosshair;
-    const newOptions = { ...currentOptions, ...options };
+    if (!options) return;
 
     // Apply mode if specified
-    if (options.mode) {
+    if (options.mode !== undefined) {
       this.setMode(options.mode);
     }
 
@@ -123,18 +122,18 @@ export class CrosshairAPI {
     }
 
     // Apply vertical line options if specified
-    if (options.vertLine) {
+    if (options.vertLine !== undefined) {
       this.chart.options.crosshair.vertLine = {
-        ...this.chart.options.crosshair.vertLine,
+        ...this.chart.options.crosshair.vertLine!,
         ...options.vertLine
       };
       this.crosshair.draw();
     }
 
     // Apply horizontal line options if specified
-    if (options.horzLine) {
+    if (options.horzLine !== undefined) {
       this.chart.options.crosshair.horzLine = {
-        ...this.chart.options.crosshair.horzLine,
+        ...this.chart.options.crosshair.horzLine!,
         ...options.horzLine
       };
       this.crosshair.draw();

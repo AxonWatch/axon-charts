@@ -18,9 +18,13 @@ export interface ChartState {
   priceScale: number;   // Vertical zoom factor
   priceOffset: number;  // Manual vertical pan offset
   priceScaleMode: 'linear' | 'logarithmic' | 'percentage';
-  /** Reference price for percentage mode (first visible bar close) */
+  /** Reference price for percentage mode (first visible bar open) */
   referencePrice: number;
   chartBottom: number;
+  subPaneHeight: number;
+  axisWidth: number;
+  /** Reverse price axis: false = normal (high at top), true = inverted (high at bottom) */
+  reverse: boolean;
 }
 
 /**

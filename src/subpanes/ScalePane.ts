@@ -1,5 +1,6 @@
 import { SubPane } from './SubPane.js';
-import { IChart, ChartState, Bar } from '../types/index.js';
+import { IChart, Bar } from '../types/index.js';
+import type { ChartState } from '../utils/projection.js';
 import { LAYOUT } from '../core/layout.js';
 import { deriveVisibleStartIdx, indexToX } from '../utils/projection.js';
 import { calculateTimeStep } from '../utils/math.js';
@@ -98,7 +99,7 @@ export abstract class ScalePane implements SubPane {
     const chartAreaWidth = w - axisWidth;
 
     // Fill sub-pane background (only axis area — chart area keeps grid lines visible)
-    ctx.fillStyle = chart.options.layout.background;
+    ctx.fillStyle = chart.options.layout.background ?? '#1e1e1e';
     ctx.fillRect(w - axisWidth, subPaneTop, axisWidth, subPaneHeight);
 
     // Separator line (full width including axis column)
@@ -208,14 +209,14 @@ export abstract class ScalePane implements SubPane {
         ctx.setLineDash([]);
       }
 
-      ctx.fillStyle = chart.options.layout.background;
+      ctx.fillStyle = chart.options.layout.background ?? '#1e1e1e';
       ctx.fillRect(w - axisWidth, curY - 10, axisWidth, 20);
       ctx.strokeStyle = '#888';
       ctx.lineWidth = 1;
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
       ctx.fillStyle = '#888';
-      ctx.font = 'bold ' + chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
+      ctx.font = 'bold ' + (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(this.formatValue(latestVal), w - 5, curY);
@@ -259,13 +260,13 @@ export abstract class ScalePane implements SubPane {
     const valueAtY = Math.max(0, Math.min(1, ratio)) * visibleRange + visibleMin;
 
     const labelHeight = 20;
-    ctx.fillStyle = chart.options.layout.background;
+    ctx.fillStyle = chart.options.layout.background ?? '#1e1e1e';
     ctx.fillRect(w - axisWidth, mouseY - labelHeight / 2, axisWidth, labelHeight);
-    ctx.strokeStyle = chart.options.layout.textColor;
+    ctx.strokeStyle = chart.options.layout.textColor ?? '#888';
     ctx.lineWidth = 1;
     ctx.strokeRect(w - axisWidth, mouseY - labelHeight / 2, axisWidth, labelHeight);
-    ctx.fillStyle = chart.options.layout.textColor;
-    ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
+    ctx.fillStyle = chart.options.layout.textColor ?? '#888';
+    ctx.font = (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillText(this.formatValue(valueAtY), w - 5, mouseY);

@@ -70,7 +70,11 @@ export class PriceScaleAPI {
    * @returns Current margins object with top and bottom values
    */
   getMargins(): { top: number; bottom: number } {
-    return this.chart.options.priceScale.scaleMargins || { top: 0.1, bottom: 0.1 };
+    const margins = this.chart.options.priceScale.scaleMargins;
+    return {
+      top: margins?.top ?? 0.1,
+      bottom: margins?.bottom ?? 0.1
+    };
   }
 
   /**
@@ -96,18 +100,19 @@ export class PriceScaleAPI {
    * @param options - Partial price scale options to apply
    */
   setOptions(options: Partial<ChartOptions['priceScale']>): void {
-    // Merge with existing options
-    const currentOptions = this.chart.options.priceScale;
-    const newOptions = { ...currentOptions, ...options };
+    if (!options) return;
 
     // Apply mode if specified
-    if (options.mode) {
+    if (options.mode !== undefined) {
       this.setMode(options.mode);
     }
 
     // Apply margins if specified
     if (options.scaleMargins) {
-      this.setMargins(options.scaleMargins);
+      const margins = options.scaleMargins;
+      if (margins.top !== undefined && margins.bottom !== undefined) {
+        this.setMargins({ top: margins.top, bottom: margins.bottom });
+      }
     }
 
     // Apply price format if specified
@@ -122,7 +127,7 @@ export class PriceScaleAPI {
     // Apply current price options if specified
     if (options.currentPrice) {
       this.chart.options.priceScale.currentPrice = {
-        ...this.chart.options.priceScale.currentPrice,
+        ...this.chart.options.priceScale.currentPrice!,
         ...options.currentPrice
       };
 

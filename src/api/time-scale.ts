@@ -1,6 +1,6 @@
 import { Chart } from '../core/chart.js';
 import { indexToX, xToIndex, deriveVisibleStartIdx, calculateRightEdgeOffset } from '../utils/projection.js';
-import { Bar } from '../types/index.js';
+import { Bar, ChartOptions } from '../types/index.js';
 
 /**
  * Time Scale API
@@ -338,6 +338,8 @@ export class TimeScaleAPI {
    * @param options - Partial time scale options to apply
    */
   setOptions(options: Partial<ChartOptions['timeScale']>): void {
+    if (!options) return;
+
     const currentOptions = this.chart.options.timeScale;
     const newOptions = { ...currentOptions, ...options };
 

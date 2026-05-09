@@ -146,7 +146,7 @@ export class Renderer {
     const yClose = priceToY(bar.close, this.chart.state);
 
     const isUp = bar.close >= bar.open;
-    const color = isUp ? this.chart.options.series.upColor : this.chart.options.series.downColor;
+    const color = isUp ? (this.chart.options.series.upColor ?? '#26a69a') : (this.chart.options.series.downColor ?? '#ef5350');
 
     this.bufferCtx.fillStyle = color;
     this.bufferCtx.strokeStyle = color;
@@ -174,12 +174,12 @@ export class Renderer {
     if (!force) return;
     const { w, h, axisWidth, bottomMargin } = this.chart.state;
 
-    ctx.fillStyle = this.chart.options.layout.background;
+    ctx.fillStyle = this.chart.options.layout.background ?? '#1e1e1e';
     ctx.fillRect(0, 0, w, h);
 
     this.axes.drawGrid(ctx);
 
-    ctx.fillStyle = this.chart.options.layout.background;
+    ctx.fillStyle = this.chart.options.layout.background ?? '#1e1e1e';
     ctx.fillRect(w - axisWidth, 0, axisWidth, h);
     ctx.fillRect(0, h - bottomMargin, w, bottomMargin);
 
@@ -253,7 +253,7 @@ export class Renderer {
     const lineY = Math.min(yClose, clipBottom);
 
     if (cp?.showLine !== false) {
-      ctx.strokeStyle = lineColor;
+      ctx.strokeStyle = lineColor ?? '#888';
       ctx.lineWidth = 1;
       ctx.setLineDash(cp?.lineStyle === 'solid' ? [] : [4, 4]);
       ctx.beginPath();
@@ -268,14 +268,14 @@ export class Renderer {
     
     // Use the same clamped Y for the label so it stays in the chart area
     const labelY = Math.min(yClose, clipBottom);
-    ctx.fillStyle = this.hexToRgba(lineColor, LAYOUT.CURRENT_PRICE_LABEL_ALPHA);
+    ctx.fillStyle = this.hexToRgba(lineColor ?? '#888', LAYOUT.CURRENT_PRICE_LABEL_ALPHA);
     ctx.fillRect(w - axisWidth, labelY - labelHeight / 2, axisWidth, labelHeight);
 
-    ctx.strokeStyle = lineColor;
+    ctx.strokeStyle = lineColor ?? '#888';
     ctx.lineWidth = 1;
     ctx.strokeRect(w - axisWidth, labelY - labelHeight / 2, axisWidth, labelHeight);
 
-    ctx.fillStyle = textColor;
+    ctx.fillStyle = textColor ?? '#888';
     ctx.font = `${layout.fontSize}px ${layout.fontFamily}`;
     ctx.textAlign = 'right';
     
@@ -296,7 +296,7 @@ export class Renderer {
 
       if (remainingMs > 0) {
         const countdownText = this.formatCountdown(remainingMs, interval);
-        ctx.fillStyle = cp?.countdownColor || textColor;
+        ctx.fillStyle = (cp?.countdownColor || textColor) || '#aaa';
         ctx.font = `10px ${layout.fontFamily}`;
         ctx.textBaseline = 'top';
         ctx.fillText(countdownText, w - LAYOUT.LABEL_OFFSET, labelY + 3);
@@ -376,8 +376,8 @@ export class Renderer {
     ctx.font = `bold ${fontSize}px ${this.chart.options.layout.fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.globalAlpha = watermark.opacity;
-    ctx.fillStyle = watermark.color;
+    ctx.globalAlpha = watermark.opacity ?? 0.07;
+    const wmColor = watermark.color || this.chart.options.layout.textColor; ctx.fillStyle = wmColor || '#ffffff';
 
     if (isRotated) {
       ctx.translate(chartAreaWidth / 2, h / 2);
@@ -411,7 +411,7 @@ export class Renderer {
     if (refPriceY < 0 || refPriceY > clipBottom) return;
 
     // Draw solid horizontal line using axis text color
-    ctx.strokeStyle = this.chart.options.layout.textColor;
+    ctx.strokeStyle = this.chart.options.layout.textColor || '#aaa';
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
     ctx.beginPath();

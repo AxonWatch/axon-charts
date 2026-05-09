@@ -166,17 +166,18 @@ export class EventManager {
     const items = opts.menu.items;
 
     // Item definitions: [id, type, label, action]
-    const itemDefs = {
+    type MenuDef = ['item', string, () => void] | ['toggle', string, boolean, Partial<import('../types/index.js').ChartOptions>];
+    const itemDefs: Record<string, MenuDef> = {
       copy: ['item', 'Copy Chart Image', () => this.copyChartToClipboard()],
       save: ['item', 'Save Chart Image As...', () => this.saveChartImage()],
-      grid: ['toggle', 'Grid', opts.grid.show, { grid: { show: !opts.grid.show } }],
-      volume: ['toggle', 'Volume', opts.volume.show, { volume: { show: !opts.volume.show } }],
-      crosshair: ['toggle', 'Crosshair', opts.crosshair.mode !== 'none', { crosshair: { mode: opts.crosshair.mode !== 'none' ? 'none' : 'magnet' } }],
-      market: ['toggle', 'Market Header', opts.market.show, { market: { show: !opts.market.show } }],
-      watermark: ['toggle', 'Watermark', opts.watermark.show, { watermark: { show: !opts.watermark.show } }],
+      grid: ['toggle', 'Grid', opts.grid.show ?? true, { grid: { show: !(opts.grid.show ?? true) } }],
+      volume: ['toggle', 'Volume', opts.volume.show ?? false, { volume: { show: !(opts.volume.show ?? false) } }],
+      crosshair: ['toggle', 'Crosshair', (opts.crosshair.mode ?? 'magnet') !== 'none', { crosshair: { mode: (opts.crosshair.mode ?? 'magnet') !== 'none' ? 'none' : 'magnet' } }],
+      market: ['toggle', 'Market Header', opts.market.show ?? false, { market: { show: !(opts.market.show ?? false) } }],
+      watermark: ['toggle', 'Watermark', opts.watermark.show ?? false, { watermark: { show: !(opts.watermark.show ?? false) } }],
       'fit-content': ['item', 'Fit Content', () => this.chart.timeScale().fitContent()],
       'reset-price': ['item', 'Reset Price Scale', () => { this.chart.state.priceScale = 1.0; this.chart.state.priceOffset = 0; this.chart.render(); }],
-      reverse: ['toggle', 'Reverse Price Scale', opts.priceScale.reverse, { priceScale: { reverse: !opts.priceScale.reverse } }],
+      reverse: ['toggle', 'Reverse Price Scale', opts.priceScale.reverse ?? false, { priceScale: { reverse: !(opts.priceScale.reverse ?? false) } }],
       fullscreen: ['item', document.fullscreenElement ? 'Exit Fullscreen' : 'Fullscreen', () => {
         this.removeContextMenu();
         this.toggleFullscreen();
@@ -188,7 +189,7 @@ export class EventManager {
       ? items
       : ['copy', 'save', 'divider1', 'grid', 'volume', 'crosshair', 'market', 'watermark', 'divider2', 'fit-content', 'reset-price', 'reverse', 'divider3', 'fullscreen'];
 
-    const makeToggle = (text, checked, partial) => {
+    const makeToggle = (text: string, checked: boolean, partial: Partial<import('../types/index.js').ChartOptions>) => {
       const el = document.createElement('div');
       el.textContent = text;
       el.style.cssText = [
@@ -210,7 +211,7 @@ export class EventManager {
       });
       return el;
     };
-    const makeItem = (text, fn) => {
+    const makeItem = (text: string, fn: () => void) => {
       const el = document.createElement('div');
       el.textContent = text;
       el.style.cssText = [
@@ -266,7 +267,7 @@ export class EventManager {
     };
     // Use setTimeout to avoid the current mousedown closing it immediately
     setTimeout(() => {
-      document.addEventListener('mousedown', this._contextMenuDismiss);
+      if (this._contextMenuDismiss) document.addEventListener('mousedown', this._contextMenuDismiss);
     }, 0);
   }
 
@@ -306,7 +307,7 @@ export class EventManager {
       if (typeof chart.toDataURL === 'function') {
         const dataUrl = chart.toDataURL();
         // Use chart.toBlob() for clipboard (avoids Image() load latency)
-        chart.toBlob().then(function(blob) {
+        chart.toBlob().then(function(blob: Blob | null) {
           if (blob) {
             navigator.clipboard.write([
               new ClipboardItem({ 'image/png': blob })

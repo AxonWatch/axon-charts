@@ -1,4 +1,4 @@
-import { niceTicks, getPriceDecimals, calculateTimeStep } from '../utils/math.js';
+import { niceTicks, calculateTimeStep } from '../utils/math.js';
 import { LAYOUT } from '../core/layout.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { priceToY, yToPrice, deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
@@ -58,8 +58,8 @@ export class Axes {
     const currentPriceY = currentPrice !== null ? priceToY(currentPrice, this.chart.state) : LAYOUT.OFFSCREEN_PRICE_FALLBACK;
 
     // Draw price labels
-    ctx.fillStyle = this.chart.options.layout.textColor;
-    ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.fillStyle = this.chart.options.layout.textColor ?? '#888';
+    ctx.font = `${this.chart.options.layout.fontSize ?? 12}px ${this.chart.options.layout.fontFamily ?? 'system-ui'}`;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
 
@@ -121,8 +121,8 @@ export class Axes {
 
     // 5. Draw!
     const vertOptions = this.chart.options.grid.vertLines || {};
-    ctx.fillStyle = this.chart.options.layout.textColor;
-    ctx.font = `${this.chart.options.layout.fontSize}px ${this.chart.options.layout.fontFamily}`;
+    ctx.fillStyle = this.chart.options.layout.textColor ?? '#888';
+    ctx.font = `${this.chart.options.layout.fontSize ?? 12}px ${this.chart.options.layout.fontFamily ?? 'system-ui'}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 

@@ -121,7 +121,7 @@ export class PriceFormatter {
 
   static formatDate(ts: number, timezone?: string, dateFormat?: string, showDayOfWeek?: boolean): string {
     const date = new Date(ts);
-    let year: string, monthShort: string, monthNum: string, day: string, weekday: string;
+    let year: string, monthShort: string, monthNum: string = '', day: string, weekday: string;
 
     const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
     if (tz) {

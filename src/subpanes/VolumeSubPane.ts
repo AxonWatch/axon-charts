@@ -1,5 +1,6 @@
 import { ScalePane } from './ScalePane.js';
-import { IChart, ChartState, Bar } from '../types/index.js';
+import { IChart, Bar } from '../types/index.js';
+import type { ChartState } from '../utils/projection.js';
 import { LAYOUT } from '../core/layout.js';
 import { indexToX } from '../utils/projection.js';
 

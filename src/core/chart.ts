@@ -2,7 +2,7 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, Bar, ScrollLockChangeCallback, ChartCommand, ChartState } from '../types/index.js';
+import { ChartOptions, Bar, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback } from '../types/index.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
@@ -14,7 +14,7 @@ import { validateOptions } from '../utils/validation.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
-const DEFAULT_OPTIONS: Required<ChartOptions> = {
+const DEFAULT_OPTIONS = {
   layout: {
     width: 'auto',
     height: 'auto',
@@ -67,7 +67,7 @@ const DEFAULT_OPTIONS: Required<ChartOptions> = {
   },
   menu: {
     enabled: true,
-    items: null
+    items: undefined
   },
   behavior: {
     dragToZoom: true,
@@ -114,7 +114,7 @@ export class Chart {
 
   // Canvas layers
   private bgCanvas!: HTMLCanvasElement;
-  private mainCanvas!: HTMLCanvasElement;
+  mainCanvas!: HTMLCanvasElement;
   private bgCtx!: CanvasRenderingContext2D;
   private mainCtx!: CanvasRenderingContext2D;
 
@@ -146,13 +146,14 @@ export class Chart {
     priceScaleMode: 'linear' | 'logarithmic' | 'percentage';
     axisWidth: number;
     reverse: boolean;
+    referencePrice: number;
   };
 
   // Core modules
   public dataManager: DataManager;
   public renderer: Renderer;
   public eventManager: EventManager;
-  private priceFormatter: PriceFormatter;
+  priceFormatter!: PriceFormatter;
   private priceScaleAPI: PriceScaleAPI;
   private timeScaleAPI: TimeScaleAPI;
   private _crosshairAPI: CrosshairAPI;
@@ -193,18 +194,18 @@ export class Chart {
       w: 0,
       h: 0,
       devicePixelRatio: this.options.devicePixelRatio || window.devicePixelRatio || 1,
-      barWidth: this.options.timeScale.barSpacing,
-      baseBarWidth: this.options.timeScale.barSpacing,
+      barWidth: this.options.timeScale.barSpacing ?? 6,
+      baseBarWidth: this.options.timeScale.barSpacing ?? 6,
       offsetX: 0,
       priceMin: 0,
       priceMax: 100,
       data: [],
-      rightGap: this.options.timeScale.rightOffset,
+      rightGap: this.options.timeScale.rightOffset ?? 0,
       topMargin: this.options.layout.padding?.top ?? LAYOUT.TOP_MARGIN,
       bottomMargin: this.options.layout.padding?.bottom ?? LAYOUT.BOTTOM_MARGIN,
       priceScale: 1.0,
       priceOffset: 0,
-      priceScaleMode: this.options.priceScale.mode,
+      priceScaleMode: this.options.priceScale.mode ?? 'linear',
       axisWidth: this.options.layout.padding?.right ?? LAYOUT.RIGHT_GAP,
       chartBottom: 0,
       subPaneHeight: 0,
@@ -213,8 +214,8 @@ export class Chart {
     };
 
     // 4. Initialize core modules
-    this.dataManager = new DataManager(this.options.data.maxBars);
-    this.dataManager.setAutoCleanup(this.options.data.autoCleanup);
+    this.dataManager = new DataManager(this.options.data.maxBars ?? 5000);
+    this.dataManager.setAutoCleanup(this.options.data.autoCleanup ?? true);
     this.priceFormatter = new PriceFormatter(this.options.priceScale.priceFormat);
     this.renderer = new Renderer(this);
     this.initCanvases();
@@ -669,7 +670,7 @@ export class Chart {
     validateOptions(partialOptions);
 
     const normalizedPartial = this.normalizePartialOptions(partialOptions);
-    this.options = deepMerge(this.options, normalizedPartial);
+    this.options = deepMerge(this.options, normalizedPartial) as Required<ChartOptions>;
 
     let needsRender = false;
     let needsCrosshairUpdate = false;
@@ -678,12 +679,12 @@ export class Chart {
     // === TIME SCALE ===
     if (normalizedPartial.timeScale) {
       if (normalizedPartial.timeScale.barSpacing !== undefined) {
-        this.state.barWidth = this.options.timeScale.barSpacing;
+        this.state.barWidth = this.options.timeScale.barSpacing!;
         this.renderer.createBuffer();
         needsRender = true;
       }
       if (normalizedPartial.timeScale.rightOffset !== undefined) {
-        this.state.rightGap = this.options.timeScale.rightOffset;
+        this.state.rightGap = this.options.timeScale.rightOffset!;
         needsRender = true;
       }
       if (normalizedPartial.timeScale.visible !== undefined) {
@@ -818,12 +819,12 @@ export class Chart {
   }
 
   private normalizeOptions(options: ChartOptions): Required<ChartOptions> {
-    return deepMerge(deepClone(DEFAULT_OPTIONS), this.normalizePartialOptions(options)) as Required<ChartOptions>;
+    return deepMerge<ChartOptions>(deepClone(DEFAULT_OPTIONS) as ChartOptions, this.normalizePartialOptions(options)) as Required<ChartOptions>;
   }
 
   public getOptions(): Readonly<ChartOptions> { return deepClone(this.options); }
   public resetOptions(): void {
-    this.options = deepClone(DEFAULT_OPTIONS);
+    this.options = deepClone(DEFAULT_OPTIONS) as Required<ChartOptions>;
     this.state.reverse = false;
     this.state.priceScale = 1.0;
     this.state.priceOffset = 0;
@@ -1043,6 +1044,9 @@ export class Chart {
       version: '1.0.0',
       options: deepClone(this.options),
       data: [...this.dataManager.data],
+      referencePrice: this.state.referencePrice,
+      priceScaleMode: this.state.priceScaleMode,
+      reverse: this.state.reverse,
       viewport: {
         offsetX: this.state.offsetX,
         barWidth: this.state.barWidth,

@@ -1,4 +1,5 @@
-import { IChart, ChartState, Bar } from '../types/index.js';
+import { IChart, Bar } from '../types/index.js';
+import type { ChartState } from '../utils/projection.js';
 
 /**
  * Generic sub-pane interface for indicators, volume, etc.
