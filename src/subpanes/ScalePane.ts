@@ -172,7 +172,7 @@ export abstract class ScalePane implements SubPane {
     this.renderContent(ctx, chart, subPaneTop, subPaneHeight, firstVisibleIdx, endIdx, visibleMin, visibleRange, areaHeight, areaTop);
 
     // Draw axis labels
-    ctx.fillStyle = '#666';
+    ctx.fillStyle = chart.options.layout.textColor;
     ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -199,7 +199,7 @@ export abstract class ScalePane implements SubPane {
       const curY = areaTop + (areaHeight - curRatio * areaHeight);
 
       if (showPriceLineOnly) {
-        ctx.strokeStyle = '#888';
+        ctx.strokeStyle = chart.options.layout.textColor;
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -211,11 +211,11 @@ export abstract class ScalePane implements SubPane {
 
       ctx.fillStyle = chart.options.layout.background ?? '#1e1e1e';
       ctx.fillRect(w - axisWidth, curY - 10, axisWidth, 20);
-      ctx.strokeStyle = '#888';
+      ctx.strokeStyle = chart.options.layout.textColor;
       ctx.lineWidth = 1;
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
-      ctx.fillStyle = '#888';
+      ctx.fillStyle = chart.options.layout.textColor;
       ctx.font = 'bold ' + (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
@@ -236,7 +236,7 @@ export abstract class ScalePane implements SubPane {
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
-    ctx.fillStyle = '#888';
+    ctx.fillStyle = chart.options.layout.textColor;
     ctx.fillText(label, 10, tooltipY);
     const labelWidth = ctx.measureText(label).width;
     ctx.fillStyle = color;

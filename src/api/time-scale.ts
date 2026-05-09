@@ -58,10 +58,11 @@ export class TimeScaleAPI {
 
     // Calculate offset to position the range
     // We want 'fromIdx' to be at the left edge (x=0)
-    // indexToX: x = (index - 1 - offsetX) * barWidth
-    // When x=0: 0 = (fromIdx - 1 - offsetX) * barWidth
-    // => offsetX = fromIdx - 1
-    this.chart.state.offsetX = fromIdx - 1;
+    // indexToX: x = index * barWidth + offsetX + barWidth / 2
+    // When x=0: 0 = fromIdx * barWidth + offsetX + barWidth / 2
+    // => offsetX = -(fromIdx * barWidth + barWidth / 2)
+    const bw = this.chart.state.barWidth;
+    this.chart.state.offsetX = -(fromIdx * bw + bw / 2);
 
     // Re-render
     this.chart.render();

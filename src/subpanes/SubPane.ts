@@ -17,6 +17,9 @@ export interface SubPane {
   /** Pixel threshold for separator drag hit-testing (default: 6px) */
   readonly separatorThreshold: number;
 
+  /** Set by events.ts on mousemove — changes separator highlight color */
+  separatorHovered: boolean;
+
   /**
    * Read options from chart (e.g., chart.options.volume)
    * Called each render to get current configuration

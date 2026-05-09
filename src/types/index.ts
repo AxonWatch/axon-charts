@@ -278,6 +278,7 @@ export interface IChart {
   onVisibleRangeChange?: VisibleRangeChangeCallback;
   timeScale(): import('../api/time-scale.js').TimeScaleAPI;
   setOptions(partial: Partial<ChartOptions>): void;
+  getActiveSubPanes(): import('../subpanes/SubPane.js').SubPane[];
   render(): void;
   isAutoScrolling(): boolean;
   scrollToLatest(): void;

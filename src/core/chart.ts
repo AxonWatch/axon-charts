@@ -891,7 +891,7 @@ export class Chart {
   /**
    * Get all active (visible) sub-panes
    */
-  private getActiveSubPanes(): SubPane[] {
+  public getActiveSubPanes(): SubPane[] {
     return Array.from(this.subPanes.values()).filter(p => p.getOptions()?.show);
   }
 

@@ -12,7 +12,7 @@ export class Renderer {
   private chart: IChart;
   private candleBuffer: HTMLCanvasElement | null = null;
   private bufferCtx: CanvasRenderingContext2D | null = null;
-  private lastBufferWidth: number = 0;
+  private lastBufferPixelWidth: number = 0;
   private axes: Axes;
   private bufferRenderStart: number = 0;
   private bufferRenderEnd: number = 0;
@@ -48,7 +48,7 @@ export class Renderer {
     if (this.candleBuffer) {
       const currentBufferWidth = this.candleBuffer.width / devicePixelRatio;
       if (Math.abs(currentBufferWidth - bufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD &&
-          this.lastBufferWidth === barWidth) {
+          Math.abs(this.lastBufferPixelWidth - currentBufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD) {
         return;
       }
     }
@@ -69,7 +69,7 @@ export class Renderer {
       this.bufferCtx.imageSmoothingEnabled = false;
     }
 
-    this.lastBufferWidth = barWidth;
+    this.lastBufferPixelWidth = this.candleBuffer ? this.candleBuffer.width / devicePixelRatio : 0;
     this.renderCandles();
   }
 
@@ -329,10 +329,41 @@ export class Renderer {
     return `${days}d ${hours}h`;
   }
 
+  /** Named CSS color to hex lookup */
+  private static readonly NAMED_COLORS: Record<string, string> = {
+    black: '#000000', white: '#ffffff', red: '#ff0000', green: '#008000',
+    blue: '#0000ff', yellow: '#ffff00', cyan: '#00ffff', magenta: '#ff00ff',
+    gray: '#808080', grey: '#808080', orange: '#ffa500', purple: '#800080',
+    pink: '#ffc0cb', brown: '#a52a2a', transparent: '#000000'
+  };
+
   private hexToRgba(hex: string, alpha: number): string {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
+    // Resolve named colors to hex
+    const h = Renderer.NAMED_COLORS[hex.toLowerCase()] || hex;
+    let r: number, g: number, b: number;
+
+    if (/^#[0-9a-fA-F]{3}$/.test(h)) {
+      // #RGB short form: duplicate each hex digit
+      r = parseInt(h[1] + h[1], 16);
+      g = parseInt(h[2] + h[2], 16);
+      b = parseInt(h[3] + h[3], 16);
+    } else if (/^#[0-9a-fA-F]{6}$/.test(h)) {
+      // #RRGGBB standard form
+      r = parseInt(h.slice(1, 3), 16);
+      g = parseInt(h.slice(3, 5), 16);
+      b = parseInt(h.slice(5, 7), 16);
+    } else {
+      // Fallback — use layout text color
+      const fallback = this.chart.options.layout.textColor || '#aaa';
+      const fb = Renderer.NAMED_COLORS[fallback.toLowerCase()] || fallback;
+      if (/^#[0-9a-fA-F]{6}$/.test(fb)) {
+        r = parseInt(fb.slice(1, 3), 16);
+        g = parseInt(fb.slice(3, 5), 16);
+        b = parseInt(fb.slice(5, 7), 16);
+      } else {
+        r = 170; g = 170; b = 170;
+      }
+    }
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
   }
 

@@ -79,7 +79,7 @@ export class EventManager {
 
     // If double-clicked on separator line, reset sub-pane height to default (20%)
     let currentTop = chartBottom;
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
       const SEPARATOR_HIT = 6;
       const isOverSeparator = mouseY > currentTop - SEPARATOR_HIT && mouseY < currentTop + SEPARATOR_HIT;
@@ -367,7 +367,7 @@ export class EventManager {
 
     // === NEW: Sub-pane axis zoom ===
     let currentTop = chartBottomEdge;
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
       const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
       const isOverAxis = mouseX > chartAreaWidth;
@@ -435,7 +435,7 @@ export class EventManager {
         // Check if over any sub-pane axis
         let currentTop = chartBottomEdge;
         let foundPane = false;
-        for (const pane of (this.chart as any).getActiveSubPanes()) {
+        for (const pane of this.chart.getActiveSubPanes()) {
           const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
           const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
           const isOverAxis = mouseX > chartAreaWidth;
@@ -503,10 +503,10 @@ export class EventManager {
     let separatorHovered = false;
     let currentTop = chartBottomEdge;
     // Reset all pane separator hover states before checking
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       pane.separatorHovered = false;
     }
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
       const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
       const isOverAxis = mouseX > chartAreaWidth;
@@ -567,7 +567,7 @@ export class EventManager {
     } else if (this.dragMode === 'separator') {
       // Dragging separator resizes the first active sub-pane
       const deltaY = mouseY - this.lastMouseY;
-      const firstPane = (this.chart as any).getActiveSubPanes()[0];
+      const firstPane = this.chart.getActiveSubPanes()[0];
       if (firstPane) {
         firstPane.handleSeparatorDrag(this.chart, deltaY, this.chart.state.h);
       }
@@ -636,7 +636,7 @@ export class EventManager {
   private handleFullscreenChange = (): void => {
     this.removeContextMenu();
     this._separatorWasHovered = false;
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       pane.separatorHovered = false;
     }
     this.chart.render();
@@ -646,7 +646,7 @@ export class EventManager {
     // Reset separator hover state when mouse leaves chart
     if (this._separatorWasHovered) {
       this._separatorWasHovered = false;
-      for (const pane of (this.chart as any).getActiveSubPanes()) {
+      for (const pane of this.chart.getActiveSubPanes()) {
         pane.separatorHovered = false;
       }
       this.requestRender();
@@ -727,7 +727,8 @@ export class EventManager {
     // distinguish "at right edge" from "scrolled way past it."
     const rawFirstVisible = Math.floor(-offsetX / barWidth);
     const latestBarVisible = rawFirstVisible < dataLength;
-    const atRightEdge = latestBarVisible && (rawFirstVisible + barsVisible >= dataLength - 8);
+    const AUTOSCROLL_BUFFER = 8;
+    const atRightEdge = latestBarVisible && (rawFirstVisible + barsVisible >= dataLength - AUTOSCROLL_BUFFER);
 
     const wasAutoScrolling = this.autoScrollEnabled;
     this.autoScrollEnabled = atRightEdge;

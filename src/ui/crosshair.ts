@@ -215,7 +215,7 @@ export class Crosshair {
       let currentTop = this.chart.state.chartBottom;
       let tooltipY = this.chart.state.chartBottom + LAYOUT.TOOLTIP_MARGIN_Y;
 
-      for (const pane of (this.chart as any).getActiveSubPanes()) {
+      for (const pane of this.chart.getActiveSubPanes()) {
         const bar = data[barIndex];
         if (bar) {
           pane.renderTooltip(this.overlayCtx, this.chart, bar, currentTop, tooltipY);
@@ -322,7 +322,7 @@ export class Crosshair {
     let currentTop = chartBottom;
     let isOverSubPane = false;
 
-    for (const pane of (this.chart as any).getActiveSubPanes()) {
+    for (const pane of this.chart.getActiveSubPanes()) {
       const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
       const isOverThisPane = this.y > currentTop && this.y <= currentTop + subPaneHeight;
 

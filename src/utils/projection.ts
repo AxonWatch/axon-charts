@@ -39,7 +39,7 @@ export function priceToY(price: number, state: ChartState): number {
 
   if (state.priceScaleMode === 'logarithmic') {
     const minLog = Math.log10(Math.max(state.priceMin, 0.01));
-    const maxLog = Math.log10(Math.max(state.priceMax, 0.02));
+    const maxLog = Math.log10(Math.max(state.priceMax, 0.01));
     const priceLog = Math.log10(Math.max(price, 0.01));
     ratio = (priceLog - minLog) / (maxLog - minLog || 1);
   } else if (state.priceScaleMode === 'percentage' && state.referencePrice > 0) {
@@ -76,7 +76,7 @@ export function yToPrice(y: number, state: ChartState): number {
 
   if (state.priceScaleMode === 'logarithmic') {
     const minLog = Math.log10(Math.max(state.priceMin, 0.01));
-    const maxLog = Math.log10(Math.max(state.priceMax, 0.02));
+    const maxLog = Math.log10(Math.max(state.priceMax, 0.01));
     const priceLog = minLog + ratio * (maxLog - minLog || 1);
     return Math.pow(10, priceLog);
   } else if (state.priceScaleMode === 'percentage' && state.referencePrice > 0) {
