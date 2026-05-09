@@ -695,7 +695,7 @@ export class Chart {
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { totalBars: data.length, isAutoScrolling: this.isAutoScrolling() }
+      state: { id: this.axonId, version: '1.1.0', totalBars: data.length, isAutoScrolling: this.isAutoScrolling() }
     };
 
     // Conditionally expose data — reduces token cost for AI agents that only need metadata
