@@ -23,6 +23,8 @@ import { calculateTimeStep } from '../utils/math.js';
  *   formatValue()    – text formatting (e.g. "1.5K" or "42.5")
  *   getLatestValue() – current value for the horizontal reference line
  *   getMaxVisible()  – visible range max for Y-axis scaling
+ *   getMinVisible()  – (optional, default 0) visible range min, override for negative-value indicators
+ *   computeValues()  – (optional) compute once per render, cache in paneState.computedValues
  *   getTooltipColor(bar) – color for tooltip value text
  *   getTooltipLabel() – e.g. "Volume:" or "RSI:"
  */
@@ -32,13 +34,26 @@ export abstract class ScalePane implements SubPane {
   /** Set by events.ts on mousemove — changes separator highlight color */
   separatorHovered: boolean = false; // pixels for separator hit-testing
 
-  // Internal scale state (zoom/pan)
+  // Internal scale state (zoom/pan + computed values cache)
   protected paneState = {
     scale: 1.0,
     offset: 0,
     detectedPrecision: null as number | null,
-    lastDataLength: -1
+    lastDataLength: -1,
+    /** Cached computed values from computeValues(). Reset on every render. */
+    computedValues: null as number[] | null
   };
+
+  /**
+   * Compute indicator values for all bars. Called once per render() before renderContent().
+   * The return value is stored in paneState.computedValues and available in
+   * renderContent(), getLatestValue(), getTooltipValue(), etc.
+   *
+   * Return null (default) if no computation is needed (e.g. VolumeSubPane reads raw bar data).
+   */
+  protected computeValues(chart: IChart): number[] | null {
+    return null;
+  }
 
   constructor(protected chart: IChart) {}
 
@@ -67,6 +82,8 @@ export abstract class ScalePane implements SubPane {
   abstract getLatestValue(chart: IChart): number | null;
   /** Visible range max for Y-axis scaling */
   abstract getMaxVisible(chart: IChart): number;
+  /** Visible range min for Y-axis scaling (default 0). Override for oscillators with negative values like MACD. */
+  getMinVisible(chart: IChart): number { return 0; }
   /** Color for the tooltip value text (depends on bar direction) */
   abstract getTooltipColor(bar: Bar): string;
   /** Tooltip label prefix (e.g. "Volume:" or "RSI:") */
@@ -160,8 +177,11 @@ export abstract class ScalePane implements SubPane {
 
     const maxVal = this.getMaxVisible(chart);
     const visibleMax = maxVal / this.paneState.scale;
-    const visibleMin = Math.max(0, this.paneState.offset);
+    const visibleMin = Math.max(this.getMinVisible(chart), this.paneState.offset);
     const visibleRange = Math.max(1, visibleMax - visibleMin);
+
+    // Compute indicator values once per render (cached in paneState.computedValues)
+    this.paneState.computedValues = this.computeValues(chart);
 
     // Top gap for visual comfort
     const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
@@ -211,7 +231,7 @@ export abstract class ScalePane implements SubPane {
 
       ctx.fillStyle = chart.options.layout.background ?? '#1e1e1e';
       ctx.fillRect(w - axisWidth, curY - 10, axisWidth, 20);
-      ctx.strokeStyle = chart.options.layout.textColor;
+      ctx.strokeStyle = chart.options.layout.textColor || '#aaa';
       ctx.lineWidth = 1;
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
@@ -249,7 +269,7 @@ export abstract class ScalePane implements SubPane {
 
     const maxVal = this.getMaxVisible(chart);
     const visibleMax = maxVal / this.paneState.scale;
-    const visibleMin = Math.max(0, this.paneState.offset);
+    const visibleMin = Math.max(this.getMinVisible(chart), this.paneState.offset);
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
     const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));

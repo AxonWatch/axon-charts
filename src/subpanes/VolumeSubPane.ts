@@ -7,9 +7,10 @@ import { indexToX } from '../utils/projection.js';
 /**
  * Volume bar sub-pane implementation.
  *
- * Only implements the 6 abstract methods from ScalePane.
+ * Only implements the required abstract methods from ScalePane.
+ * Volume reads raw bar.volume directly (no computeValues needed).
  * All generic functionality (separator, grids, tooltip, axis labels,
- * current value line, zoom/pan, precision detection) is provided
+ * current value line, zoom/pan, precision detection, compute cache) is provided
  * by the ScalePane base class.
  */
 export class VolumeSubPane extends ScalePane {
