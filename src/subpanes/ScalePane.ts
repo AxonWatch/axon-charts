@@ -216,10 +216,10 @@ export abstract class ScalePane implements SubPane {
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
       ctx.fillStyle = chart.options.layout.textColor;
-      ctx.font = 'bold ' + (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
+      ctx.font = (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
-      ctx.fillText(this.formatValue(latestVal), w - 5, curY);
+      ctx.fillText(this.formatValue(latestVal), w - LAYOUT.LABEL_OFFSET, curY);
       ctx.textAlign = 'left';
     }
   }

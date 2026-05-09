@@ -426,8 +426,8 @@ export class EventManager {
 
     if (mouseX > chartAreaWidth && mouseY <= chartBottomEdge) {
       this.dragMode = 'price';
-    } else if (mouseY > chartBottomEdge && mouseY <= h - bottomMargin) {
-      // === NEW: Check for separator drag or sub-pane axis drag ===
+    } else if (mouseY >= chartBottomEdge - 6 && mouseY <= h - bottomMargin) {
+      // Check for separator drag (6px zone, matching highlight threshold)
       const SEPARATOR_DRAG_THRESHOLD = 6;
       if (Math.abs(mouseY - chartBottomEdge) < SEPARATOR_DRAG_THRESHOLD) {
         this.dragMode = 'separator';
