@@ -97,6 +97,9 @@ const DEFAULT_OPTIONS = {
     show: false,
     rotate: false
   },
+  context: {
+    exposeData: false
+  },
   volume: {
     show: false,
     upColor: '#22c55e',
@@ -104,6 +107,31 @@ const DEFAULT_OPTIONS = {
     heightPercent: 0.2
   }
 };
+
+let _chartIdCounters: Record<string, number> = {};
+
+/**
+ * Generate a chart ID for the global __AXON_CHARTS__ registry.
+ *
+ * Priority:
+ * 1. User-provided context.id (used verbatim)
+ * 2. Market pair prefix + auto-increment counter (e.g. BTC-USDT-1, BTC-USDT-2)
+ * 3. Generic chart- prefix + auto-increment counter (e.g. chart-1, chart-2)
+ *
+ * The per-prefix counter prevents collisions when the same pair appears
+ * on multiple charts with different timeframes or sources.
+ */
+function generateChartId(options: ChartOptions): string {
+  if (options.context?.id && options.context.id.trim().length > 0) {
+    return options.context.id.trim();
+  }
+  const pair = options.market?.baseAsset && options.market?.quoteAsset
+    ? `${options.market.baseAsset}-${options.market.quoteAsset}`
+    : null;
+  const prefix = pair || 'chart';
+  _chartIdCounters[prefix] = (_chartIdCounters[prefix] || 0) + 1;
+  return `${prefix}-${_chartIdCounters[prefix]}`;
+}
 
 /**
  * Main Chart class - Core candlestick chart implementation
@@ -150,6 +178,8 @@ export class Chart {
   };
 
   // Core modules
+  /** Chart identifier in global __AXON_CHARTS__ registry */
+  public readonly axonId: string = "";
   public dataManager: DataManager;
   public renderer: Renderer;
   public eventManager: EventManager;
@@ -230,6 +260,19 @@ export class Chart {
     this.addSubPane(this.volumeSubPane);
 
     this.startCountdownTimer();
+
+    // Generate chart ID for AI agent registry (handles user-provided ID, market pair, or auto-increment)
+    this.axonId = generateChartId(this.options);
+
+    // Register in global AI agent registry
+    if (typeof window !== 'undefined' && this.options.context.discoverable !== false) {
+      const registry = (window as any).__AXON_CHARTS__;
+      if (registry) {
+        registry.charts[this.axonId] = this;
+      }
+      // Set DOM attribute for agent discovery
+      this.container.setAttribute('data-axon-charts-id', this.axonId);
+    }
 
     // 5. Setup Resize Listeners (Memory Leak Protected)
     this.handleResizeBound = () => {
@@ -646,23 +689,31 @@ export class Chart {
     const pricePerPixel = (priceMax - priceMin) / (usableH || 1);
     const timePerBar = data.length > 1 ? data[1].time - data[0].time : 0;
 
-    // Auto-expose all active sub-panes
-    const subPanes: Record<string, any> = {};
-    for (const pane of this.getActiveSubPanes()) {
-      subPanes[pane.id] = pane.getContextData();
-    }
-
-    return {
+    const result: Record<string, any> = {
       viewport: { width: w, height: h, rightGap,
         visibleRange: { fromIndex: startIdx, toIndex: endIdx, fromTime: data[startIdx]?.time, toTime: data[endIdx]?.time },
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { totalBars: data.length, isAutoScrolling: this.isAutoScrolling() },
-      visibleBars,
-      latestBar: data[data.length - 1],
-      subPanes
+      state: { totalBars: data.length, isAutoScrolling: this.isAutoScrolling() }
     };
+
+    // Conditionally expose data — reduces token cost for AI agents that only need metadata
+    if (this.options.context?.exposeData !== false) {
+      result.visibleBars = visibleBars;
+      result.latestBar = data[data.length - 1];
+
+      // Auto-expose all active sub-panes
+      const subPanes: Record<string, any> = {};
+      for (const pane of this.getActiveSubPanes()) {
+        subPanes[pane.id] = pane.getContextData();
+      }
+      if (Object.keys(subPanes).length > 0) {
+        result.subPanes = subPanes;
+      }
+    }
+
+    return result;
   }
 
   public setOptions(partialOptions: Partial<ChartOptions>): void {
@@ -897,6 +948,15 @@ export class Chart {
 
   public destroy(): void {
     this.stopCountdownTimer();
+
+    // Unregister from AI agent registry
+    if (typeof window !== 'undefined') {
+      const registry = (window as any).__AXON_CHARTS__;
+      if (registry) {
+        delete registry.charts[this.axonId];
+      }
+    }
+
     window.removeEventListener('resize', this.handleResizeBound);
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();

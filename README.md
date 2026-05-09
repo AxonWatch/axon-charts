@@ -13,7 +13,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 - ⚡ **Performance** — <8ms first render, <0.2ms tick updates
 - 🤖 **AI-First** — Native LLM integration with structured context export
 - 📦 **Lightweight** — Only 21.8KB gzipped (zero external dependencies)
-- 🎨 **Customizable** — 82 configuration options across 12 categories
+- 🎨 **Customizable** — 85 configuration options across 13 categories
 - 🔒 **Type-Safe** — Full TypeScript support
 
 ## Features
@@ -40,13 +40,16 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 
 ### Developer Experience
 - ✅ Clean, intuitive API
-- ✅ Comprehensive configuration system (82 options across 12 categories)
+- ✅ Comprehensive configuration system (85 options across 13 categories)
 - ✅ Component APIs (priceScale, timeScale, crosshair)
 - ✅ Runtime option updates with validation
 - ✅ Zero external dependencies
 
 ### AI Integration
-- ✅ Structured context export (`getContext()`)
+- ✅ Structured context export (`getContext()`) with configurable data exposure
+- ✅ AI agent discovery via `window.__AXON_CHARTS__` global registry
+- ✅ Multi-chart support with per-chart IDs (`data-axon-charts-id`)
+- ✅ Stealth mode (`context.discoverable: false`) to hide from agents
 - ✅ Typed command execution (`execute()`)
 - ✅ Event callbacks (`onCrosshairMove`, `onBarClick`, `onVisibleRangeChange`)
 - ✅ Screenshot capture (`toDataURL`, `toBlob`)
@@ -99,7 +102,7 @@ chart.setData(data);
 
 ## Try It Live
 
-Check out the [interactive demo](demo.html) — explore all 82 settings in real-time.
+Check out the [interactive demo](demo.html) — explore all 85 settings in real-time.
 
 ## API Reference
 

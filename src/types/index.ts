@@ -140,6 +140,22 @@ export interface ChartOptions {
     rotate?: boolean;
   };
 
+  // === LLM Context Exposure ===
+  context?: {
+    /** Controls whether getContext() returns visible bars, latest bar, and sub-panes.
+     *  false (default): only viewport metadata. true: full trading data exposure. */
+    exposeData?: boolean;
+    /** Controls whether the chart registers in the global window.__AXON_CHARTS__ registry.
+     *  When true, AI agents with the Axon Charts skill can discover and interact with this chart.
+     *  Set to false for stealth mode (agents won't know this is an Axon Charts chart). */
+    discoverable?: boolean;
+    /** Optional identifier for this chart instance in the global registry.
+     *  Used by AI agents to target specific charts in multi-chart environments.
+     *  Auto-generated from market.baseAsset/quoteAsset if available, or auto-incremented.
+     *  Also set as a DOM attribute: data-axon-charts-id="{id}" on the container element. */
+    id?: string;
+  };
+
   // === Volume Sub-Pane ===
   volume?: {
     show?: boolean;            // default: false

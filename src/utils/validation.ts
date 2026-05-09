@@ -68,6 +68,11 @@ export function validateOptions(options: Partial<ChartOptions>): void {
     validateData(options.data);
   }
 
+  // === CONTEXT ===
+  if (options.context) {
+    validateContext(options.context);
+  }
+
   // === VOLUME ===
   if (options.volume) {
     validateVolume(options.volume);
@@ -404,6 +409,15 @@ function validateData(data: any, path: string = 'data'): void {
 
   if (data.autoCleanup !== undefined && typeof data.autoCleanup !== 'boolean') {
     throw new ValidationError(`${path}.autoCleanup`, 'Auto cleanup must be a boolean', data.autoCleanup);
+  }
+}
+
+function validateContext(context: any, path: string = 'context'): void {
+  if (typeof context !== 'object' || context === null) {
+    throw new ValidationError(path, 'Context must be an object', context);
+  }
+  if (context.exposeData !== undefined && typeof context.exposeData !== 'boolean') {
+    throw new ValidationError(`${path}.exposeData`, 'exposeData must be a boolean', context.exposeData);
   }
 }
 
