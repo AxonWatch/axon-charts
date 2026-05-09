@@ -172,7 +172,7 @@ export abstract class ScalePane implements SubPane {
     this.renderContent(ctx, chart, subPaneTop, subPaneHeight, firstVisibleIdx, endIdx, visibleMin, visibleRange, areaHeight, areaTop);
 
     // Draw axis labels
-    ctx.fillStyle = chart.options.layout.textColor;
+    ctx.fillStyle = chart.options.layout.textColor || '#aaa';
     ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
@@ -199,7 +199,7 @@ export abstract class ScalePane implements SubPane {
       const curY = areaTop + (areaHeight - curRatio * areaHeight);
 
       if (showPriceLineOnly) {
-        ctx.strokeStyle = chart.options.layout.textColor;
+        ctx.strokeStyle = chart.options.layout.textColor || '#aaa';
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -215,7 +215,7 @@ export abstract class ScalePane implements SubPane {
       ctx.lineWidth = 1;
       ctx.strokeRect(w - axisWidth, curY - 10, axisWidth, 20);
 
-      ctx.fillStyle = chart.options.layout.textColor;
+      ctx.fillStyle = chart.options.layout.textColor || '#aaa';
       ctx.font = (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
@@ -236,7 +236,7 @@ export abstract class ScalePane implements SubPane {
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
-    ctx.fillStyle = chart.options.layout.textColor;
+    ctx.fillStyle = chart.options.layout.textColor || '#aaa';
     ctx.fillText(label, 10, tooltipY);
     const labelWidth = ctx.measureText(label).width;
     ctx.fillStyle = color;
@@ -269,7 +269,7 @@ export abstract class ScalePane implements SubPane {
     ctx.font = (chart.options.layout.fontSize ?? 12) + 'px ' + (chart.options.layout.fontFamily ?? 'system-ui');
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.formatValue(valueAtY), w - 5, mouseY);
+    ctx.fillText(this.formatValue(valueAtY), w - LAYOUT.LABEL_OFFSET, mouseY);
   }
 
   protected formatValue(value: number): string {
