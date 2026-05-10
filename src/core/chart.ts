@@ -108,29 +108,21 @@ const DEFAULT_OPTIONS = {
   }
 };
 
-let _chartIdCounters: Record<string, number> = {};
-
 /**
  * Generate a chart ID for the global __AXON_CHARTS__ registry.
  *
  * Priority:
  * 1. User-provided context.id (used verbatim)
- * 2. Market pair prefix + auto-increment counter (e.g. BTC-USDT-1, BTC-USDT-2)
- * 3. Generic chart- prefix + auto-increment counter (e.g. chart-1, chart-2)
+ * 2. Opaque random token (ax-xxxxxx) — no pair inference, no stale associations.
  *
- * The per-prefix counter prevents collisions when the same pair appears
- * on multiple charts with different timeframes or sources.
+ * Opaque IDs force agents to read state.market for instrument info.
+ * User-provided IDs are used verbatim (user takes responsibility for meaning).
  */
 function generateChartId(options: ChartOptions): string {
   if (options.context?.id && options.context.id.trim().length > 0) {
     return options.context.id.trim();
   }
-  const pair = options.market?.baseAsset && options.market?.quoteAsset
-    ? `${options.market.baseAsset}-${options.market.quoteAsset}`
-    : null;
-  const prefix = pair || 'chart';
-  _chartIdCounters[prefix] = (_chartIdCounters[prefix] || 0) + 1;
-  return `${prefix}-${_chartIdCounters[prefix]}`;
+  return 'ax-' + Math.random().toString(36).slice(2, 8);
 }
 
 /**
@@ -695,7 +687,13 @@ export class Chart {
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { id: this.axonId, version: '1.1.0', totalBars: data.length, isAutoScrolling: this.isAutoScrolling() }
+      state: { id: this.axonId, version: '1.1.0', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
+        market: {
+          baseAsset: this.options.market?.baseAsset || null,
+          quoteAsset: this.options.market?.quoteAsset || null,
+          timeframe: this.options.market?.timeframe || null,
+          source: this.options.market?.source || null
+        } }
     };
 
     // Conditionally expose data — reduces token cost for AI agents that only need metadata
