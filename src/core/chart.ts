@@ -503,6 +503,67 @@ export class Chart {
     return false;
   }
 
+  /**
+   * Fast price scale update for high-frequency tick streams.
+   * Only recalculates when the last bar's high/low exceeds the current range
+   * by more than the hysteresis threshold (1.5% of current range).
+   * Prevents micro-updates and flickering during normal noise.
+   * Returns true if range expanded (caller should redraw background).
+   */
+  private updatePriceScaleFast(): boolean {
+    if (this.dataManager.isEmpty) return false;
+
+    const lastBar = this.dataManager.data[this.dataManager.length - 1];
+    if (!lastBar) return false;
+
+    const currentRange = this.state.priceMax - this.state.priceMin;
+    if (currentRange <= 0) return false;
+
+    // Hysteresis: 1.5% threshold prevents jitter from normal market noise
+    const threshold = currentRange * 0.015;
+
+    const needsUpdate =
+      lastBar.high > this.state.priceMax + threshold ||
+      lastBar.low < this.state.priceMin - threshold;
+
+    if (!needsUpdate) return false;
+
+    // Recalculate using existing price range logic
+    const { h, w, barWidth, priceScale } = this.state;
+    const firstVisibleIdx = deriveVisibleStartIdx(this.state, this.dataManager.length);
+
+    const visibleEnd = Math.min(
+      firstVisibleIdx + Math.ceil((w - this.state.axisWidth) / barWidth) + 5,
+      this.dataManager.length
+    );
+
+    const range = this.dataManager.getPriceRange(
+      firstVisibleIdx,
+      visibleEnd - firstVisibleIdx,
+      this.options.priceScale.scaleMargins
+    );
+    const mid = (range.max + range.min) / 2;
+    const halfRange = ((range.max - range.min) / 2) * priceScale;
+
+    this.state.priceMin = mid - halfRange;
+    this.state.priceMax = mid + halfRange;
+
+    // In percentage mode, convert priceMin/Max to percentage space and set reference price
+    if (this.options.priceScale.mode === 'percentage') {
+      const firstVisibleBar = this.dataManager.data[firstVisibleIdx];
+      if (firstVisibleBar) {
+        this.state.referencePrice = firstVisibleBar.open;
+        const ref = this.state.referencePrice;
+        if (ref > 0) {
+          this.state.priceMin = ((mid - halfRange - ref) / ref) * 100;
+          this.state.priceMax = ((mid + halfRange - ref) / ref) * 100;
+        }
+      }
+    }
+
+    return true;
+  }
+
   private ensureRightGapAndRoll(): void {
     if (!this.options.behavior.autoScroll || !this.isAutoScrolling()) return;
     const { barWidth, axisWidth, w, rightGap } = this.state;
@@ -652,9 +713,21 @@ export class Chart {
       return;
     }
 
+    // Fast price scale check: update priceMin/priceMax if range expanded
+    // beyond hysteresis threshold (1.5%). Only redraws background when needed.
+    const rangeChanged = this.updatePriceScaleFast();
+
     // Lightweight path: only update last candle in buffer, then composite
     this.renderer.updateLastCandleInBuffer();
     this.renderer.drawViewport(this.mainCtx);
+
+    // Redraw background if price range expanded significantly (flash crash)
+    // This updates grid lines, axis labels, and current price label on bgCanvas
+    if (rangeChanged) {
+      this.renderer.drawBackground(this.bgCtx, true);
+    }
+
+    // Current price line is drawn atomically inside drawViewport — no separate call needed
   }
 
   /**

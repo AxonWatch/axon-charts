@@ -16,5 +16,7 @@ archive/
 !demo.html
 !docs.html
 !index.html
+# Test files
+rugpull-test.html
 .html-maintenance-checklist.md
 EXAMPLES.md
