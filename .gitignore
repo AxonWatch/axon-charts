@@ -18,5 +18,7 @@ archive/
 !index.html
 # Test files
 rugpull-test.html
+forex-weekend-gaps.html
 .html-maintenance-checklist.md
 EXAMPLES.md
+EURUSD*.csv

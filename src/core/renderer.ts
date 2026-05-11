@@ -454,22 +454,6 @@ export class Renderer {
     ctx.stroke();
   }
 
-  /**
-   * Lightweight overlay pass for high-frequency tick streams.
-   * Draws ONLY the dashed current price line on the main canvas.
-   * Keeps the price line synced to every tick without touching bgCanvas or axes.
-   * Axis labels, price label box, and grid stay exclusively on bgCanvas.
-   * No layer overlap = no flickering.
-   * Cost: ~0.002ms per call.
-   */
-  /**
-   * Lightweight overlay pass for high-frequency tick streams.
-   * Draws the full current price line (dashed line + label box + price text)
-   * directly on the main canvas — the only place the price line is drawn.
-   * No competition with bgCanvas = no ghosting, no double-line, no flickering.
-   * Axis labels and grid stay on bgCanvas as before.
-   * Cost: ~0.005ms per call.
-   */
   destroy(): void {
     if (this.candleBuffer) {
       this.candleBuffer.width = 0;

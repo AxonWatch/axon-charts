@@ -128,30 +128,24 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
-    // Re-draw vertical grid lines through sub-pane
+    // Re-draw vertical grid lines through sub-pane (only at bar positions)
     const vertOpts = chart.options.grid.vertLines || {};
     if (chart.options.grid.show && vertOpts.show !== false) {
       ctx.strokeStyle = vertOpts.color ?? '#2a2a2a';
       ctx.lineWidth = vertOpts.width ?? 1;
       ctx.setLineDash([]);
-      const interval = data.length > 1 ? data[1].time - data[0].time : 60000;
-      const step = calculateTimeStep(barWidth);
-      const stepTime = step * interval;
-      const refBar = data[data.length - 1];
-      const refIdx = data.length - 1;
-      const refTime = refBar.time;
-      const leftIdx = Math.max(0, Math.floor(-chart.state.offsetX / barWidth));
-      const leftTime = refTime + (leftIdx - refIdx) * interval;
-      const startSnapped = Math.floor(leftTime / stepTime) * stepTime;
-      for (let t = startSnapped; t < refTime + stepTime; t += stepTime) {
-        const virtualIdx = refIdx + (t - refTime) / interval;
-        const x = indexToX(virtualIdx, chart.state);
-        if (x < -100) continue;
-        if (x > chartAreaWidth) break;
-        ctx.beginPath();
-        ctx.moveTo(x, subPaneTop);
-        ctx.lineTo(x, subPaneTop + subPaneHeight);
-        ctx.stroke();
+      const step = Math.max(1, calculateTimeStep(barWidth) || 1);
+      const firstIdx = Math.max(0, Math.ceil((-chart.state.offsetX - 50) / barWidth));
+      const lastIdx = Math.min(data.length - 1, Math.floor((chartAreaWidth - chart.state.offsetX + 50) / barWidth));
+      for (let i = firstIdx; i <= lastIdx; i += step) {
+        const x = indexToX(i, chart.state);
+        if (x < -100 || x > chartAreaWidth + 100) continue;
+        if (x >= 0 && x <= chartAreaWidth) {
+          ctx.beginPath();
+          ctx.moveTo(x, subPaneTop);
+          ctx.lineTo(x, subPaneTop + subPaneHeight);
+          ctx.stroke();
+        }
       }
     }
 

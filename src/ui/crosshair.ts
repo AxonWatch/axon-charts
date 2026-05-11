@@ -143,23 +143,18 @@ export class Crosshair {
       crosshairX = indexToX(barIndex, this.chart.state);
     }
 
-    // 2. Calculate Virtual Time (matches Axes.ts logic)
-    const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
-    const refTime = data.length > 0 ? data[data.length - 1].time : Date.now();
-    const refIdx = data.length > 0 ? data.length - 1 : 0;
-    const virtualTime = refTime + (barIndex - refIdx) * interval;
-
-    // For normal mode, calculate time at cursor position
-    if (this.chart.options.crosshair.mode === 'normal' && this.visible && isOverChart) {
-      const cursorIndex = xToIndex(this.x, this.chart.state);
-      displayTime = refTime + (cursorIndex - refIdx) * interval;
+    // 2. Use actual bar timestamp from data (no virtual time calculation)
+    //    Virtual time would create misleading timestamps during data gaps (weekends)
+    const bar = data[barIndex];
+    if (bar) {
+      displayTime = bar.time;
     } else {
-      displayTime = virtualTime;
+      displayTime = Date.now(); // Fallback (shouldn't happen with proper clamping)
     }
 
     // Trigger onCrosshairMove callback
     if (this.visible && isOverChart && this.chart.onCrosshairMove) {
-      const bar = data[barIndex];
+      // bar is already declared above from data[barIndex]
       const price = this.getPriceAt(this.y);
 
       this.chart.onCrosshairMove({
@@ -252,11 +247,11 @@ export class Crosshair {
    * Draw OHLC legend in the top-left corner
    */
   private drawTooltip(bar: Bar): void {
-    // 1. Format values
-    const open = bar.open.toFixed(2);
-    const high = bar.high.toFixed(2);
-    const low = bar.low.toFixed(2);
-    const close = bar.close.toFixed(2);
+    // 1. Format values using chart's price formatter (respects precision)
+    const open = this.chart.priceFormatter.formatPrice(bar.open);
+    const high = this.chart.priceFormatter.formatPrice(bar.high);
+    const low = this.chart.priceFormatter.formatPrice(bar.low);
+    const close = this.chart.priceFormatter.formatPrice(bar.close);
 
     // 2. Determine color based on bar direction
     const isUp = bar.close >= bar.open;

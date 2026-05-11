@@ -119,16 +119,25 @@ export class PriceFormatter {
     }
   }
 
+  private static dateFormatterCache = new Map<string, Intl.DateTimeFormat>();
+  private static monthFormatterCache = new Map<string, Intl.DateTimeFormat>();
+
   static formatDate(ts: number, timezone?: string, dateFormat?: string, showDayOfWeek?: boolean): string {
     const date = new Date(ts);
     let year: string, monthShort: string, monthNum: string = '', day: string, weekday: string;
 
     const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
     if (tz) {
-      const parts = new Intl.DateTimeFormat('en', {
-        timeZone: tz,
-        year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
-      }).formatToParts(date);
+      // Cache formatters per timezone — avoids creating Intl objects on every label draw
+      const dateKey = `date-${timezone}`;
+      let dateFormatter = PriceFormatter.dateFormatterCache.get(dateKey);
+      if (!dateFormatter) {
+        dateFormatter = new Intl.DateTimeFormat('en', {
+          timeZone: tz, year: 'numeric', month: 'short', day: 'numeric', weekday: 'short'
+        });
+        PriceFormatter.dateFormatterCache.set(dateKey, dateFormatter);
+      }
+      const parts = dateFormatter.formatToParts(date);
       const map: Record<string, string> = {};
       for (const p of parts) map[p.type] = p.value;
       year = map.year;
@@ -136,9 +145,13 @@ export class PriceFormatter {
       day = map.day;
       weekday = map.weekday;
       // Get numeric month as well (for MM token)
-      const numParts = new Intl.DateTimeFormat('en', {
-        timeZone: tz, month: '2-digit'
-      }).formatToParts(date);
+      const monthKey = `month-${timezone}`;
+      let monthFormatter = PriceFormatter.monthFormatterCache.get(monthKey);
+      if (!monthFormatter) {
+        monthFormatter = new Intl.DateTimeFormat('en', { timeZone: tz, month: '2-digit' });
+        PriceFormatter.monthFormatterCache.set(monthKey, monthFormatter);
+      }
+      const numParts = monthFormatter.formatToParts(date);
       for (const p of numParts) if (p.type === 'month') monthNum = p.value;
     } else {
       year = date.getFullYear().toString();
@@ -191,14 +204,23 @@ export class PriceFormatter {
     return prefix + formatted + '%';
   }
 
+  private static dateFormatCache = new Map<string, Intl.DateTimeFormat>();
+
   static isDifferentDay(ts1: number, ts2: number, timezone?: string): boolean {
     const d1 = new Date(ts1);
     const d2 = new Date(ts2);
     const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
     if (tz) {
-      const opts: Intl.DateTimeFormatOptions = { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' };
-      const f1 = new Intl.DateTimeFormat('en', opts).format(d1);
-      const f2 = new Intl.DateTimeFormat('en', opts).format(d2);
+      // Cache the formatter per timezone — avoids creating Intl objects on every call
+      const cacheKey = `diff-${timezone}`;
+      let formatter = PriceFormatter.dateFormatCache.get(cacheKey);
+      if (!formatter) {
+        const opts: Intl.DateTimeFormatOptions = { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' };
+        formatter = new Intl.DateTimeFormat('en', opts);
+        PriceFormatter.dateFormatCache.set(cacheKey, formatter);
+      }
+      const f1 = formatter.format(d1);
+      const f2 = formatter.format(d2);
       return f1 !== f2;
     }
     return d1.getDate() !== d2.getDate() || d1.getMonth() !== d2.getMonth() || d1.getFullYear() !== d2.getFullYear();

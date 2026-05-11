@@ -96,78 +96,102 @@ export class Axes {
    * VIRTUAL & SNAPPED: Anchors to clean time boundaries (e.g. 13:00, 14:00)
    */
   public drawTimeAxis(ctx: CanvasRenderingContext2D): void {
-    const { w, h, barWidth, data, axisWidth, bottomMargin } = this.chart.state;
+    const { w, h, barWidth, data, offsetX, axisWidth, bottomMargin } = this.chart.state;
     if (data.length === 0) return;
 
-    // 1. Calculate time interval and step
+    // 1. Calculate base interval and step
     const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
     const step = calculateTimeStep(barWidth);
-    const stepTime = step * interval;
-
-    // 2. Reference point for "Time Space" vs "Index Space" mapping
-    const refBar = data[data.length - 1];
-    const refIdx = data.length - 1;
-    const refTime = refBar.time;
-
-    // 3. Find the 'Time' at the left edge of the screen (x=0)
-    const leftIndex = xToIndex(0, this.chart.state);
-    const leftTime = refTime + (leftIndex - refIdx) * interval;
-
-    // 4. SNAP the leftTime to the nearest 'nice' boundary (Epoch-based)
-    const startSnappedTime = Math.floor(leftTime / stepTime) * stepTime;
-
-    // SIDEBAR: Must use dynamic axisWidth for visual boundary
+    const stepIndices = Math.max(1, step || 1);
     const chartWidth = w - axisWidth;
 
-    // 5. Draw!
+    // 4. Styles
     const vertOptions = this.chart.options.grid.vertLines || {};
     ctx.fillStyle = this.chart.options.layout.textColor ?? '#888';
     ctx.font = `${this.chart.options.layout.fontSize ?? 12}px ${this.chart.options.layout.fontFamily ?? 'system-ui'}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // Skip if time scale is hidden (this hides both labels and grid)
     if (!this.chart.options.timeScale.visible) return;
 
-    // Check if we should draw vertical grid lines
     const drawVertLines = this.chart.options.grid.show && vertOptions.show !== false;
-
-    // Apply grid line styles (always solid) - only if we're going to draw them
     if (drawVertLines) {
       ctx.strokeStyle = vertOptions.color ?? '#2a2a2a';
       ctx.lineWidth = vertOptions.width ?? 1;
       ctx.setLineDash([]);
     }
 
-    // SAFETY: Prevent infinite loops if stepTime is 0 or NaN
-    const safeStepTime = Math.max(1, stepTime || 1);
-    let iterations = 0;
-    const MAX_ITERATIONS = 1000;
+    // Calculate visible bar range early so both passes can use it
+    const firstVisibleIdx = Math.max(0, Math.ceil((-offsetX - 50) / barWidth));
+    const lastVisibleIdx = Math.min(data.length - 1, Math.floor((chartWidth - offsetX + 50) / barWidth));
 
-    // Loop across the screen time-by-time
-    for (let currentT = startSnappedTime; ; currentT += safeStepTime) {
-      if (++iterations > MAX_ITERATIONS) break;
-      // Calculate index for this nice time
-      const virtualIdx = refIdx + (currentT - refTime) / interval;
-      const x = indexToX(virtualIdx, this.chart.state);
+    // 5. PASS 1: Vertical grid lines — only at actual bar positions (no virtual time)
+    //    Uses the same indices as PASS 2 labels to stay consistent
+    if (drawVertLines) {
+      for (let i = firstVisibleIdx; i <= lastVisibleIdx; i += stepIndices) {
+        const bar = data[i];
+        if (!bar) continue;
+        const x = indexToX(i, this.chart.state);
+        if (x < -100 || x > chartWidth + 100) continue;
+        if (x >= 0 && x <= chartWidth) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h - bottomMargin);
+          ctx.stroke();
+        }
+      }
+    }
 
-      if (x > chartWidth) break;
-      if (x < -100) continue; // Skip if far to the left
+    // 6. PASS 2: Time labels — bar-index-based using actual bar timestamps
+    //    Labels at stepIndices intervals, plus forced labels at day boundaries
+    //    Day-boundary labels ensure weekend transitions are clearly visible
+    const labelY = h - bottomMargin / 2;
+    const tz = PriceFormatter.isValidTimezone(this.chart.options.timeScale.timezone)
+      ? this.chart.options.timeScale.timezone : undefined;
+    let lastLabelX = -Infinity;
+    const MIN_LABEL_SPACING = 40; // Minimum pixels between labels to prevent overlap
 
-      // Draw vertical grid line through full height (including sub-pane)
-      if (drawVertLines) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, h - bottomMargin);
-        ctx.stroke();
+    // Pre-compute day boundaries in a single O(n) pass (avoids O(n²) inner scanning)
+    const dayBoundaryIndices: number[] = [];
+    for (let i = firstVisibleIdx + 1; i <= lastVisibleIdx; i++) {
+      const prevBar = data[i - 1];
+      const curBar = data[i];
+      if (prevBar && curBar && PriceFormatter.isDifferentDay(curBar.time, prevBar.time, tz)) {
+        dayBoundaryIndices.push(i);
+      }
+    }
+
+    for (let i = firstVisibleIdx; i <= lastVisibleIdx; i += stepIndices) {
+      const bar = data[i];
+      if (!bar) continue;
+
+      // Binary search: find first day boundary within [i, i + stepIndices)
+      let drawIdx = i;
+      const upperBound = i + stepIndices;
+      let left = 0;
+      let right = dayBoundaryIndices.length - 1;
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        const bIdx = dayBoundaryIndices[mid];
+        if (bIdx >= i && bIdx < upperBound) {
+          drawIdx = bIdx;
+          break;
+        } else if (bIdx < i) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
+        }
       }
 
-      // Draw time label (always, unless timeScale.hidden)
-      if (x >= 0 && x <= chartWidth) {
-        const label = this.formatTimeLabel(currentT, virtualIdx, step, interval);
-        // Center label vertically in the time axis area
-        const labelY = h - bottomMargin / 2;
+      const drawBar = data[drawIdx];
+      if (!drawBar) continue;
+
+      const x = indexToX(drawIdx, this.chart.state);
+      if (x < -100 || x > chartWidth + 100) continue;
+      if (x >= 0 && x <= chartWidth && (x - lastLabelX >= MIN_LABEL_SPACING)) {
+        const label = this.formatTimeLabel(drawBar.time, drawIdx, stepIndices, interval);
         ctx.fillText(label, x, labelY);
+        lastLabelX = x;
       }
     }
 
@@ -179,9 +203,11 @@ export class Axes {
    */
   private formatTimeLabel(time: number, index: number, step: number, interval: number): string {
     const ts = this.chart.options.timeScale;
+    const data = this.chart.dataManager.data;
     const tz = PriceFormatter.isValidTimezone(ts.timezone) ? ts.timezone : undefined;
 
-    const prevTime = time - (step * interval);
+    // Use actual previous bar's timestamp for date-rollover detection
+    const prevTime = index > 0 ? data[index - 1]?.time : time - (step * interval);
 
     // Check if we should show date (first bar or day change)
     const isNewDay = PriceFormatter.isDifferentDay(time, prevTime, tz);

@@ -637,12 +637,9 @@ export class Chart {
     const barsVisible = Math.ceil((w - axisWidth) / barWidth);
     const toIndex = Math.min(fromIndex + barsVisible, data.length - 1);
 
-    const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
-    const refTime = data.length > 0 ? data[data.length - 1].time : Date.now();
-    const refIdx = data.length > 0 ? data.length - 1 : 0;
-
-    const fromTime = refTime + (fromIndex - refIdx) * interval;
-    const toTime = refTime + (toIndex - refIdx) * interval;
+    // Read actual bar.time directly — avoids fictional timestamps during data gaps
+    const fromTime = data[fromIndex]?.time ?? Date.now();
+    const toTime = data[toIndex]?.time ?? Date.now();
 
     this.onVisibleRangeChange({
       fromIndex,
