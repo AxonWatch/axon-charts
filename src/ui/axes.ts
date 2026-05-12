@@ -121,16 +121,17 @@ export class Axes {
       ctx.setLineDash([]);
     }
 
-    // Calculate visible bar range early so both passes can use it
+    // Calculate visible bar range for labels (PASS 2) and day-boundary scan
     const firstVisibleIdx = Math.max(0, Math.ceil((-offsetX - 50) / barWidth));
     const lastVisibleIdx = Math.min(data.length - 1, Math.floor((chartWidth - offsetX + 50) / barWidth));
 
-    // 5. PASS 1: Vertical grid lines — only at actual bar positions (no virtual time)
-    //    Uses the same indices as PASS 2 labels to stay consistent
+    // 5. PASS 1: Vertical grid lines — full chart width, extending past data bounds
+    //    Uses synthetic indices derived from offsetX (no bar data needed — lines are
+    //    purely positional). The ~100px buffer on each edge ensures smooth scrolling.
     if (drawVertLines) {
-      for (let i = firstVisibleIdx; i <= lastVisibleIdx; i += stepIndices) {
-        const bar = data[i];
-        if (!bar) continue;
+      const firstGridIdx = Math.ceil((-offsetX - 100) / barWidth);
+      const lastGridIdx = Math.floor((chartWidth - offsetX + 100) / barWidth);
+      for (let i = firstGridIdx; i <= lastGridIdx; i += stepIndices) {
         const x = indexToX(i, this.chart.state);
         if (x < -100 || x > chartWidth + 100) continue;
         if (x >= 0 && x <= chartWidth) {

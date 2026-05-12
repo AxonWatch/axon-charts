@@ -128,16 +128,17 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
-    // Re-draw vertical grid lines through sub-pane (only at bar positions)
+    // Re-draw vertical grid lines through sub-pane — full width, past data bounds
+    // Uses synthetic indices derived from offsetX (no bar data needed).
     const vertOpts = chart.options.grid.vertLines || {};
     if (chart.options.grid.show && vertOpts.show !== false) {
       ctx.strokeStyle = vertOpts.color ?? '#2a2a2a';
       ctx.lineWidth = vertOpts.width ?? 1;
       ctx.setLineDash([]);
       const step = Math.max(1, calculateTimeStep(barWidth) || 1);
-      const firstIdx = Math.max(0, Math.ceil((-chart.state.offsetX - 50) / barWidth));
-      const lastIdx = Math.min(data.length - 1, Math.floor((chartAreaWidth - chart.state.offsetX + 50) / barWidth));
-      for (let i = firstIdx; i <= lastIdx; i += step) {
+      const firstGridIdx = Math.ceil((-chart.state.offsetX - 100) / barWidth);
+      const lastGridIdx = Math.floor((chartAreaWidth - chart.state.offsetX + 100) / barWidth);
+      for (let i = firstGridIdx; i <= lastGridIdx; i += step) {
         const x = indexToX(i, chart.state);
         if (x < -100 || x > chartAreaWidth + 100) continue;
         if (x >= 0 && x <= chartAreaWidth) {
