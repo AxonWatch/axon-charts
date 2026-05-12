@@ -31,6 +31,7 @@ const DEFAULT_OPTIONS = {
     horzLines: { show: true, color: '#2a2a2a', width: 1 }
   },
   series: {
+    type: 'candlestick',
     upColor: '#22c55e',
     downColor: '#ef4444'
   },
@@ -904,7 +905,11 @@ export class Chart {
 
     // === SERIES ===
     if (normalizedPartial.series) {
-      // Candle color changes need a full re-render (candles + price line)
+      // Series type change: recreate the series renderer
+      if (normalizedPartial.series.type !== undefined) {
+        this.renderer.setSeriesType();
+      }
+      // Visual changes need a full buffer redraw
       needsRender = true;
       this.renderer.createBuffer();
     }
@@ -951,6 +956,7 @@ export class Chart {
     this.state.reverse = false;
     this.state.priceScale = 1.0;
     this.state.priceOffset = 0;
+    this.renderer.setSeriesType();
     this.render();
   }
 

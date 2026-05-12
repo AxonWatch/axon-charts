@@ -34,8 +34,9 @@ export interface ChartOptions {
     horzLines?: { show?: boolean; color?: string; width?: number };
   };
 
-  // === Series (Candle Colors) ===
+  // === Series ===
   series?: {
+    type?: 'candlestick' | 'line' | 'area' | 'bar' | 'heiken-ashi' | 'hollow';
     upColor?: string;
     downColor?: string;
   };

@@ -1,9 +1,15 @@
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, deriveVisibleStartIdx } from '../utils/projection.js';
-import { calculateTimeStep } from '../utils/math.js';
-import { IChart, Bar } from '../types/index.js';
+import { IChart } from '../types/index.js';
 import { Axes } from '../ui/axes.js';
 import { PriceFormatter } from '../utils/formatter.js';
+import { SeriesRenderer } from '../series/SeriesRenderer.js';
+import { CandlestickRenderer } from '../series/CandlestickRenderer.js';
+import { LineRenderer } from '../series/LineRenderer.js';
+import { AreaRenderer } from '../series/AreaRenderer.js';
+import { BarRenderer } from '../series/BarRenderer.js';
+import { HeikenAshiRenderer } from '../series/HeikenAshiRenderer.js';
+import { HollowRenderer } from '../series/HollowRenderer.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -16,10 +22,29 @@ export class Renderer {
   private axes: Axes;
   private bufferRenderStart: number = 0;
   private bufferRenderEnd: number = 0;
+  private seriesRenderer!: SeriesRenderer;
 
   constructor(chart: IChart) {
     this.chart = chart;
     this.axes = new Axes(chart);
+    this.setSeriesType();
+  }
+
+  /**
+   * Create or swap the series renderer based on current options.
+   * Called on construction and whenever series.type changes.
+   */
+  setSeriesType(): void {
+    const seriesType = this.chart.options.series.type ?? 'candlestick';
+    switch (seriesType) {
+      case 'line': this.seriesRenderer = new LineRenderer(); break;
+      case 'area': this.seriesRenderer = new AreaRenderer(); break;
+      case 'bar': this.seriesRenderer = new BarRenderer(); break;
+      case 'heiken-ashi': this.seriesRenderer = new HeikenAshiRenderer(); break;
+      case 'hollow': this.seriesRenderer = new HollowRenderer(); break;
+      default:
+      case 'candlestick': this.seriesRenderer = new CandlestickRenderer(); break;
+    }
   }
 
   /**
@@ -96,13 +121,12 @@ export class Renderer {
     const renderStart = Math.max(0, visibleStartIdx - Math.floor(spareBars / 2));
     const renderEnd = Math.min(data.length, renderStart + maxBarsInBuffer);
 
-    // 4. Clear and Draw
-    this.bufferCtx.clearRect(0, 0, bufferWidthCSS, this.chart.state.h);
-    this.bufferCtx.lineWidth = 1;
+    // 4. Clear the entire buffer before redrawing (prevents stale pixel buildup)
+    const bufferCSSWidth = this.candleBuffer.width / devicePixelRatio;
+    this.bufferCtx.clearRect(0, 0, bufferCSSWidth, this.chart.state.h);
 
-    for (let i = renderStart; i < renderEnd; i++) {
-      this.drawCandleToBuffer(i, renderStart);
-    }
+    // 5. Delegate to active series renderer
+    this.seriesRenderer.render(this.bufferCtx, this.chart, renderStart, renderEnd);
 
     this.bufferRenderStart = renderStart;
     this.bufferRenderEnd = renderEnd;
@@ -115,59 +139,22 @@ export class Renderer {
    */
   updateLastCandleInBuffer(): void {
     if (!this.bufferCtx || !this.candleBuffer) return;
-    const { data, barWidth } = this.chart.state;
+    const { data } = this.chart.state;
     if (data.length === 0) return;
     const lastIdx = data.length - 1;
 
     // Only redraw if the last index is within our buffer range
     if (lastIdx < this.bufferRenderStart || lastIdx >= this.bufferRenderEnd) return;
 
-    // Clear just the last candle's region in the buffer
-    const bufferOffset = lastIdx - this.bufferRenderStart;
-    const candleX = bufferOffset * barWidth;
-    this.bufferCtx.clearRect(candleX, 0, barWidth, this.chart.state.h);
-
-    // Re-draw only the last candle
-    this.drawCandleToBuffer(lastIdx, this.bufferRenderStart);
-  }
-
-  private drawCandleToBuffer(index: number, startIdx: number): void {
-    if (!this.bufferCtx) return;
-    const { data, barWidth } = this.chart.state;
-    const bar = data[index];
-    if (!bar) return;
-
-    const bufferX = (index - startIdx) * barWidth;
-    const centerX = bufferX + barWidth / 2;
-
-    const yHigh = priceToY(bar.high, this.chart.state);
-    const yLow = priceToY(bar.low, this.chart.state);
-    const yOpen = priceToY(bar.open, this.chart.state);
-    const yClose = priceToY(bar.close, this.chart.state);
-
-    const isUp = bar.close >= bar.open;
-    const color = isUp ? (this.chart.options.series.upColor ?? '#26a69a') : (this.chart.options.series.downColor ?? '#ef5350');
-
-    this.bufferCtx.fillStyle = color;
-    this.bufferCtx.strokeStyle = color;
-
-    const wickX = Math.floor(centerX) + 0.5;
-
-    this.bufferCtx.beginPath();
-    this.bufferCtx.moveTo(wickX, yHigh);
-    this.bufferCtx.lineTo(wickX, yLow);
-    this.bufferCtx.stroke();
-
-    let bodyWidth = Math.floor(barWidth * LAYOUT.CANDLE_GAP_RATIO);
-    if (bodyWidth % 2 === 0 && bodyWidth > 1) bodyWidth--; 
-    
-    const bodyLeft = Math.floor(wickX) - Math.floor(bodyWidth / 2);
-    this.bufferCtx.fillRect(
-      bodyLeft, 
-      Math.floor(Math.min(yOpen, yClose)), 
-      bodyWidth, 
-      Math.max(Math.abs(yOpen - yClose), 1)
+    // Delegate to active series renderer
+    const needsFullRedraw = this.seriesRenderer.updateLast(
+      this.bufferCtx, this.chart, lastIdx, this.bufferRenderStart
     );
+
+    // Some renderers (line, area, Heiken-Ashi) need full redraw — re-run renderCandles
+    if (needsFullRedraw) {
+      this.renderCandles();
+    }
   }
 
   drawBackground(ctx: CanvasRenderingContext2D, force: boolean = false): void {
