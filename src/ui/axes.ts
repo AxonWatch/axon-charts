@@ -121,18 +121,25 @@ export class Axes {
       ctx.setLineDash([]);
     }
 
-    // Calculate visible bar range for labels (PASS 2) and day-boundary scan
-    const firstVisibleIdx = Math.max(0, Math.ceil((-offsetX - 50) / barWidth));
-    const lastVisibleIdx = Math.min(data.length - 1, Math.floor((chartWidth - offsetX + 50) / barWidth));
+    // 5. Compute virtual time range for full-width time-anchored grid & labels
+    //    Uses virtual time extending past/before data bounds so the grid covers the
+    //    entire chart width, including empty zones before bar 0 and after the last bar.
+    const stepMs = stepIndices * interval;
+    const firstGridIdx = Math.ceil((-offsetX - 100) / barWidth);
+    const lastGridIdx = Math.floor((chartWidth - offsetX + 100) / barWidth);
+    const firstVirtualTime = data[0].time + (firstGridIdx * interval);
+    const lastVirtualTime = data[0].time + (lastGridIdx * interval);
 
-    // 5. PASS 1: Vertical grid lines — full chart width, extending past data bounds
-    //    Uses synthetic indices derived from offsetX (no bar data needed — lines are
-    //    purely positional). The ~100px buffer on each edge ensures smooth scrolling.
+    // Round to nearest stepMs boundary (ceil so first line is at or after the left edge)
+    const firstBoundary = Math.ceil(firstVirtualTime / stepMs) * stepMs;
+
+    // 6. PASS 1: Vertical grid lines — time-anchored, full chart width
+    //    Snaps to rounded time boundaries (e.g. 12:00, 12:15, 12:30) that shift
+    //    naturally as the user pans — same behavior as the time axis labels.
     if (drawVertLines) {
-      const firstGridIdx = Math.ceil((-offsetX - 100) / barWidth);
-      const lastGridIdx = Math.floor((chartWidth - offsetX + 100) / barWidth);
-      for (let i = firstGridIdx; i <= lastGridIdx; i += stepIndices) {
-        const x = indexToX(i, this.chart.state);
+      for (let t = firstBoundary; t <= lastVirtualTime; t += stepMs) {
+        const virtualIndex = (t - data[0].time) / interval;
+        const x = indexToX(virtualIndex, this.chart.state);
         if (x < -100 || x > chartWidth + 100) continue;
         if (x >= 0 && x <= chartWidth) {
           ctx.beginPath();
@@ -143,54 +150,27 @@ export class Axes {
       }
     }
 
-    // 6. PASS 2: Time labels — bar-index-based using actual bar timestamps
-    //    Labels at stepIndices intervals, plus forced labels at day boundaries
-    //    Day-boundary labels ensure weekend transitions are clearly visible
+    // 7. PASS 2: Time labels — at the same time-anchored positions as grid lines
+    //    Labels stay aligned with grid lines because both use the same time boundaries.
     const labelY = h - bottomMargin / 2;
     const tz = PriceFormatter.isValidTimezone(this.chart.options.timeScale.timezone)
       ? this.chart.options.timeScale.timezone : undefined;
     let lastLabelX = -Infinity;
-    const MIN_LABEL_SPACING = 40; // Minimum pixels between labels to prevent overlap
+    const MIN_LABEL_SPACING = 40;
 
-    // Pre-compute day boundaries in a single O(n) pass (avoids O(n²) inner scanning)
-    const dayBoundaryIndices: number[] = [];
-    for (let i = firstVisibleIdx + 1; i <= lastVisibleIdx; i++) {
-      const prevBar = data[i - 1];
-      const curBar = data[i];
-      if (prevBar && curBar && PriceFormatter.isDifferentDay(curBar.time, prevBar.time, tz)) {
-        dayBoundaryIndices.push(i);
-      }
-    }
+    // Track previous time for day-change detection across data gaps
+    for (let t = firstBoundary; t <= lastVirtualTime; t += stepMs) {
+      // Find the nearest bar for actual timestamp (for label formatting accuracy)
+      // Inside data bounds: uses the bar's time. Past/future: uses virtual time.
+      const index = Math.round((t - data[0].time) / interval);
+      const bar = data[index];
+      const labelTime = bar?.time ?? t;
 
-    for (let i = firstVisibleIdx; i <= lastVisibleIdx; i += stepIndices) {
-      const bar = data[i];
-      if (!bar) continue;
-
-      // Binary search: find first day boundary within [i, i + stepIndices)
-      let drawIdx = i;
-      const upperBound = i + stepIndices;
-      let left = 0;
-      let right = dayBoundaryIndices.length - 1;
-      while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        const bIdx = dayBoundaryIndices[mid];
-        if (bIdx >= i && bIdx < upperBound) {
-          drawIdx = bIdx;
-          break;
-        } else if (bIdx < i) {
-          left = mid + 1;
-        } else {
-          right = mid - 1;
-        }
-      }
-
-      const drawBar = data[drawIdx];
-      if (!drawBar) continue;
-
-      const x = indexToX(drawIdx, this.chart.state);
+      // Use t (the time boundary) for X position — guarantees alignment with grid lines
+      const x = indexToX((t - data[0].time) / interval, this.chart.state);
       if (x < -100 || x > chartWidth + 100) continue;
       if (x >= 0 && x <= chartWidth && (x - lastLabelX >= MIN_LABEL_SPACING)) {
-        const label = this.formatTimeLabel(drawBar.time, drawIdx, stepIndices, interval);
+        const label = this.formatTimeLabel(labelTime, index, stepIndices, interval);
         ctx.fillText(label, x, labelY);
         lastLabelX = x;
       }
@@ -207,8 +187,11 @@ export class Axes {
     const data = this.chart.dataManager.data;
     const tz = PriceFormatter.isValidTimezone(ts.timezone) ? ts.timezone : undefined;
 
-    // Use actual previous bar's timestamp for date-rollover detection
-    const prevTime = index > 0 ? data[index - 1]?.time : time - (step * interval);
+    // Use actual previous bar's timestamp for date-rollover detection.
+    // For virtual indices past/future data bounds (from time-anchored grid),
+    // data[index-1] is undefined, so ?. produces undefined, and the fallback
+    // time - (step * interval) provides a reasonable virtual prevTime.
+    const prevTime = index > 0 && index < data.length ? data[index - 1]?.time : time - (step * interval);
 
     // Check if we should show date (first bar or day change)
     const isNewDay = PriceFormatter.isDifferentDay(time, prevTime, tz);

@@ -43,7 +43,8 @@ const DEFAULT_OPTIONS = {
       countdownColor: 'rgba(255, 255, 255, 0.8)',
       lineStyle: 'dashed'
     },
-    reverse: false
+    reverse: false,
+    borderVisible: true
   },
   timeScale: {
     visible: true,
@@ -56,7 +57,8 @@ const DEFAULT_OPTIONS = {
     rightOffset: 80,
     barSpacing: 11,
     minBarSpacing: 4,
-    maxBarSpacing: 1000
+    maxBarSpacing: 1000,
+    borderVisible: true
   },
   crosshair: {
     mode: 'magnet',
@@ -813,6 +815,9 @@ export class Chart {
           normalizedPartial.timeScale.maxBarSpacing !== undefined) {
         // Options updated by deepMerge, enforced in events.ts
         // No immediate render needed unless we want to clamp current barWidth
+      }
+      if (normalizedPartial.timeScale.borderVisible !== undefined) {
+        needsRender = true;
       }
     }
 

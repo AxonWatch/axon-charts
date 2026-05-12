@@ -128,18 +128,24 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
-    // Re-draw vertical grid lines through sub-pane — full width, past data bounds
-    // Uses synthetic indices derived from offsetX (no bar data needed).
+    // Re-draw vertical grid lines through sub-pane — time-anchored, full width
+    // Same time-boundary logic as the main chart grid for consistent alignment.
     const vertOpts = chart.options.grid.vertLines || {};
     if (chart.options.grid.show && vertOpts.show !== false) {
       ctx.strokeStyle = vertOpts.color ?? '#2a2a2a';
       ctx.lineWidth = vertOpts.width ?? 1;
       ctx.setLineDash([]);
       const step = Math.max(1, calculateTimeStep(barWidth) || 1);
+      const interval = data.length > 1 ? data[1].time - data[0].time : 60000;
+      const stepMs = step * interval;
       const firstGridIdx = Math.ceil((-chart.state.offsetX - 100) / barWidth);
       const lastGridIdx = Math.floor((chartAreaWidth - chart.state.offsetX + 100) / barWidth);
-      for (let i = firstGridIdx; i <= lastGridIdx; i += step) {
-        const x = indexToX(i, chart.state);
+      const firstVirtualTime = data[0].time + (firstGridIdx * interval);
+      const lastVirtualTime = data[0].time + (lastGridIdx * interval);
+      const firstBoundary = Math.ceil(firstVirtualTime / stepMs) * stepMs;
+      for (let t = firstBoundary; t <= lastVirtualTime; t += stepMs) {
+        const virtualIndex = (t - data[0].time) / interval;
+        const x = indexToX(virtualIndex, chart.state);
         if (x < -100 || x > chartAreaWidth + 100) continue;
         if (x >= 0 && x <= chartAreaWidth) {
           ctx.beginPath();

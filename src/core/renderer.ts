@@ -183,6 +183,33 @@ export class Renderer {
     ctx.fillRect(w - axisWidth, 0, axisWidth, h);
     ctx.fillRect(0, h - bottomMargin, w, bottomMargin);
 
+    // Draw axis border lines (on top of axis overpaint, behind labels)
+    // Vertical: between chart area and price axis — stops at time axis boundary
+    // Horizontal: between chart area and time axis — stops at price axis boundary
+    const layout = this.chart.options.layout;
+    const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
+    const borderColor = layout.textColor ?? '#aaa';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+
+    if (this.chart.options.priceScale.borderVisible !== false) {
+      const axisX = w - axisWidth;
+      ctx.strokeStyle = borderColor;
+      ctx.beginPath();
+      ctx.moveTo(axisX, 0);
+      ctx.lineTo(axisX, clipBottom);
+      ctx.stroke();
+    }
+
+    if (this.chart.options.timeScale.borderVisible !== false) {
+      const axisY = clipBottom;
+      ctx.strokeStyle = borderColor;
+      ctx.beginPath();
+      ctx.moveTo(0, axisY);
+      ctx.lineTo(w - axisWidth, axisY);
+      ctx.stroke();
+    }
+
     this.axes.drawTimeAxis(ctx);
     this.axes.drawPriceAxis(ctx);
     this.drawWatermark(ctx);
