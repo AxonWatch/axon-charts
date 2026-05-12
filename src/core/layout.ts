@@ -9,7 +9,6 @@ export const LAYOUT = {
   RIGHT_GAP: 60,
   
   // === Label Styling ===
-  LABEL_WIDTH: 50,
   LABEL_HEIGHT: 20,
   CURRENT_PRICE_LABEL_HEIGHT: 30,
   LABEL_OFFSET: 15, // Distance of labels from axis edge
@@ -17,8 +16,6 @@ export const LAYOUT = {
   
   // === Interaction ===
   COLLISION_THRESHOLD: 25,
-  AUTO_SCROLL_BUFFER: 8,
-  DEFAULT_RIGHT_PADDING_BARS: 2,
   
   // === Behavior & Scaling ===
   ZOOM_FACTOR_IN: 1.15,
@@ -43,7 +40,6 @@ export const LAYOUT = {
   DEFAULT_TIME_INTERVAL: 60000,
   DEFAULT_MAX_BARS: 5000,
   DEFAULT_PRICE_RANGE: { min: 0, max: 100 },
-  PRICE_PADDING_RATIO: 0.07,
   CURRENT_PRICE_LABEL_ALPHA: 0.2,
   TOOLTIP_MARGIN_X: 10,
   TOOLTIP_MARGIN_Y: 15,
@@ -57,4 +53,3 @@ export const LAYOUT = {
 export function getUsableHeight(height: number): number {
   return height - LAYOUT.TOP_MARGIN - LAYOUT.BOTTOM_MARGIN;
 }
-

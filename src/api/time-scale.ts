@@ -121,8 +121,8 @@ export class TimeScaleAPI {
     const chartWidth = w - axisWidth;
 
     // Calculate offsetX based on position
-    // indexToX: x = (index - 1 - offsetX) * barWidth
-    // => offsetX = index - 1 - (x / barWidth)
+    // indexToX: x = index * barWidth + offsetX + barWidth / 2
+    // => offsetX = targetX - index * barWidth - barWidth / 2
 
     let targetX: number;
     switch (position) {
@@ -138,7 +138,7 @@ export class TimeScaleAPI {
         break;
     }
 
-    this.chart.state.offsetX = idx - 1 - (targetX / barWidth);
+    this.chart.state.offsetX = targetX - idx * barWidth - barWidth / 2;
 
     // Re-render
     this.chart.render();
@@ -231,32 +231,11 @@ export class TimeScaleAPI {
    * @param timestamp - Target timestamp
    * @returns Bar object, or null if not found
    *
+   * Delegates to DataManager.getBarAtTime (same binary search).
    * Useful for retrieving OHLC data for a specific time.
    */
   getBarAtTime(timestamp: number): Bar | null {
-    const data = this.chart.dataManager.data;
-    if (data.length === 0) {
-      return null;
-    }
-
-    // Binary search for the bar
-    let left = 0;
-    let right = data.length - 1;
-
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      const bar = data[mid];
-
-      if (bar.time === timestamp) {
-        return bar;
-      } else if (bar.time < timestamp) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
-    }
-
-    return null;
+    return this.chart.dataManager.getBarAtTime(timestamp) ?? null;
   }
 
   /**

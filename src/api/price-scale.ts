@@ -40,10 +40,6 @@ export class PriceScaleAPI {
    * Set scale margins (padding at top/bottom as percentage 0-1)
    * @param margins - Object with top and bottom margins (0-1 range)
    * @throws Error if margins are out of range
-   *
-   * Note: Currently this option is accepted but not implemented in the price range calculation.
-   * The DataManager uses a hardcoded LAYOUT.PRICE_PADDING_RATIO (0.07) instead.
-   * This API is provided for future implementation and type compatibility.
    */
   setMargins(margins: { top: number; bottom: number }): void {
     // Validate
