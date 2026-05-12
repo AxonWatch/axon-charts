@@ -184,29 +184,29 @@ export class Renderer {
     ctx.fillRect(0, h - bottomMargin, w, bottomMargin);
 
     // Draw axis border lines (on top of axis overpaint, behind labels)
-    // Vertical: between chart area and price axis — stops at time axis boundary
-    // Horizontal: between chart area and time axis — stops at price axis boundary
+    // Vertical: between chart area and price axis — stops at time axis boundary.
+    // Horizontal: between chart area and time axis — stops at price axis boundary.
+    // Both extend to h - bottomMargin regardless of sub-panes — the time axis
+    // and price axis zones are fixed. Sub-panes sit between them.
     const layout = this.chart.options.layout;
-    const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
     const borderColor = layout.textColor ?? '#aaa';
     ctx.lineWidth = 1;
     ctx.setLineDash([]);
 
-    if (this.chart.options.priceScale.borderVisible !== false) {
+    if (layout.borderVisible !== false) {
       const axisX = w - axisWidth;
       ctx.strokeStyle = borderColor;
+
+      // Vertical: chart area ↔ price axis (full height)
       ctx.beginPath();
       ctx.moveTo(axisX, 0);
-      ctx.lineTo(axisX, clipBottom);
+      ctx.lineTo(axisX, h - bottomMargin);
       ctx.stroke();
-    }
 
-    if (this.chart.options.timeScale.borderVisible !== false) {
-      const axisY = clipBottom;
-      ctx.strokeStyle = borderColor;
+      // Horizontal: chart area ↔ time axis (full width)
       ctx.beginPath();
-      ctx.moveTo(0, axisY);
-      ctx.lineTo(w - axisWidth, axisY);
+      ctx.moveTo(0, h - bottomMargin);
+      ctx.lineTo(axisX, h - bottomMargin);
       ctx.stroke();
     }
 

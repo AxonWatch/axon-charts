@@ -23,6 +23,8 @@ export interface ChartOptions {
     fontSize?: number;
     fontFamily?: string;
     padding?: { top?: number; right?: number; bottom?: number; left?: number };
+    /** Show axis border lines between chart area and price/time axes. Falls back to layout.textColor. Default: true */
+    borderVisible?: boolean;
   };
 
   // === Grid ===
@@ -63,8 +65,6 @@ export interface ChartOptions {
     };
     /** Reverse price axis: false = normal (high at top), true = inverted (high at bottom) */
     reverse?: boolean;
-    /** Show vertical border line between chart area and price axis. Falls back to layout.textColor. Default: true */
-    borderVisible?: boolean;
   };
 
   // === Time Scale ===
@@ -81,8 +81,6 @@ export interface ChartOptions {
     barSpacing?: number;
     minBarSpacing?: number;
     maxBarSpacing?: number;
-    /** Show horizontal border line between chart area and time axis. Falls back to layout.textColor. Default: true */
-    borderVisible?: boolean;
   };
 
   // === Crosshair ===

@@ -22,7 +22,8 @@ const DEFAULT_OPTIONS = {
     textColor: '#aaaaaa',
     fontSize: 12,
     fontFamily: 'system-ui',
-    padding: { top: 40, right: 60, bottom: 35, left: 10 }
+    padding: { top: 40, right: 60, bottom: 35, left: 10 },
+    borderVisible: true
   },
   grid: {
     show: true,
@@ -43,8 +44,7 @@ const DEFAULT_OPTIONS = {
       countdownColor: 'rgba(255, 255, 255, 0.8)',
       lineStyle: 'dashed'
     },
-    reverse: false,
-    borderVisible: true
+    reverse: false
   },
   timeScale: {
     visible: true,
@@ -57,8 +57,7 @@ const DEFAULT_OPTIONS = {
     rightOffset: 80,
     barSpacing: 11,
     minBarSpacing: 4,
-    maxBarSpacing: 1000,
-    borderVisible: true
+    maxBarSpacing: 1000
   },
   crosshair: {
     mode: 'magnet',
@@ -816,9 +815,6 @@ export class Chart {
         // Options updated by deepMerge, enforced in events.ts
         // No immediate render needed unless we want to clamp current barWidth
       }
-      if (normalizedPartial.timeScale.borderVisible !== undefined) {
-        needsRender = true;
-      }
     }
 
     // === PRICE SCALE ===
@@ -851,6 +847,9 @@ export class Chart {
           normalizedPartial.layout.textColor !== undefined ||
           normalizedPartial.layout.fontSize !== undefined ||
           normalizedPartial.layout.fontFamily !== undefined) {
+        needsRender = true;
+      }
+      if (normalizedPartial.layout.borderVisible !== undefined) {
         needsRender = true;
       }
       // Padding changes
