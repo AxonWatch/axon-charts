@@ -33,7 +33,11 @@ const DEFAULT_OPTIONS = {
   series: {
     type: 'candlestick',
     upColor: '#22c55e',
-    downColor: '#ef4444'
+    downColor: '#ef4444',
+    lineColor: '#1E90FF',
+    showMarkers: false,
+    showLatestPriceMarker: true,
+    showLatestPriceAnimation: true
   },
   priceScale: {
     mode: 'linear',

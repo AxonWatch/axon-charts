@@ -23,6 +23,8 @@ export class Renderer {
   private bufferRenderStart: number = 0;
   private bufferRenderEnd: number = 0;
   private seriesRenderer!: SeriesRenderer;
+  private latestClose: number | null = null;
+  private lastChangeTime: number = 0;
 
   constructor(chart: IChart) {
     this.chart = chart;
@@ -244,6 +246,7 @@ export class Renderer {
     // Atomic overlay: draw current price line in same render pass as buffer copy
     // This eliminates frame-race flicker between drawViewport and a separate overlay call
     this.drawCurrentPriceLine(mainCtx);
+    this.drawLatestPriceMarker(mainCtx);
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {
@@ -258,11 +261,15 @@ export class Renderer {
     const isUp = lastBar.close >= lastBar.open;
     const cp = this.chart.options.priceScale.currentPrice;
     const layout = this.chart.options.layout;
+    const seriesType = this.chart.options.series.type || 'candlestick';
 
-    // Cascading colors: explicit currentPrice value > series/layout defaults
-    const lineColor = isUp
-      ? (cp?.upColor || this.chart.options.series.upColor)
-      : (cp?.downColor || this.chart.options.series.downColor);
+    // For line/area: use lineColor (not tied to up/down direction)
+    // For OHLC series: cascading up/down colors
+    const lineColor = (seriesType === 'line' || seriesType === 'area')
+      ? (cp?.upColor || cp?.downColor || this.chart.options.series.lineColor || '#1E90FF')
+      : (isUp
+        ? (cp?.upColor || this.chart.options.series.upColor)
+        : (cp?.downColor || this.chart.options.series.downColor));
     const textColor = cp?.textColor || layout.textColor;
 
     const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
@@ -466,6 +473,45 @@ export class Renderer {
     ctx.moveTo(0, refPriceY);
     ctx.lineTo(w - axisWidth, refPriceY);
     ctx.stroke();
+  }
+
+  private drawLatestPriceMarker(ctx: CanvasRenderingContext2D): void {
+    const { data } = this.chart.state;
+    if (data.length === 0) return;
+
+    const seriesOpts = this.chart.options.series;
+    const seriesType = seriesOpts.type || 'candlestick';
+
+    // Only for line/area series with animation enabled
+    if (seriesType !== 'line' && seriesType !== 'area') return;
+    if (seriesOpts.showLatestPriceMarker === false) return;
+    if (seriesOpts.showLatestPriceAnimation === false) return;
+
+    const lastBar = data[data.length - 1];
+
+    // Track price changes - only animate on actual change from a known price
+    if (this.latestClose !== null && lastBar.close !== this.latestClose) {
+      this.latestClose = lastBar.close;
+      this.lastChangeTime = Date.now();
+    } else if (this.latestClose === null) {
+      this.latestClose = lastBar.close;
+    }
+
+    const x = indexToX(data.length - 1, this.chart.state);
+    const y = priceToY(lastBar.close, this.chart.state);
+    const lineColor = seriesOpts.lineColor || '#1E90FF';
+
+    // Pulse decay over 500ms after each price change
+    const age = Date.now() - this.lastChangeTime;
+    const decay = Math.max(0, 1 - age / 500);
+    const dotR = 4 + decay * 5;
+
+    ctx.fillStyle = lineColor;
+    ctx.globalAlpha = 0.6 + decay * 0.4;
+    ctx.beginPath();
+    ctx.arc(x, y, dotR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
   }
 
   destroy(): void {

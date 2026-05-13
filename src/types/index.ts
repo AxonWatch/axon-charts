@@ -39,6 +39,14 @@ export interface ChartOptions {
     type?: 'candlestick' | 'line' | 'area' | 'bar' | 'heiken-ashi' | 'hollow';
     upColor?: string;
     downColor?: string;
+    /** Dedicated color for line/area series. Falls back to upColor if not set. */
+    lineColor?: string;
+    /** Show a small dot at every close price point (line/area series). Default: false */
+    showMarkers?: boolean;
+    /** Show a highlighted marker at the latest close price. Default: true */
+    showLatestPriceMarker?: boolean;
+    /** Animate the latest price marker with a continuous pulse. Default: true */
+    showLatestPriceAnimation?: boolean;
   };
 
   // === Price Scale ===
