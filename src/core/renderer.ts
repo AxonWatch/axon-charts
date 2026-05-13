@@ -255,13 +255,14 @@ export class Renderer {
     if (this.chart.options.priceScale.currentPrice?.show === false) return;
 
     const lastBar = data[data.length - 1];
-    const currentPrice = lastBar.close;
-    const yClose = priceToY(currentPrice, this.chart.state);
-
-    const isUp = lastBar.close >= lastBar.open;
     const cp = this.chart.options.priceScale.currentPrice;
     const layout = this.chart.options.layout;
     const seriesType = this.chart.options.series.type || 'candlestick';
+
+    // Always use real close for the price line position and main label
+    const currentPrice = lastBar.close;
+    const isUp = lastBar.close >= lastBar.open;
+    const yClose = priceToY(currentPrice, this.chart.state);
 
     // For line/area: use lineColor (not tied to up/down direction)
     // For OHLC series: cascading up/down colors
@@ -308,7 +309,8 @@ export class Renderer {
       const pct = ((currentPrice - this.chart.state.referencePrice) / this.chart.state.referencePrice) * 100;
       formattedPrice = PriceFormatter.formatPercentage(pct);
     }
-    
+
+    // Draw real close label (standard behavior for all series)
     if (showCountdown) {
       ctx.textBaseline = 'alphabetic';
       ctx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, labelY - 2);
@@ -330,8 +332,72 @@ export class Renderer {
       ctx.fillText(formattedPrice, w - LAYOUT.LABEL_OFFSET, labelY);
     }
 
+    // HA mode: additional label at HA close level — no line, HA candle color, separate from real close
+    if (seriesType === 'heiken-ashi') {
+      const cache = this.getSeriesCache();
+      const haArr = cache?.ha as Array<{o:number;h:number;l:number;c:number}> | undefined;
+      if (haArr && haArr.length > 0) {
+        const ha = haArr[haArr.length - 1];
+        const haColor = (ha.c >= ha.o)
+          ? (cp?.upColor || this.chart.options.series.upColor || '#22c55e')
+          : (cp?.downColor || this.chart.options.series.downColor || '#ef4444');
+        this.drawHaPriceLabel(ctx, ha.c, lastBar.close, haColor);
+      }
+    }
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+
+  private drawHaPriceLabel(ctx: CanvasRenderingContext2D, haClose: number, realClose: number, haColor: string): void {
+    const { data, w, axisWidth } = this.chart.state;
+    const layout = this.chart.options.layout;
+    const cp = this.chart.options.priceScale.currentPrice;
+    const showCountdown = cp?.showCountdown;
+    // Use same label height as the real close label to match overlap detection
+    const mainLabelH = showCountdown ? LAYOUT.CURRENT_PRICE_LABEL_HEIGHT : LAYOUT.LABEL_HEIGHT;
+    const haLabelH = LAYOUT.LABEL_HEIGHT;  // HA label is compact, no countdown
+    const haY = priceToY(haClose, this.chart.state);
+    const realY = priceToY(realClose, this.chart.state);
+    const clipBottom = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
+    const y = Math.min(haY, clipBottom);
+
+    // Compute the real close label's full occupied region (including countdown text below)
+    const realCY = Math.min(realY, clipBottom);
+    const realHalfH = mainLabelH / 2;
+    const realTop = realCY - realHalfH;
+    // Countdown text draws at labelY + 3 with 10px font — extends realBottom by ~13px
+    const realBottom = realCY + realHalfH + (showCountdown ? 15 : 0);
+
+    const haHalfH = haLabelH / 2;
+    let labelY = y;
+    // Overlap detection: does HA label box intersect real label box (including countdown)?
+    if (labelY - haHalfH < realBottom && labelY + haHalfH > realTop) {
+      // Overlap — shift HA label above or below the real label's full region
+      labelY = (labelY < realCY)
+        ? realTop - haHalfH - 4
+        : realBottom + haHalfH + 4;
+      // Clamp within chart area
+      const minY = haHalfH + 2;
+      const maxY = clipBottom - haHalfH - 2;
+      labelY = Math.max(minY, Math.min(labelY, maxY));
+    }
+
+    // Draw HA price label box — same style as current price but no horizontal line
+    ctx.fillStyle = this.hexToRgba(haColor, 0.20);
+    ctx.fillRect(w - axisWidth, labelY - haHalfH, axisWidth, haLabelH);
+    ctx.strokeStyle = haColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(w - axisWidth, labelY - haHalfH, axisWidth, haLabelH);
+
+    // Text
+    ctx.fillStyle = haColor;
+    ctx.font = `${layout.fontSize}px ${layout.fontFamily}`;
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    const fmt = this.chart.priceFormatter.formatPrice(haClose);
+    ctx.fillText(fmt, w - LAYOUT.LABEL_OFFSET, labelY);
+    ctx.textAlign = 'left';
   }
 
   private formatCountdown(remainingMs: number, intervalMs: number): string {
@@ -512,6 +578,10 @@ export class Renderer {
     ctx.arc(x, y, dotR, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = 1;
+  }
+
+  getSeriesCache(): Record<string, unknown> | null {
+    return this.seriesRenderer.getSeriesCache?.() ?? null;
   }
 
   destroy(): void {

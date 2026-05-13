@@ -295,6 +295,8 @@ export interface IChart {
     createBuffer(): void;
     /** Lightweight: re-draw only the last candle in the buffer */
     updateLastCandleInBuffer(): void;
+    /** Get cached series-specific computed values (e.g., HA O/H/L/C for heiken-ashi) */
+    getSeriesCache(): Record<string, unknown> | null;
   };
   priceFormatter: {
     formatPrice(price: number): string;

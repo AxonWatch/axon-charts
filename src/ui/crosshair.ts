@@ -201,7 +201,7 @@ export class Crosshair {
     if (this.chart.options.crosshair.showTooltip) {
       const bar = data[barIndex];
       if (bar) {
-        this.drawTooltip(bar);
+        this.drawTooltip(bar, barIndex);
       }
     }
 
@@ -246,15 +246,20 @@ export class Crosshair {
   /**
    * Draw OHLC legend in the top-left corner
    */
-  private drawTooltip(bar: Bar): void {
-    // 1. Format values using chart's price formatter (respects precision)
-    const open = this.chart.priceFormatter.formatPrice(bar.open);
-    const high = this.chart.priceFormatter.formatPrice(bar.high);
-    const low = this.chart.priceFormatter.formatPrice(bar.low);
-    const close = this.chart.priceFormatter.formatPrice(bar.close);
+  private drawTooltip(bar: Bar, barIndex?: number): void {
+    // HA mode: show Heiken Ashi OHLC values (not raw values)
+    const seriesType = this.chart.options.series.type || 'candlestick';
+    const haBar = (seriesType === 'heiken-ashi' && barIndex !== undefined)
+      ? this.getHaBar(barIndex) : null;
 
-    // 2. Determine color based on bar direction
-    const isUp = bar.close >= bar.open;
+    // 1. Format values — use HA O/H/L/C for heiken-ashi
+    const open = this.chart.priceFormatter.formatPrice(haBar ? haBar.o : bar.open);
+    const high = this.chart.priceFormatter.formatPrice(haBar ? haBar.h : bar.high);
+    const low = this.chart.priceFormatter.formatPrice(haBar ? haBar.l : bar.low);
+    const close = this.chart.priceFormatter.formatPrice(haBar ? haBar.c : bar.close);
+
+    // 2. Determine color based on bar direction (HA direction for HA mode)
+    const isUp = haBar ? (haBar.c >= haBar.o) : (bar.close >= bar.open);
     const color = isUp ? (this.chart.options.series.upColor ?? '#26a69a') : (this.chart.options.series.downColor ?? '#ef5350');
 
     // 3. Position: Top Left with small margin
@@ -270,6 +275,7 @@ export class Crosshair {
 
     // Label styling
     const labelColor = '#888';
+    // Use standard O/H/L/C labels even for HA mode (values are HA-computed)
     
     // Draw O: value
     let currentX = startX;
@@ -303,6 +309,18 @@ export class Crosshair {
     this.overlayCtx.fillStyle = color;
     this.overlayCtx.fillText(close, currentX, startY);
 
+  }
+
+  /**
+   * Get Heiken Ashi bar values from the renderer cache
+   */
+  private getHaBar(barIndex: number): { o: number; h: number; l: number; c: number } | null {
+    try {
+      const cache = this.chart.renderer.getSeriesCache();
+      const haArr = cache?.ha as Array<{o:number;h:number;l:number;c:number}> | undefined;
+      if (haArr && haArr.length > barIndex) return haArr[barIndex];
+    } catch { /* renderer not ready */ }
+    return null;
   }
 
   /**

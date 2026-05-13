@@ -13,4 +13,6 @@ export interface SeriesRenderer {
     barIndex: number,
     renderStart: number
   ): boolean;
+  /** Optional: cached series-specific computed values (e.g., HA O/H/L/C for heiken-ashi) */
+  getSeriesCache?(): Record<string, unknown> | null;
 }
