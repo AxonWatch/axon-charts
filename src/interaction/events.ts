@@ -607,6 +607,8 @@ export class EventManager {
       if (!this.chart.options.behavior.panOnMouseDrag) return;
 
       this.chart.state.offsetX += mouseX - this.lastMouseX;
+      // When price scale is zoomed (priceScale !== 1.0), vertical drag in chart area
+      // also pans the price axis — this lets users navigate the zoomed price range
       if (this.chart.state.priceScale !== 1.0) {
         this.chart.state.priceOffset += mouseY - this.lastMouseY;
       }
@@ -764,6 +766,7 @@ export class EventManager {
     mainCanvas.removeEventListener('touchstart', this.handleTouchStart);
     mainCanvas.removeEventListener('touchmove', this.handleTouchMove);
     mainCanvas.removeEventListener('touchend', this.handleTouchEnd);
+    mainCanvas.removeEventListener('dblclick', this.handleDblClick);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
   }
 }

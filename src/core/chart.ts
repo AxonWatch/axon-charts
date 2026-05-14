@@ -188,6 +188,7 @@ export class Chart {
 
   // Real-time Countdown management
   private countdownRafId: number | null = null;
+  private _destroyed: boolean = false;
   private lastCountdownUpdate: number = 0;
 
   // Callbacks
@@ -434,8 +435,8 @@ export class Chart {
         canvas.style.height = this.state.h + 'px';
       });
 
-      this.bgCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
-      this.mainCtx.scale(this.state.devicePixelRatio, this.state.devicePixelRatio);
+      this.bgCtx.setTransform(this.state.devicePixelRatio, 0, 0, this.state.devicePixelRatio, 0, 0);
+      this.mainCtx.setTransform(this.state.devicePixelRatio, 0, 0, this.state.devicePixelRatio, 0, 0);
       this.mainCtx.imageSmoothingEnabled = false;
 
       // Reset font after canvas resize (width/height change resets context state)
@@ -633,8 +634,13 @@ export class Chart {
   /**
    * Trigger onVisibleRangeChange callback with current visible range
    */
+  private _lastRangeChangeTime: number = 0;
+
   public triggerVisibleRangeChange(): void {
     if (!this.onVisibleRangeChange || this.dataManager.isEmpty) return;
+    const now = Date.now();
+    if (now - this._lastRangeChangeTime < 200) return;
+    this._lastRangeChangeTime = now;
 
     const { w, axisWidth, barWidth, offsetX } = this.state;
     const data = this.dataManager.data;
@@ -659,9 +665,8 @@ export class Chart {
     if (!Array.isArray(bars)) throw new Error('AxonCharts: Data must be an array');
     
     // Validate structural integrity of data
-    if (bars.length > 0) {
-      this.validateBar(bars[0]);
-      if (bars.length > 1) this.validateBar(bars[bars.length - 1]);
+    for (const bar of bars) {
+      this.validateBar(bar);
     }
 
     // Invalidate measurement cache — new data means completely different prices
@@ -975,7 +980,7 @@ export class Chart {
       // Throttle to 100ms to save CPU
       if (now - this.lastCountdownUpdate >= 100) {
         this.lastCountdownUpdate = now;
-        this.render(); 
+        this.renderer.drawViewport(this.mainCtx); 
       }
       this.countdownRafId = requestAnimationFrame(updateCountdown);
     };
@@ -1029,6 +1034,8 @@ export class Chart {
   }
 
   public destroy(): void {
+    if (this._destroyed) return;
+    this._destroyed = true;
     this.stopCountdownTimer();
 
     // Unregister from AI agent registry
@@ -1049,6 +1056,19 @@ export class Chart {
     this.mainCanvas.remove();
     this.crosshair.destroy();
     this.renderer.destroy();
+    // Nullify references to prevent use-after-destroy
+    this.dataManager = null!;
+    this.renderer = null!;
+    this.crosshair = null!;
+    this.eventManager = null!;
+    this.priceScaleAPI = null!;
+    this.timeScaleAPI = null!;
+    this._crosshairAPI = null!;
+    this.priceFormatter = null!;
+    this.bgCtx = null!;
+    this.mainCtx = null!;
+    this.bgCanvas = null!;
+    this.mainCanvas = null!;
   }
 
   public isAutoScrolling(): boolean { return this.eventManager.isAutoScrolling(); }
@@ -1214,8 +1234,6 @@ export class Chart {
     this.state.priceScale = state.viewport.priceScale;
     this.state.priceOffset = state.viewport.priceOffset;
 
-    // Re-render
-    this.render();
   }
 
   /**

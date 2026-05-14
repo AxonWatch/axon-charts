@@ -297,6 +297,8 @@ export interface IChart {
     updateLastCandleInBuffer(): void;
     /** Get cached series-specific computed values (e.g., HA O/H/L/C for heiken-ashi) */
     getSeriesCache(): Record<string, unknown> | null;
+    /** Redraw the viewport (buffer + overlays) without full render */
+    drawViewport(ctx: CanvasRenderingContext2D): void;
   };
   priceFormatter: {
     formatPrice(price: number): string;

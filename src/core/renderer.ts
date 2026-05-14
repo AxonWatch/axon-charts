@@ -216,6 +216,7 @@ export class Renderer {
     }
 
     mainCtx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    mainCtx.imageSmoothingEnabled = false;
     mainCtx.clearRect(0, 0, w, h);
 
     // Clip to main chart area (above sub-pane)
@@ -275,7 +276,7 @@ export class Renderer {
 
     const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
     // Clamp the line Y to chart area — don't let it go diagonal
-    const lineY = Math.min(yClose, clipBottom);
+    const lineY = Math.max(this.chart.state.topMargin, Math.min(yClose, clipBottom));
 
     if (cp?.showLine !== false) {
       ctx.strokeStyle = lineColor ?? '#888';
