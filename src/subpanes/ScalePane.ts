@@ -44,14 +44,23 @@ export abstract class ScalePane implements SubPane {
     computedValues: null as number[] | null
   };
 
+  /** External data injected by plugins (takes priority over computeValues) */
+  protected externalValues: number[] | null = null;
+
+  /**
+   * Inject pre-computed values from external source (e.g., Web Worker plugin).
+   * When set, computeValues() is not called — externalValues are used directly.
+   */
+  setData(values: number[]): void {
+    this.externalValues = values;
+  }
+
   /**
    * Compute indicator values for all bars. Called once per render() before renderContent().
-   * The return value is stored in paneState.computedValues and available in
-   * renderContent(), getLatestValue(), getTooltipValue(), etc.
-   *
-   * Return null (default) if no computation is needed (e.g. VolumeSubPane reads raw bar data).
+   * Returns externalValues if set via setData(), otherwise runs internal computation.
    */
   protected computeValues(chart: IChart): number[] | null {
+    if (this.externalValues) return this.externalValues;
     return null;
   }
 

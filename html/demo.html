@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Axon Charts - Complete Settings Audit</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-primary: #0d0d0d;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #111;
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --text-tertiary: #666666;
+      --border-color: #222;
+      --border-light: #333;
+      --accent: #4ade80;
+      --accent-hover: #22c55e;
+    }
+
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg-primary); color: var(--text-primary); font-family: system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; overflow: hidden;  }
+
+    /* === TOP BAR === */
+    #top-bar {
+      height: 60px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 20px;
+      flex-shrink: 0;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    #top-bar .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-right: 20px;
+    }
+
+    #top-bar .connection-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+
+    #top-bar select {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    #top-bar select:hover {
+      border-color: #4ade80;
+    }
+
+    #top-bar button {
+      background: var(--bg-secondary);
+      color: #4ade80;
+      border: 1px solid #4ade80;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    #top-bar button:hover {
+      background: #4ade80;
+      color: #000;
+      transform: translateY(-1px);
+    }
+
+    #top-bar button.primary {
+      background: #4ade80;
+      color: #000;
+    }
+
+    #top-bar button.primary:hover {
+      background: #22c55e;
+    }
+
+    #top-bar button.danger {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    #top-bar button.danger:hover {
+      background: #ef4444;
+      color: var(--text-primary);
+    }
+
+    #top-bar .status {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-left: auto;
+    }
+
+    #top-bar .status.live {
+      color: #22c55e;
+    }
+
+    /* Spinning loader animation */
+    .spin-icon {
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      width: 14px;
+      height: 14px;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* === MAIN LAYOUT === */
+    #main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #sidebar {
+      width: 50%;
+      min-width: 500px;
+      max-width: 600px;
+      background: var(--bg-primary);
+      border-right: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    @media (max-width: 1024px) {
+      #main-container {
+        flex-direction: column-reverse;
+      }
+      #sidebar {
+        width: 100%;
+        min-width: unset;
+        max-width: unset;
+        max-height: 50vh;
+        border-right: none;
+        border-top: 1px solid var(--border-light);
+      }
+      #chart-box {
+        min-height: 50vh;
+      }
+    }
+
+    @media (max-width: 768px) {
+      #top-bar {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px;
+        gap: 10px;
+      }
+      #top-bar .logo {
+        margin-right: 10px;
+      }
+      #top-bar .connection-controls {
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+      #top-bar button {
+        font-size: 10px;
+        padding: 6px 10px;
+      }
+      .section-header {
+        padding: 6px 8px;
+      }
+      .section-content {
+        padding: 6px 8px;
+      }
+      .settings-table {
+        font-size: 10px;
+      }
+      .settings-table td {
+        padding: 4px 6px;
+      }
+      .settings-table .st-api {
+        font-size: 8px;
+        padding: 3px 6px;
+      }
+      .settings-table .st-label {
+        font-size: 9px;
+        padding: 3px 6px;
+      }
+      .control-note {
+        font-size: 8px;
+      }
+      .legend {
+        font-size: 8px;
+        padding: 6px 8px;
+      }
+      input[type="text"],
+      input[type="number"],
+      select {
+        width: 60px;
+        font-size: 10px;
+        padding: 4px 6px;
+      }
+      input[type="range"] {
+        width: 60px;
+      }
+    }
+
+    #sidebar-header {
+      padding: 12px 16px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid #333;
+    }
+
+    #sidebar-header h1 {
+      margin: 0;
+      font-size: 14px;
+      color: #4ade80;
+      font-weight: 700;
+    }
+
+    #sidebar-header p {
+      margin: 4px 0 0;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    #settings-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    #settings-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #settings-container::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+
+    #settings-container::-webkit-scrollbar-thumb {
+      background: var(--bg-secondary);
+      border-radius: 3px;
+    }
+
+    #settings-container::-webkit-scrollbar-thumb:hover {
+      background: var(--bg-secondary);
+    }
+
+    .section {
+      margin-bottom: 6px;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 8px 10px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid #222;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .section-header:hover {
+      background: #252525;
+      border-bottom-color: #4ade80;
+      transform: translateX(2px);
+    }
+
+    .section-header:hover .section-title {
+      color: #22c55e;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #4ade80;
+    }
+
+    .section-header a {
+      font-size: 9px;
+      color: var(--text-muted);
+      text-decoration: none;
+      margin-left: 6px;
+      transition: color 0.2s;
+    }
+
+    .section-header a:hover {
+      color: #4ade80;
+    }
+
+    .section-count {
+      font-size: 9px;
+      color: #555;
+      font-weight: 500;
+    }
+
+    .section-content {
+      padding: 8px 10px;
+      display: block;
+    }
+
+    .section-content.collapsed {
+      display: none;
+    }
+
+    /* Settings Table (all screen sizes) */
+    .settings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    .settings-table th {
+      text-align: left;
+      font-size: 9px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 6px 8px;
+      border-bottom: 1px solid #222;
+      font-weight: 600;
+    }
+    .settings-table td {
+      padding: 6px 8px;
+      border-left: 1px solid #181818;
+      vertical-align: middle;
+      line-height: 1.4;
+    }
+    .settings-table tr:last-child td {
+      border-bottom: none;
+    }
+    .settings-table tr:hover td {
+      background: var(--bg-secondary);
+    }
+    .settings-table .st-label {
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      font-weight: 500;
+      width: 30%;
+    }
+    .settings-table .st-label:hover {
+      color: #4ade80;
+    }
+    .settings-table .st-api {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: #4ade80;
+      cursor: pointer;
+      word-break: break-all;
+      width: 40%;
+      transition: all 0.15s;
+      padding: 6px 10px;
+      border-radius: 4px;
+      background: var(--bg-primary);
+      /* border: 1px solid #1a1a1a; */
+      line-height: 1.5;
+    }
+    .settings-table .st-api:hover {
+      background: var(--bg-primary);
+      border-color: var(--border-light);
+      color: #22c55e;
+    }
+    .settings-table .st-api.api-copied {
+      background: var(--bg-primary);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+    .settings-table .st-value {
+      text-align: right;
+      white-space: nowrap;
+      width: 20%;
+      padding: 4px 8px;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    select {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      width: 80px;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: #4ade80;
+    }
+
+    input[type="color"] {
+      width: 32px;
+      height: 24px;
+      padding: 0;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      cursor: pointer;
+      background: var(--bg-secondary);
+    }
+
+    input[type="range"] {
+      width: 100px;
+      cursor: pointer;
+      accent-color: #4ade80;
+    }
+
+    input[type="checkbox"] {
+      cursor: pointer;
+      width: 14px;
+      height: 14px;
+      accent-color: #4ade80;
+    }
+
+    .control-note {
+      font-size: 8px;
+      color: #555;
+      font-style: italic;
+      margin-left: 4px;
+    }
+
+    #chart-box {
+      flex: 1;
+      position: relative;
+      background: #000;
+      min-width: 0;
+      min-height: 0;
+    }
+
+    #sidebar-footer {
+      padding: 10px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    #sidebar-footer button {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    #sidebar-footer button:hover {
+      border-color: #4ade80;
+      color: #4ade80;
+    }
+
+    #sidebar-footer button[style*="4ade80"] {
+      background: var(--bg-secondary);
+      color: #4ade80;
+      border-color: #4ade80;
+    }
+
+    #sidebar-footer button[style*="4ade80"]:hover {
+      background: #4ade80;
+      color: #000;
+    }
+
+    #json-dump,
+    #llm-context-content {
+      background: var(--bg-primary);
+      color: #4ade80;
+      font-size: 8px;
+      padding: 8px;
+      overflow: auto;
+      max-height: 120px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      border: 1px solid var(--border-color);
+    }
+
+    #json-panel,
+    #llm-panel {
+      display: none;
+    }
+
+    #json-panel.active,
+    #llm-panel.active {
+      display: block;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid #222;
+      flex-wrap: wrap;
+      font-size: 9px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-muted);
+    }
+
+    /* Toast notification - slides from right edge */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--bg-secondary);
+      border: 1px solid #22c55e;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #22c55e;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: auto;
+    }
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .toast .toast-icon {
+      margin-right: 8px;
+    }
+    /* Panel Toggles */
+    .panel-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--bg-tertiary);
+      cursor: pointer;
+      font-size: 10px;
+      color: var(--text-secondary);
+      border-top: 1px solid #222;
+      transition: all 0.2s;
+    }
+
+    .panel-toggle:hover {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+    }
+
+    .panel-toggle.active {
+      background: var(--bg-secondary);
+      color: #4ade80;
+    }
+
+    .panel-toggle .toggle-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      transition: all 0.2s;
+    }
+
+    .panel-toggle.active .toggle-indicator {
+      background: #4ade80;
+      box-shadow: 0 0 6px rgba(74, 222, 128, 0.4);
+    }
+
+    /* Series type button group */
+    .series-type-group {
+      display: flex;
+      gap: 3px;
+      align-items: center;
+      background: var(--bg-tertiary);
+      border-radius: 6px;
+      padding: 3px;
+      border: 1px solid var(--border-color);
+    }
+    .series-type-btn {
+      background: transparent;
+      color: var(--text-tertiary);
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .series-type-btn:hover {
+      color: var(--text-secondary);
+      background: var(--bg-secondary);
+    }
+    .series-type-btn.active {
+      background: #4ade80;
+      color: #000;
+    }
+    .series-type-btn.active:hover {
+      background: #22c55e;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP BAR -->
+  <div id="top-bar">
+    <div class="logo">
+      <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts" style="vertical-align: middle; margin-right: 6px; height: 20px; width: auto;">
+      <span style="vertical-align: middle;">Axon Charts</span>
+      <span style="background: var(--bg-secondary); color: #4ade80; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-left: 8px; vertical-align: middle;">v1.1.0</span>
+    </div>
+    <div class="connection-controls">
+      <button id="ws-demo-btn" class="primary"><img src="/assets/images/axon_charts_logo.png" alt="" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 4px;"> Demo</button>
+      <button id="ws-connect-btn"><i data-lucide="wifi" style="vertical-align: middle; width: 16px; height: 16px;"></i> Live</button>
+      <button id="ws-disconnect-btn" class="danger" style="display:none;"><i data-lucide="x" style="vertical-align: middle; width: 16px; height: 16px;"></i> Stop</button>
+      <button id="ws-tick-btn" style="display:none;"><i data-lucide="zap" style="vertical-align: middle; width: 16px; height: 16px;"></i> Ticks</button>
+      <div class="series-type-group" id="series-type-group">
+        <button data-type="candlestick" class="series-type-btn active" title="Standard candlestick">Candle</button>
+        <button data-type="line" class="series-type-btn" title="Continuous line of closes">Line</button>
+        <button data-type="area" class="series-type-btn" title="Filled area under close line">Area</button>
+        <button data-type="bar" class="series-type-btn" title="OHLC bar (open/close ticks)">Bar</button>
+        <button data-type="heiken-ashi" class="series-type-btn" title="Heiken-Ashi smoothed candles">HA</button>
+        <button data-type="hollow" class="series-type-btn" title="Hollow body on bullish candles">Hollow</button>
+      </div>
+      <span class="status" id="ws-status">Ready</span>
+      <div style="border-left: 1px solid var(--border-color); margin: 0 8px;"></div>
+      <button id="export-image-btn" title="Snapshot chart as PNG image"><i data-lucide="camera" style="vertical-align: middle; width: 16px; height: 16px;"></i> Snapshot</button>
+      <button id="share-config-btn" title="Copy configuration to clipboard"><i data-lucide="save" style="vertical-align: middle; width: 16px; height: 16px;"></i> Save Config</button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div id="main-container">
+    <!-- SIDEBAR -->
+    <div id="sidebar">
+      <div id="settings-container"></div>
+
+      <div class="panel-toggle" onclick="toggleJsonPanel()" id="json-toggle">
+        <div class="toggle-indicator"></div>
+        <span>Config</span>
+      </div>
+
+      <div id="json-panel">
+        <div id="json-dump"></div>
+      </div>
+
+      <div class="panel-toggle" onclick="toggleLLMPanel()" id="llm-toggle">
+        <div class="toggle-indicator"></div>
+        <span>LLM Context</span>
+      </div>
+
+      <div id="llm-panel">
+        <div id="llm-context-content"></div>
+      </div>
+
+      <div id="sidebar-footer">
+        <button onclick="reset()">↺ Reset to Defaults</button>
+        <button onclick="window.open('docs.html', '_blank')" style="margin-top: 8px; background: var(--bg-secondary); color: #4ade80; border-color: #4ade80;"><i data-lucide="book-open" style="vertical-align: middle; width: 16px; height: 16px;"></i> Full Docs</button>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div id="chart-box"></div>
+  </div>
+
+
+  <script src="/dist/chart.js"></script>
+  <script>
+
+    const SETTINGS = [
+      // ==================== LAYOUT ====================
+      { id: 'layout.width', label: 'Width', category: 'layout', status: 'functional', default: 'auto', type: 'select', options: ['auto', '800', '1000', '1200'], note: 'Auto uses container width' , api: 'window.chart.setOptions({ layout: { width: value } })' },
+      { id: 'layout.height', label: 'Height', category: 'layout', status: 'functional', default: 'auto', type: 'select', options: ['auto', '600', '800', '1000'], note: 'Auto uses container height' , api: 'window.chart.setOptions({ layout: { height: value } })' },
+      { id: 'layout.background', label: 'Background', category: 'layout', status: 'functional', default: '#1a1a1a', type: 'color' , api: 'window.chart.setOptions({ layout: { background: value } })' },
+      { id: 'layout.textColor', label: 'Text Color', category: 'layout', status: 'functional', default: '#aaaaaa', type: 'color' , api: 'window.chart.setOptions({ layout: { textColor: value } })' },
+      { id: 'layout.fontSize', label: 'Font Size (px)', category: 'layout', status: 'functional', default: 12, type: 'number', min: 8, max: 24 , api: 'window.chart.setOptions({ layout: { fontSize: value } })' },
+      { id: 'layout.fontFamily', label: 'Font Family', category: 'layout', status: 'functional', default: 'system-ui', type: 'select', options: ['system-ui', 'Arial', 'monospace'] , api: 'window.chart.setOptions({ layout: { fontFamily: value } })' },
+      { id: 'layout.padding.top', label: 'Padding Top', category: 'layout', status: 'functional', default: 40, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { top: value } } })' },
+      { id: 'layout.padding.right', label: 'Padding Right', category: 'layout', status: 'functional', default: 60, type: 'number', min: 0, max: 200 , api: 'window.chart.setOptions({ layout: { padding: { right: value } } })' },
+      { id: 'layout.padding.bottom', label: 'Padding Bottom', category: 'layout', status: 'functional', default: 35, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { bottom: value } } })' },
+      { id: 'layout.padding.left', label: 'Padding Left', category: 'layout', status: 'functional', default: 10, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { left: value } } })' },
+      // ==================== GRID ====================
+      { id: 'grid.show', label: 'Show Grid', category: 'grid', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ grid: { show: value } })' },
+      { id: 'grid.vertLines.show', label: 'Show V. Lines', category: 'grid', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ grid: { vertLines: { show: value } } })' },
+      { id: 'grid.vertLines.color', label: 'V. Line Color', category: 'grid', status: 'functional', default: '#2a2a2a', type: 'color' , api: 'window.chart.setOptions({ grid: { vertLines: { color: value } } })' },
+      { id: 'grid.vertLines.width', label: 'V. Line Width', category: 'grid', status: 'functional', default: 1, type: 'number', min: 1, max: 5 , api: 'window.chart.setOptions({ grid: { vertLines: { width: value } } })' },
+      { id: 'grid.horzLines.show', label: 'Show H. Lines', category: 'grid', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ grid: { horzLines: { show: value } } })' },
+      { id: 'grid.horzLines.color', label: 'H. Line Color', category: 'grid', status: 'functional', default: '#2a2a2a', type: 'color' , api: 'window.chart.setOptions({ grid: { horzLines: { color: value } } })' },
+      { id: 'grid.horzLines.width', label: 'H. Line Width', category: 'grid', status: 'functional', default: 1, type: 'number', min: 1, max: 5 , api: 'window.chart.setOptions({ grid: { horzLines: { width: value } } })' },
+      // ==================== SERIES ====================
+      { id: 'series.upColor', label: 'Up Candle Color', category: 'series', status: 'functional', default: '#22c55e', type: 'color', note: 'Bullish candle and current price line color' , api: 'window.chart.setOptions({ series: { upColor: value } })' },
+      { id: 'series.downColor', label: 'Down Candle Color', category: 'series', status: 'functional', default: '#ef4444', type: 'color', note: 'Bearish candle and current price line color' , api: 'window.chart.setOptions({ series: { downColor: value } })' },
+      { id: 'series.type', label: 'Series Type', category: 'series', status: 'functional', default: 'candlestick', type: 'select', options: ['candlestick', 'line', 'area', 'bar', 'heiken-ashi', 'hollow'], note: 'Switch chart visualization style', api: 'window.chart.setOptions({ series: { type: value } })' },
+      { id: 'series.lineColor', label: 'Line/Area Color', category: 'series', status: 'functional', default: '#1E90FF', type: 'color', note: 'Only affects line/area series. Not tied to up/down colors' , api: 'window.chart.setOptions({ series: { lineColor: value } })' },
+      { id: 'series.showMarkers', label: 'Show Close Dots', category: 'series', status: 'functional', default: false, type: 'checkbox', note: 'Show dot at every close (line/area)' , api: 'window.chart.setOptions({ series: { showMarkers: value } })' },
+      { id: 'series.showLatestPriceMarker', label: 'Show Latest Dot', category: 'series', status: 'functional', default: true, type: 'checkbox', note: 'Highlighted marker at latest close' , api: 'window.chart.setOptions({ series: { showLatestPriceMarker: value } })' },
+      { id: 'series.showLatestPriceAnimation', label: 'Animate Price Dot', category: 'series', status: 'functional', default: true, type: 'checkbox', note: 'Pulsing dot on price change (500ms decay)' , api: 'window.chart.setOptions({ series: { showLatestPriceAnimation: value } })' },
+      // ==================== PRICE SCALE ====================
+      { id: 'priceScale.mode', label: 'Scale Mode', category: 'priceScale', status: 'functional', default: 'linear', type: 'select', options: ['linear', 'logarithmic', 'percentage'] , api: 'window.chart.priceScale().setMode(value)' },
+      { id: 'priceScale.scaleMargins.top', label: 'Scale Margin Top', category: 'priceScale', status: 'functional', default: 0.1, type: 'number', min: 0, max: 0.5, step: 0.05 , api: 'window.chart.priceScale().setMargins({ top: value })' },
+      { id: 'priceScale.scaleMargins.bottom', label: 'Scale Margin Bottom', category: 'priceScale', status: 'functional', default: 0.1, type: 'number', min: 0, max: 0.5, step: 0.05 , api: 'window.chart.priceScale().setMargins({ bottom: value })' },
+      { id: 'priceScale.priceFormat.type', label: 'Price Format', category: 'priceScale', status: 'functional', default: 'price', type: 'select', options: ['price', 'volume', 'percent'] , api: 'window.chart.setOptions({ priceScale: { priceFormat: { type: value } } })' },
+      { id: 'priceScale.priceFormat.precision', label: 'Price Precision', category: 'priceScale', status: 'functional', default: 2, type: 'number', min: 0, max: 8 , api: 'window.chart.setOptions({ priceScale: { priceFormat: { precision: value } } })' },
+      { id: 'priceScale.priceFormat.minMove', label: 'Min Move', category: 'priceScale', status: 'functional', default: null, type: 'number', note: 'Derives precision from minMove when precision not set' , api: 'window.chart.setOptions({ priceScale: { priceFormat: { minMove: value } } })' },
+      { id: 'priceScale.currentPrice.show', label: 'Show Price Label', category: 'priceScale', status: 'functional', default: true, type: 'checkbox', note: 'Show/hide the entire price line and label on Y-axis' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { show: value } } })' },
+      { id: 'priceScale.currentPrice.showLine', label: 'Show Price Line', category: 'priceScale', status: 'functional', default: true, type: 'checkbox', note: 'Show/hide just the dashed line (label stays)' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { showLine: value } } })' },
+      { id: 'priceScale.currentPrice.showCountdown', label: 'Show Countdown', category: 'priceScale', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { showCountdown: value } } })' },
+      { id: 'priceScale.currentPrice.countdownColor', label: 'Countdown Color', category: 'priceScale', status: 'functional', default: '#ffffff', type: 'color' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { countdownColor: value } } })' },
+      { id: 'priceScale.currentPrice.upColor', label: 'Up Line Color', category: 'priceScale', status: 'functional', default: null, type: 'color', note: 'Falls back to series up color' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { upColor: value } } })' },
+      { id: 'priceScale.currentPrice.downColor', label: 'Down Line Color', category: 'priceScale', status: 'functional', default: null, type: 'color', note: 'Falls back to series down color' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { downColor: value } } })' },
+      { id: 'priceScale.currentPrice.lineStyle', label: 'Line Style', category: 'priceScale', status: 'functional', default: 'dashed', type: 'select', options: ['dashed', 'solid'] , api: 'window.chart.setOptions({ priceScale: { currentPrice: { lineStyle: value } } })' },
+      { id: 'priceScale.currentPrice.textColor', label: 'Text Color', category: 'priceScale', status: 'functional', default: null, type: 'color', note: 'Falls back to layout text color' , api: 'window.chart.setOptions({ priceScale: { currentPrice: { textColor: value } } })' },
+      { id: 'priceScale.reverse', label: 'Reverse (Inverted)', category: 'priceScale', status: 'functional', default: false, type: 'checkbox', note: 'High prices at bottom, low at top' , api: 'window.chart.priceScale().setReverse(value)' },
+      // ==================== TIME SCALE ====================
+      { id: 'timeScale.visible', label: 'Visible', category: 'timeScale', status: 'functional', default: true, type: 'checkbox', note: 'Hides time axis and grid when false' , api: 'window.chart.setOptions({ timeScale: { visible: value } })' },
+      { id: 'timeScale.timeVisible', label: 'Time Visible', category: 'timeScale', status: 'functional', default: true, type: 'checkbox', note: 'Controls date vs time display in axis' , api: 'window.chart.setOptions({ timeScale: { timeVisible: value } })' },
+      { id: 'timeScale.secondsVisible', label: 'Seconds Visible', category: 'timeScale', status: 'functional', default: false, type: 'checkbox', note: 'Shows seconds in time format' , api: 'window.chart.setOptions({ timeScale: { secondsVisible: value } })' },
+      { id: 'timeScale.showFullDate', label: 'Show Full Date', category: 'timeScale', status: 'functional', default: true, type: 'checkbox', note: 'Crosshair: "Fri 03 Jan\'26 17:55"' , api: 'window.chart.setOptions({ timeScale: { showFullDate: value } })' },
+      { id: 'timeScale.rightOffset', label: 'Right Offset', category: 'timeScale', status: 'functional', default: 80, type: 'range', min: 0, max: 400 , api: 'window.chart.setOptions({ timeScale: { rightOffset: value } })' },
+      { id: 'timeScale.barSpacing', label: 'Bar Spacing', category: 'timeScale', status: 'functional', default: 11, type: 'range', min: 4, max: 100 , api: 'window.chart.timeScale().setBarSpacing(value)' },
+      { id: 'timeScale.minBarSpacing', label: 'Min Bar Spacing', category: 'timeScale', status: 'functional', default: 4, type: 'number', min: 2, max: 20, note: 'Minimum bar spacing (zoom boundary)' , api: 'window.chart.setOptions({ timeScale: { minBarSpacing: value } })' },
+      { id: 'timeScale.maxBarSpacing', label: 'Max Bar Spacing', category: 'timeScale', status: 'functional', default: 1000, type: 'number', min: 50, max: 2000, note: 'Maximum bar spacing (zoom boundary)' , api: 'window.chart.setOptions({ timeScale: { maxBarSpacing: value } })' },
+      { id: 'timeScale.showDayOfWeek', label: 'Show Day of Week', category: 'timeScale', status: 'functional', default: true, type: 'checkbox', note: 'Prefix date with weekday (Mon, Tue...) in crosshair' , api: 'window.chart.setOptions({ timeScale: { showDayOfWeek: value } })' },
+      { id: 'timeScale.dateFormat', label: 'Date Format', category: 'timeScale', status: 'functional', default: 'MMM dd, yyyy', type: 'text', placeholder: 'MMM dd, yyyy', note: 'Tokens: yyyy, yy, MMM, MM, dd' , api: 'window.chart.setOptions({ timeScale: { dateFormat: value } })' },
+      { id: 'timeScale.timezone', label: 'Timezone', category: 'timeScale', status: 'functional', default: null, type: 'text', placeholder: 'America/New_York or leave empty', note: 'IANA name (empty = browser local)' , api: 'window.chart.setOptions({ timeScale: { timezone: value } })' },
+      // ==================== CROSSHAIR ====================
+      { id: 'crosshair.mode', label: 'Mode', category: 'crosshair', status: 'functional', default: 'magnet', type: 'select', options: ['normal', 'magnet', 'none'], note: 'Normal: free cursor, Magnet: snap to bar' , api: 'window.chart.crosshairAPI().setMode(value)' },
+      { id: 'crosshair.showLabels', label: 'Show Labels', category: 'crosshair', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.crosshairAPI().setShowLabels(value)' },
+      { id: 'crosshair.showTooltip', label: 'Show Tooltip', category: 'crosshair', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.crosshairAPI().setShowTooltip(value)' },
+      { id: 'crosshair.vertLine.color', label: 'V. Line Color', category: 'crosshair', status: 'functional', default: '#555555', type: 'color' , api: 'window.chart.crosshairAPI().setVerticalLine({ color: value })' },
+      { id: 'crosshair.vertLine.width', label: 'V. Line Width', category: 'crosshair', status: 'functional', default: 1, type: 'number', min: 1, max: 5 , api: 'window.chart.crosshairAPI().setVerticalLine({ width: value })' },
+      { id: 'crosshair.vertLine.style', label: 'V. Line Style', category: 'crosshair', status: 'functional', default: 'dashed', type: 'select', options: ['solid', 'dashed'], note: 'Solid/dash style implemented via setLineDash' , api: 'window.chart.crosshairAPI().setVerticalLine({ style: value })' },
+      { id: 'crosshair.horzLine.color', label: 'H. Line Color', category: 'crosshair', status: 'functional', default: '#555555', type: 'color' , api: 'window.chart.crosshairAPI().setHorizontalLine({ color: value })' },
+      { id: 'crosshair.horzLine.width', label: 'H. Line Width', category: 'crosshair', status: 'functional', default: 1, type: 'number', min: 1, max: 5 , api: 'window.chart.crosshairAPI().setHorizontalLine({ width: value })' },
+      { id: 'crosshair.horzLine.style', label: 'H. Line Style', category: 'crosshair', status: 'functional', default: 'dashed', type: 'select', options: ['solid', 'dashed'], note: 'Solid/dash style implemented via setLineDash' , api: 'window.chart.crosshairAPI().setHorizontalLine({ style: value })' },
+      // ==================== BEHAVIOR ====================
+      { id: 'behavior.dragToZoom', label: 'Drag to Zoom', category: 'behavior', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ behavior: { dragToZoom: value } })' },
+      { id: 'behavior.scrollToZoom', label: 'Scroll to Zoom', category: 'behavior', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ behavior: { scrollToZoom: value } })' },
+      { id: 'behavior.pinchToZoom', label: 'Pinch to Zoom', category: 'behavior', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ behavior: { pinchToZoom: value } })' },
+      { id: 'behavior.panOnMouseDrag', label: 'Pan on Drag', category: 'behavior', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ behavior: { panOnMouseDrag: value } })' },
+      { id: 'behavior.dragPriceScale', label: 'Drag Price Scale', category: 'behavior', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ behavior: { dragPriceScale: value } })' },
+      { id: 'behavior.autoScroll', label: 'Auto Scroll', category: 'behavior', status: 'functional', default: true, type: 'checkbox', note: 'Auto-scroll to latest bar on new data' , api: 'window.chart.setOptions({ behavior: { autoScroll: value } })' },
+      // ==================== DATA ====================
+      { id: 'data.maxBars', label: 'Max Bars', category: 'data', status: 'functional', default: 5000, type: 'number', min: 100, max: 50000 , api: 'window.chart.setOptions({ data: { maxBars: value } })' },
+      { id: 'data.autoCleanup', label: 'Auto Cleanup', category: 'data', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ data: { autoCleanup: value } })' },
+      // ==================== MARKET HEADER  ====================
+      { id: 'market.show', label: 'Show Header', category: 'market', status: 'functional', default: false, type: 'checkbox', note: 'Display market info bar' , api: 'window.chart.setOptions({ market: { show: value } })' },
+      { id: 'market.baseAsset', label: 'Base Asset', category: 'market', status: 'functional', default: 'BTC', type: 'text', placeholder: 'BTC' , api: 'window.chart.setOptions({ market: { baseAsset: value } })' },
+      { id: 'market.quoteAsset', label: 'Quote Asset', category: 'market', status: 'functional', default: 'USDT', type: 'text', placeholder: 'USDT' , api: 'window.chart.setOptions({ market: { quoteAsset: value } })' },
+      { id: 'market.timeframe', label: 'Timeframe', category: 'market', status: 'functional', default: '1m', type: 'text', placeholder: '1m' , api: 'window.chart.setOptions({ market: { timeframe: value } })' },
+      { id: 'market.source', label: 'Exchange', category: 'market', status: 'functional', default: '', type: 'text', placeholder: 'Binance' , api: 'window.chart.setOptions({ market: { source: value } })' },
+      { id: 'market.fontSize', label: 'Header Font Size', category: 'market', status: 'functional', default: 20, type: 'number', min: 10, max: 48, step: 1, note: 'Size of the market header label. Default is 20px' , api: 'window.chart.setOptions({ market: { fontSize: value } })' },
+      // ==================== WATERMARK  ====================
+      { id: 'watermark.show', label: 'Show Watermark', category: 'watermark', status: 'functional', default: false, type: 'checkbox', note: 'Display watermark overlay' , api: 'window.chart.setOptions({ watermark: { show: value } })' },
+      { id: 'watermark.text', label: 'Watermark Text', category: 'watermark', status: 'functional', default: '', type: 'text', placeholder: 'CONFIDENTIAL' , api: 'window.chart.setOptions({ watermark: { text: value } })' },
+      { id: 'watermark.color', label: 'Watermark Color', category: 'watermark', status: 'functional', default: '#ffffff', type: 'color' , api: 'window.chart.setOptions({ watermark: { color: value } })' },
+      { id: 'watermark.fontSize', label: 'Font Size', category: 'watermark', status: 'functional', default: null, type: 'number', min: 12, max: 128, note: 'null=auto (~30% of chart width), or set pixel size' , api: 'window.chart.setOptions({ watermark: { fontSize: value } })' },
+      { id: 'watermark.opacity', label: 'Opacity', category: 'watermark', status: 'functional', default: 0.07, type: 'number', min: 0.01, max: 1, step: 0.01 , api: 'window.chart.setOptions({ watermark: { opacity: value } })' },
+      { id: 'watermark.rotate', label: 'Rotated', category: 'watermark', status: 'functional', default: false, type: 'checkbox', note: 'Diagonal -45° stamp. Default: horizontal centered' , api: 'window.chart.setOptions({ watermark: { rotate: value } })' },
+
+      // ==================== VOLUME  ====================
+      { id: 'volume.show', label: 'Show Volume', category: 'volume', status: 'functional', default: false, type: 'checkbox', note: 'Display volume sub-pane below candles' , api: 'window.chart.setOptions({ volume: { show: value } })' },
+      { id: 'volume.upColor', label: 'Volume Up Color', category: 'volume', status: 'functional', default: '#22c55e', type: 'color' , api: 'window.chart.setOptions({ volume: { upColor: value } })' },
+      { id: 'volume.downColor', label: 'Volume Down Color', category: 'volume', status: 'functional', default: '#ef4444', type: 'color' , api: 'window.chart.setOptions({ volume: { downColor: value } })' },
+      { id: 'volume.heightPercent', label: 'Volume Height %', category: 'volume', status: 'functional', default: 0.2, type: 'number', min: 0.05, max: 0.5, step: 0.05, note: 'Percentage of total chart height (0.05-0.5)' , api: 'window.chart.setOptions({ volume: { heightPercent: value } })' },
+      { id: 'volume.precision', label: 'Decimal Precision', category: 'volume', status: 'functional', default: null, type: 'select', options: ['null', '0', '1', '2', '3', '4', '5', '6', '7', '8'], note: 'null=auto, 0=integer, 8=crypto' , api: 'window.chart.setOptions({ volume: { precision: value } })' },
+      { id: 'volume.minMove', label: 'Min Move', category: 'volume', status: 'functional', default: null, type: 'select', options: ['null', '0.00000001', '0.0001', '0.001', '0.01', '0.1', '1'], note: 'Derives precision from min increment' , api: 'window.chart.setOptions({ volume: { minMove: value } })' },
+      // ==================== CONTEXT (LLM) ====================
+      { id: 'context.exposeData', label: 'Expose Data', category: 'context', status: 'functional', default: false, type: 'checkbox', note: 'Show visible bars in getContext()', api: "window.chart.setOptions({ context: { exposeData: value } })" },
+      { id: 'context.discoverable', label: 'Discoverable', category: 'context', status: 'functional', default: true, type: 'checkbox', note: 'Register in __AXON_CHARTS__ for agent discovery', api: "window.chart.setOptions({ context: { discoverable: value } })" },
+      { id: 'context.id', label: 'Chart ID', category: 'context', status: 'functional', default: 'auto', type: 'text', placeholder: 'Leave empty for auto', note: 'Init-only — shown for reference', api: 'createChart(container, { context: { id: value } })' },
+      // ==================== MENU ====================
+      { id: 'menu.enabled', label: 'Right-Click Menu', category: 'menu', status: 'functional', default: true, type: 'checkbox', note: 'Show right-click menu', api: 'window.chart.setOptions({ menu: { enabled: value } })' },
+      { id: 'menu.items', label: 'Menu Items Order', category: 'menu', status: 'functional', default: '', type: 'text', placeholder: 'e.g. copy,save,grid,volume,fullscreen', note: 'Comma-separated item IDs. Leave empty for defaults.', api: "window.chart.setOptions({ menu: { items: items } })  // items: string[]" },
+    ];
+
+    // === CATEGORIES ===
+    const CATEGORIES = {
+      layout: { title: '1. Layout', desc: 'Chart dimensions and appearance (10 options)', docs: 'docs/SETTINGS.md#layout' },
+      grid: { title: '2. Grid', desc: 'Background grid lines (7 options)', docs: 'docs/SETTINGS.md#grid' },
+      series: { title: '3. Series', desc: 'Visual style, colors and markers (7 options)', docs: 'docs/SETTINGS.md#series' },
+      priceScale: { title: '4. Price Scale', desc: 'Y-axis behavior and formatting (10 options)', docs: 'docs/SETTINGS.md#price-scale' },
+      timeScale: { title: '5. Time Scale', desc: 'X-axis behavior and spacing (9 options)', docs: 'docs/SETTINGS.md#time-scale' },
+      crosshair: { title: '6. Crosshair', desc: 'Cursor overlay and tooltip (10 options)', docs: 'docs/SETTINGS.md#crosshair' },
+      menu: { title: '7. Right-Click Menu', desc: 'Context menu options (1 option)', docs: 'docs/SETTINGS.md#menu' },
+      behavior: { title: '8. Behavior', desc: 'Interaction controls (6 options)', docs: 'docs/SETTINGS.md#behavior' },
+      data: { title: '9. Data', desc: 'Data management (2 options)', docs: 'docs/SETTINGS.md#data-limits' },
+      market: { title: '10. Market Header', desc: 'Trading pair and exchange info (5 options)', docs: 'docs/SETTINGS.md#market' },
+      context: { title: '11. LLM Context', desc: 'AI agent exposure (3 options)', docs: 'docs/SETTINGS.md#llm-integration' },
+      watermark: { title: '12. Watermark', desc: 'Semi-transparent overlay (6 options)', docs: 'docs/SETTINGS.md#watermark' },
+      volume: { title: '13. Volume', desc: 'Volume histogram sub-pane (6 options)', docs: 'docs/SETTINGS.md#volume' },
+    };
+
+    // === WEBSOCKET STATE ===
+    let ws = null;
+    let isLiveMode = false;
+
+    // === INIT CHART ===
+    window.chart = AxonCharts.createChart('#chart-box', {
+      layout: { background: '#1a1a1a', textColor: '#aaaaaa', fontSize: 12, fontFamily: 'system-ui' },
+      grid: { show: true, vertLines: { show: true, color: '#2a2a2a', width: 1 }, horzLines: { show: true, color: '#2a2a2a', width: 1 } },
+      priceScale: { mode: 'linear', scaleMargins: { top: 0.1, bottom: 0.1 }, priceFormat: { type: 'price' }, currentPrice: { showCountdown: true } },
+      timeScale: { rightOffset: 80, barSpacing: 11, timeVisible: true, secondsVisible: false, showFullDate: true, showDayOfWeek: true, dateFormat: 'MMM dd, yyyy' },
+      crosshair: { mode: 'magnet', showLabels: true, showTooltip: true, vertLine: { color: '#555555', width: 1 }, horzLine: { color: '#555555', width: 1 } },
+      menu: { enabled: true },
+      behavior: { dragToZoom: true, scrollToZoom: true, pinchToZoom: true, panOnMouseDrag: true, dragPriceScale: true, autoScroll: true },
+      data: { maxBars: 5000, autoCleanup: true },
+      market: { baseAsset: 'DEMO', quoteAsset: 'USD', timeframe: '1m', source: 'Demo', show: true },
+      watermark: { text: '', color: '#ffffff', fontSize: null, opacity: 0.07, show: false, rotate: false },
+      series: { upColor: '#22c55e', downColor: '#ef4444', lineColor: '#1E90FF', showMarkers: false, showLatestPriceMarker: true, showLatestPriceAnimation: true },
+      volume: { show: false, upColor: '#22c55e', downColor: '#ef4444', heightPercent: 0.2, precision: null, minMove: null }
+    });
+
+    // Dummy data generator (includes volume for sub-pane support)
+    function gen(n=300) {
+      let p=100, d=[], t=Math.floor(Date.now()/60000)*60000;
+      let prevVol = 1000;
+      for(let i=0; i<n; i++) {
+        let o=p, c=p+(Math.random()*4-2);
+        prevVol = Math.max(100, prevVol + (Math.random() - 0.5) * 500);
+        d.push({time: t-(n-i)*60000, open: o, high: Math.max(o,c)+2, low: Math.min(o,c)-2, close: c, volume: Math.round(prevVol)});
+        p=c;
+      }
+      return d;
+    }
+
+    // Load demo data
+    function loadDemoData() {
+      stopTickStream();
+      if (ws) ws.close();
+      isLiveMode = false;
+      const data = gen(300);
+      window.chart.setData(data);
+      window.chart.setOptions({ market: { baseAsset: 'DEMO', quoteAsset: 'USD', timeframe: '1m', source: 'Demo', show: true } });
+      updateWsStatus('Demo: 300 bars loaded');
+      document.getElementById('ws-connect-btn').style.display = 'inline-block';
+      document.getElementById('ws-disconnect-btn').style.display = 'none';
+      document.getElementById('ws-tick-btn').style.display = 'inline-block';
+    }
+
+    // === WEBSOCKET HANDLERS ===
+    let isConnecting = false;
+
+    async function connectWebSocket() {
+      if (ws) ws.close();
+      if (isConnecting) return; // Prevent multiple connection attempts
+
+      isConnecting = true;
+      const symbol = 'BTCUSDT';
+      const interval = '1m';
+
+      // Hide Live button and show loading state
+      document.getElementById('ws-connect-btn').style.display = 'none';
+      updateWsStatus(`<i data-lucide="loader-2" class="spin-icon"></i> Connecting to ${symbol}...`);
+
+      try {
+        // 1. Fetch exchange info for precision
+        const exchangeInfoResp = await fetch(`https://api.binance.com/api/v3/exchangeInfo?symbol=${symbol}`);
+        const exchangeInfo = await exchangeInfoResp.json();
+        const tickSize = parseFloat(exchangeInfo.symbols[0].filters.find(f => f.filterType === 'PRICE_FILTER').tickSize);
+
+        // Update price format precision
+        // Derive base/quote from symbol (e.g. BTCUSDT -> BTC, USDT)
+        const baseAsset = symbol.slice(0, -4);
+        const quoteAsset = symbol.slice(-4);
+
+        // Update price format + market info
+        window.chart.setOptions({
+          priceScale: { priceFormat: { type: 'price', precision: Math.log10(1/tickSize) } },
+          market: {
+            baseAsset: baseAsset,
+            quoteAsset: quoteAsset,
+            timeframe: interval,
+            source: 'Binance',
+            show: true
+          }
+        });
+
+        // 2. Load historical data
+        const historyResp = await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=150`);
+        const historyData = await historyResp.json();
+        const bars = historyData.map(k => ({
+          time: k[0],
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4]),
+          volume: parseFloat(k[5])
+        }));
+
+        window.chart.setData(bars);
+
+        // 3. Connect WebSocket for live updates
+        const wsUrl = `wss://stream.binance.com:9443/ws/btcusdt@kline_1m`;
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          isConnecting = false;
+          isLiveMode = true;
+          updateWsStatus(`LIVE: ${symbol} (${interval})`, true);
+          document.getElementById('ws-connect-btn').style.display = 'none';
+          document.getElementById('ws-disconnect-btn').style.display = 'inline-block';
+          document.getElementById('ws-tick-btn').style.display = 'none';
+        };
+
+        ws.onmessage = (e) => {
+          const data = JSON.parse(e.data);
+          if (data.e === 'kline') {
+            const k = data.k;
+            window.chart.updateLastBar({
+              time: k.t,
+              open: parseFloat(k.o),
+              high: parseFloat(k.h),
+              low: parseFloat(k.l),
+              close: parseFloat(k.c),
+              volume: parseFloat(k.v)
+            });
+          }
+        };
+
+        ws.onclose = () => {
+          isConnecting = false;
+          if (isLiveMode) {
+            updateWsStatus(`Disconnected`);
+            document.getElementById('ws-connect-btn').style.display = 'inline-block';
+            document.getElementById('ws-disconnect-btn').style.display = 'none';
+            document.getElementById('ws-tick-btn').style.display = 'inline-block';
+            isLiveMode = false;
+          }
+        };
+
+        ws.onerror = (err) => {
+          isConnecting = false;
+          console.error('WebSocket error:', err);
+          updateWsStatus(`Connection error`);
+          document.getElementById('ws-connect-btn').style.display = 'inline-block';
+        };
+
+      } catch (error) {
+        isConnecting = false;
+        console.error('Failed to connect:', error);
+        updateWsStatus(`Failed: ${error.message}`);
+        document.getElementById('ws-connect-btn').style.display = 'inline-block';
+      }
+    }
+
+    function disconnectWebSocket() {
+      stopTickStream();
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      isLiveMode = false;
+      updateWsStatus(`Disconnected`);
+      document.getElementById('ws-connect-btn').style.display = 'inline-block';
+      document.getElementById('ws-disconnect-btn').style.display = 'none';
+      document.getElementById('ws-tick-btn').style.display = 'inline-block';
+    }
+
+    // WebSocket event listeners
+    document.getElementById('ws-connect-btn').onclick = connectWebSocket;
+    document.getElementById('ws-disconnect-btn').onclick = disconnectWebSocket;
+    document.getElementById('ws-demo-btn').onclick = loadDemoData;
+    document.getElementById('ws-tick-btn').onclick = startTickStream;
+
+    // Export and Share button handlers
+    document.getElementById('export-image-btn').onclick = function() {
+      try {
+        const dataURL = window.chart.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'axon-chart-screenshot.png';
+        link.href = dataURL;
+        link.click();
+        showToast('Chart exported successfully!');
+      } catch (err) {
+        console.error('Export failed:', err);
+        showToast('Export failed', 'error');
+      }
+    };
+
+    document.getElementById('share-config-btn').onclick = function() {
+      try {
+        const options = window.chart.getOptions();
+        const config = {
+          layout: options.layout,
+          grid: options.grid,
+          series: options.series,
+          priceScale: options.priceScale,
+          timeScale: options.timeScale,
+          crosshair: options.crosshair,
+          behavior: options.behavior,
+          watermark: options.watermark,
+          volume: options.volume
+        };
+
+        const configJSON = JSON.stringify(config, null, 2);
+        navigator.clipboard.writeText(configJSON).then(() => {
+          showToast('Configuration copied to clipboard!');
+        }).catch(() => {
+          showToast('Failed to copy configuration', 'error');
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+        showToast('Failed to share configuration', 'error');
+      }
+    };
+
+    // === TICK STREAM DEMO ===
+    let tickInterval = null;
+    let currentTickCandle = null;
+    const TICK_TIMEFRAME_MS = 60000; // 1 minute candles
+    let tickBasePrice = 100;
+
+    function startTickStream() {
+      if (tickInterval) return;
+      if (ws) { ws.close(); isLiveMode = false; }
+      
+      // Reset with single candle
+      const now = Math.floor(Date.now() / TICK_TIMEFRAME_MS) * TICK_TIMEFRAME_MS;
+      tickBasePrice = 100;
+      currentTickCandle = { time: now, open: tickBasePrice, high: tickBasePrice, low: tickBasePrice, close: tickBasePrice };
+      window.chart.setData([currentTickCandle]);
+      window.chart.setOptions({ market: { baseAsset: 'SIM', quoteAsset: 'USD', timeframe: '1m', source: 'Tick Stream', show: true } });
+      
+      let tickCount = 0;
+      tickInterval = setInterval(() => {
+        tickCount++;
+        // Simulate realistic price movement (±0.2%)
+        const change = (Math.random() - 0.5) * tickBasePrice * 0.004;
+        const price = tickBasePrice + change;
+
+        const candleStart = Math.floor(Date.now() / TICK_TIMEFRAME_MS) * TICK_TIMEFRAME_MS;
+
+        if (candleStart !== currentTickCandle.time) {
+          // New candle: use the previous close as new open
+          const newCandle = {
+            time: candleStart,
+            open: currentTickCandle.close,
+            high: currentTickCandle.close,
+            low: currentTickCandle.close,
+            close: currentTickCandle.close
+          };
+          currentTickCandle = newCandle;
+          tickBasePrice = currentTickCandle.close;
+          // Use full updateLastBar for candle boundary (handles auto-scroll)
+          window.chart.updateLastBar(newCandle);
+        } else {
+          // Same candle: update high/low/close
+          currentTickCandle.high = Math.max(currentTickCandle.high, price);
+          currentTickCandle.low = Math.min(currentTickCandle.low, price);
+          currentTickCandle.close = price;
+
+          // Use fast path for every tick (only re-draws last candle)
+          window.chart.updateLastBarFast(currentTickCandle);
+        }
+
+        // Full render every 20 ticks to keep axes/grid in sync
+        if (tickCount % 20 === 0) {
+          window.chart.render();
+        }
+      }, 50); // 20 ticks/sec simulates a moderate stream
+
+      updateWsStatus('Tick stream: 20/sec (updateLastBarFast)');
+      document.getElementById('ws-connect-btn').style.display = 'none';
+      document.getElementById('ws-disconnect-btn').style.display = 'inline-block';
+      document.getElementById('ws-demo-btn').style.display = 'inline-block';
+      document.getElementById('ws-tick-btn').style.display = 'none';
+    }
+
+    function stopTickStream() {
+      if (tickInterval) {
+        clearInterval(tickInterval);
+        tickInterval = null;
+      }
+      currentTickCandle = null;
+      document.getElementById('ws-tick-btn').style.display = 'inline-block';
+    }
+
+    // Initial load with demo data
+    loadDemoData();
+
+    // === BUILD UI ===
+    const container = document.getElementById('settings-container');
+
+    // Group settings by category
+    const byCategory = {};
+    SETTINGS.forEach(s => {
+      if (!byCategory[s.category]) byCategory[s.category] = [];
+      byCategory[s.category].push(s);
+    });
+
+    // Helper function to create a control row
+    function createControl(setting) {
+      const tr = document.createElement('tr');
+
+      // Column 1: Label with note below
+      const tdLabel = document.createElement('td');
+      tdLabel.className = 'st-label';
+      if (setting.note) {
+        tdLabel.innerHTML = setting.label + '<div class="control-note">' + setting.note + '</div>';
+      } else {
+        tdLabel.textContent = setting.label;
+      }
+
+      // Column 2: Value (interactive input) - clean, no notes
+      const tdValue = document.createElement('td');
+      tdValue.className = 'st-value';
+
+      let inputHtml = '';
+      if (setting.type === 'checkbox') {
+        inputHtml = '<input type="checkbox" id="input-' + setting.id.replace(/\./g, '-') + '" ' + (setting.default ? 'checked' : '') + '>';
+      } else if (setting.type === 'color') {
+        const colorValue = setting.default === null ? "#000000" : setting.default;
+        inputHtml = "<input type=\"color\" id=\"input-" + setting.id.replace(/\./g, "-") + "\" value=\"" + colorValue + "\">";
+      } else if (setting.type === 'select') {
+        var opts = setting.options.map(function(o) {
+          return '<option value="' + o + '"' + (o === setting.default ? ' selected' : '') + '>' + o + '</option>';
+        }).join('');
+        inputHtml = '<select id="input-' + setting.id.replace(/\./g, '-') + '">' + opts + '</select>';
+      } else if (setting.type === 'range') {
+        inputHtml = '<input type="range" id="input-' + setting.id.replace(/\./g, '-') + '" min="' + setting.min + '" max="' + setting.max + '"' + (setting.step ? ' step="' + setting.step + '"' : '') + ' value="' + setting.default + '">';
+      } else if (setting.type === 'number') {
+        inputHtml = '<input type="number" id="input-' + setting.id.replace(/\./g, '-') + '" min="' + (setting.min || 0) + '" max="' + (setting.max || 100) + '" value="' + (setting.default === null ? '' : setting.default) + '"' + (setting.step ? ' step="' + setting.step + '"' : '') + '>';
+      } else if (setting.type === 'text') {
+        inputHtml = '<input type="text" id="input-' + setting.id.replace(/\./g, '-') + '" value="' + (setting.default || '') + '" placeholder="' + (setting.placeholder || '') + '">';
+      }
+      tdValue.innerHTML = inputHtml;
+
+      // Add event listener to the input after it's in the DOM
+      const input = tdValue.querySelector('input, select');
+      if (input) {
+        input.addEventListener('change', function() {
+          let value;
+          if (setting.type === 'checkbox') {
+            value = this.checked;
+          } else if (setting.type === 'number') {
+            value = this.value === '' ? null : parseFloat(this.value);
+          } else if (setting.type === 'color') {
+            // Use default value instead of null when color picker is empty
+            value = this.value === '#000000' ? setting.default : this.value;
+          } else {
+            value = this.value;
+          }
+          updateSetting(setting.id, value);
+        });
+
+        if (setting.type === 'color' || setting.type === 'range') {
+          input.addEventListener('input', function() {
+            let value;
+            if (setting.type === 'range') {
+              value = parseFloat(this.value);
+            } else if (setting.type === 'color') {
+              // Convert placeholder #000000 back to null
+              value = this.value === '#000000' ? null : this.value;
+            } else {
+              value = this.value;
+            }
+            updateSetting(setting.id, value);
+          });
+        }
+      }
+
+      // Column 3: API call (clickable -> copy)
+      const tdApi = document.createElement('td');
+      tdApi.className = 'st-api';
+      if (setting.api) {
+        tdApi.textContent = setting.api;
+        // Use closure to capture the API string
+        (function(apiText, el) {
+          el.onclick = function() { copyToClipboard(apiText, el); };
+        })(setting.api, tdApi);
+        tdApi.title = 'Click to copy';
+      }
+
+      tr.appendChild(tdLabel);
+      tr.appendChild(tdValue);
+      tr.appendChild(tdApi);
+      return tr;
+    }
+
+    // Create sections in the order defined by CATEGORIES
+    Object.keys(CATEGORIES).forEach(catId => {
+      if (!byCategory[catId]) return;
+      const settings = byCategory[catId];
+      const cat = CATEGORIES[catId];
+
+      const section = document.createElement('div');
+      section.className = 'section';
+      section.innerHTML = `
+        <div class="section-header" onclick="toggleSection('${catId}')">
+          <span class="section-title">${cat.title}</span>
+        </div>
+        <div class="section-content collapsed" id="section-${catId}">
+          <p style="margin:0 0 8px;font-size:9px;color:#555;font-style:italic">${cat.desc}</p>
+          <table class="settings-table">
+            <thead>
+              <tr>
+                <th>Setting</th>
+                <th style="text-align:right">Value</th>
+                <th>API Call (click to copy)</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-${catId}">
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const tbody = section.querySelector('#tbody-' + catId);
+      settings.forEach(setting => {
+        const row = createControl(setting);
+        tbody.appendChild(row);
+      });
+
+      container.appendChild(section);
+    });
+
+    // === UPDATE HANDLER ===
+    function updateSetting(path, value) {
+      const config = {};
+      let current = config;
+      const parts = path.split('.');
+
+      for (let i = 0; i < parts.length - 1; i++) {
+        current[parts[i]] = {};
+        current = current[parts[i]];
+      }
+
+      // Handle special conversions
+      if (path === 'menu.items') {
+        // Comma-separated string -> array
+        current[parts[parts.length - 1]] = value === '' ? null : value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
+      } else if (value === 'null') {
+        current[parts[parts.length - 1]] = null;
+      } else if (path === 'timeScale.timezone') {
+        current[parts[parts.length - 1]] = value === '' ? undefined : value;
+      } else if (path === 'watermark.fontSize') {
+        current[parts[parts.length - 1]] = value === '' ? null : parseFloat(value);
+      } else if (path === 'volume.precision' || path === 'volume.minMove') {
+        current[parts[parts.length - 1]] = value === 'null' || value === '' ? null : parseFloat(value);
+      } else {
+        // Coerce numeric-looking strings to numbers (e.g. '800' from select -> 800)
+        // Handles select options like layout.width: ['auto', '800', '1000']
+        if (typeof value === 'string' && /^\d+$/.test(value)) {
+          value = parseFloat(value);
+        }
+        // Skip null values (color placeholder conversion sends null)
+        if (value === null) return;
+        current[parts[parts.length - 1]] = value;
+      }
+
+      window.chart.setOptions(config);
+      updateJsonDump();
+    }
+
+    function updateJsonDump() {
+      const opts = window.chart.getOptions();
+      document.getElementById('json-dump').textContent = JSON.stringify(opts, null, 2);
+      updateLLMContext();
+    }
+
+    function showToast(message) {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = '<span class="toast-icon"><i data-lucide="check" style="width: 14px; height: 14px;"></i></span> ' + message;
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+      });
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    function copyToClipboard(text, element) {
+      navigator.clipboard.writeText(text).then(() => {
+        if (element) {
+          element.classList.add('api-copied');
+          setTimeout(() => element.classList.remove('api-copied'), 2000);
+        }
+        showToast('Copied: <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;font-size:12px;color:#4ade80;">' + text + '</code>');
+      }).catch(err => {
+        console.error('Copy failed:', err);
+      });
+    }
+
+    function updateLLMContext() {
+      const panel = document.getElementById('llm-context-content');
+      if (!panel) return;
+      try {
+        const ctx = window.chart.getContext();
+        panel.textContent = JSON.stringify(ctx, null, 2);
+      } catch (e) {
+        panel.textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function toggleLLMPanel() {
+      const panel = document.getElementById('llm-panel');
+      const toggle = document.getElementById('llm-toggle');
+      panel.classList.toggle('active');
+      toggle.classList.toggle('active');
+      if (panel.classList.contains('active')) {
+        updateLLMContext();
+      }
+    }
+
+    function toggleJsonPanel() {
+      const panel = document.getElementById('json-panel');
+      const toggle = document.getElementById('json-toggle');
+      panel.classList.toggle('active');
+      toggle.classList.toggle('active');
+    }
+
+    function updateWsStatus(message, isLive = false) {
+      const statusEl = document.getElementById('ws-status');
+      // Check if message contains HTML
+      if (message.includes('<')) {
+        statusEl.innerHTML = message;
+        // Reinitialize Lucide icons for the new content
+        lucide.createIcons();
+      } else {
+        statusEl.textContent = message;
+      }
+      statusEl.className = 'status' + (isLive ? ' live' : '');
+    }
+
+    function reset() {
+      window.chart.resetOptions();
+      syncUI();
+      updateJsonDump();
+    }
+
+    function syncUI() {
+      const opts = window.chart.getOptions();
+      SETTINGS.forEach(setting => {
+        const input = document.getElementById(`input-${setting.id.replace(/\./g, '-')}`);
+        if (!input) return;
+
+        let value = opts;
+        const parts = setting.id.split('.');
+        for (const part of parts) {
+          value = value?.[part];
+        }
+
+        if (setting.type === 'checkbox') {
+          input.checked = value;
+        } else if (setting.id === 'menu.items') {
+          // Array -> comma-separated string for display
+          input.value = Array.isArray(value) ? value.join(', ') : '';
+        } else if (setting.type === 'select' || setting.type === 'text') {
+          input.value = value || '';
+        } else if (setting.type === 'color') {
+          // Handle null values for color inputs - only update if not null
+          if (value !== null && value !== undefined) {
+            input.value = value;
+          } else {
+            input.value = '#000000'; // Placeholder for null
+          }
+        } else if (setting.type === 'number' || setting.type === 'range') {
+          // Handle null values for number inputs
+          if (value === null || value === undefined) {
+            input.value = '';
+          } else {
+            input.value = value;
+          }
+        }
+      });
+    }
+
+    function toggleSection(catId) {
+      const content = document.getElementById(`section-${catId}`);
+      content.classList.toggle('collapsed');
+    }
+
+    // Initial sync
+    syncUI();
+    updateJsonDump();
+
+    // Initialize Lucide icons after all dynamic HTML is created
+    
+    // === SERIES TYPE SWITCHER ===
+    (function() {
+      const group = document.getElementById('series-type-group');
+      if (!group) return;
+      group.addEventListener('click', function(e) {
+        const btn = e.target.closest('.series-type-btn');
+        if (!btn) return;
+        group.querySelectorAll('.series-type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const type = btn.getAttribute('data-type');
+        window.chart.setOptions({ series: { type: type } });
+        showToast(btn.textContent.trim() + ' series');
+      });
+    })();
+
+lucide.createIcons();
+  </script>
+
+  <style>
+    /* Force Lucide icon sizes */
+    .control-icon svg {
+      width: 16px !important;
+      height: 16px !important;
+    }
+
+    #top-bar button svg {
+      width: 18px !important;
+      height: 18px !important;
+    }
+  </style>
+
+</body>
+</html>

@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axon Charts - LLM-First Financial Charting Library</title>
+  <meta name="description" content="High-performance, LLM-first financial charting library for modern web applications. Built for AI agents, optimized for developers.">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #0f0f0f;
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --text-tertiary: #666666;
+      --border-color: #2a2a2a;
+      --border-light: #333333;
+      --accent: #4ade80;
+      --accent-hover: #22c55e;
+      --card-bg: #1a1a1a;
+      --input-bg: #0f0f0f;
+      --shadow: var(--shadow);
+    }
+
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      
+    }
+
+    /* Navigation */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: var(--bg-primary);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      z-index: 1000;
+      padding: 0 40px;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+    }
+
+    .logo img {
+      height: 36px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 32px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    .cta-button {
+      background: var(--accent);
+      color: #000;
+      padding: 10px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .cta-button:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+    }
+
+
+    /* Mobile Menu Button */
+    .mobile-menu-button {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--accent);
+      cursor: pointer;
+      padding: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mobile-menu-button i {
+      width: 28px;
+      height: 28px;
+    }
+
+    .desktop-only {
+      display: block;
+    }
+
+    .mobile-cta {
+      display: none;
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 120px 40px 80px;
+      text-align: center;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .hero-logo {
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hero-logo img {
+      max-width: 200px;
+      width: 100%;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 30px rgba(74, 222, 128, 0.3));
+    }
+
+    @media (max-width: 768px) {
+      .hero-logo img {
+        max-width: 150px;
+      }
+    }
+
+    .hero h1 {
+      font-size: 64px;
+      font-weight: 900;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -2px;
+      line-height: 1.1;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-bottom: 60px;
+    }
+
+    .hero-button {
+      padding: 14px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .hero-button.primary {
+      background: #4ade80;
+      color: #000;
+    }
+
+    .hero-button.primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(74, 222, 128, 0.3);
+    }
+
+    .hero-button.secondary {
+      background: transparent;
+      color: var(--accent);
+      border: 2px solid #4ade80;
+    }
+
+    .hero-button.secondary:hover {
+      background: #4ade80;
+      color: #000;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* Features Section */
+    .features {
+      padding: 100px 40px;
+      background: var(--bg-tertiary);
+    }
+
+    .section-title {
+      text-align: center;
+      font-size: 48px;
+      font-weight: 900;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .section-subtitle {
+      text-align: center;
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 60px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px var(--shadow);
+    }
+
+    .feature-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--accent);
+    }
+
+    .feature-icon svg {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    .feature-icon i,
+    .feature-icon i[data-lucide] {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    .feature-card h3 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+
+    .feature-card p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Use Cases Section */
+    .use-case-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 32px;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .use-case-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 40px var(--shadow);
+    }
+
+    /* Demo Section */
+    .demo-section {
+      padding: 100px 40px;
+    }
+
+    .demo-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+    }
+
+    .demo-header {
+      padding: 24px 32px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .demo-header h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .demo-header p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* API Documentation Section */
+    .api-section {
+      padding: 100px 40px;
+      background: var(--bg-tertiary);
+    }
+
+    .api-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .api-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 24px;
+    }
+
+    .api-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+
+    .api-card code {
+      background: var(--bg-primary);
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+    }
+
+    .api-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-top: 12px;
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px 40px;
+      background: var(--bg-primary);
+      border-top: 1px solid var(--border-color);
+    }
+
+    .footer-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+    }
+
+    .footer-section h4 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 12px;
+    }
+
+    .footer-section a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .footer-section a:hover {
+      color: var(--accent);
+    }
+
+    .footer-bottom {
+      max-width: 1200px;
+      margin: 40px auto 0;
+      padding-top: 40px;
+      border-top: 1px solid var(--border-color);
+      text-align: center;
+      color: var(--text-tertiary);
+      font-size: 14px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 40px;
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      .stats {
+        flex-direction: column;
+        gap: 32px;
+      }
+
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: var(--bg-primary);
+        flex-direction: column;
+        padding: 20px;
+        border-top: 1px solid var(--border-color);
+        gap: 0;
+      }
+
+      .nav-links.active {
+        display: flex;
+      }
+
+      .nav-links li {
+        width: 100%;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .nav-links li:last-child {
+        border-bottom: none;
+      }
+
+      .nav-links a {
+        display: block;
+        padding: 16px;
+        width: 100%;
+      }
+
+      .mobile-menu-button {
+        display: flex;
+      }
+
+      .desktop-only {
+        display: none;
+      }
+
+      .mobile-cta {
+        display: block;
+        background: #4ade80;
+        color: #000;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-align: center;
+        margin-top: 8px;
+        font-weight: 700;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  
+    /* Docs Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-content {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      width: 85%;
+      max-width: 900px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border-color);
+      flex-shrink: 0;
+    }
+    .modal-header h2 {
+      font-size: 16px;
+      color: var(--accent);
+      margin: 0;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 28px;
+      cursor: pointer;
+      padding: 4px 12px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .modal-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
+    .modal-body {
+      padding: 32px 40px;
+      overflow-y: auto;
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      flex: 1;
+      width: 100%;
+      max-width: none;
+    }
+    .modal-body table {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+      margin: 16px 0;
+    }
+    .modal-body th, .modal-body td {
+      border: 1px solid var(--border-light);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .modal-body th {
+      background: var(--bg-secondary);
+      color: var(--accent);
+      font-weight: 600;
+    }
+    .modal-body td code {
+      background: var(--bg-secondary);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 11px;
+      color: var(--accent);
+    }
+
+    .modal-body h1, .modal-body h2, .modal-body h3 { color: var(--accent); margin: 20px 0 10px; }
+    .modal-body h1 { font-size: 20px; }
+    .modal-body h2 { font-size: 17px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+    .modal-body h3 { font-size: 14px; }
+    .modal-body code { background: var(--bg-secondary); padding: 2px 6px; border-radius: 3px; color: var(--accent); font-size: 12px; }
+    .modal-body pre { background: var(--bg-primary); padding: 12px; border-radius: 4px; border: 1px solid var(--border-color); overflow-x: auto; }
+    .modal-body pre code { background: none; padding: 0; }
+    .modal-body table { border-collapse: collapse; width: 100%; font-size: 12px; margin: 10px 0; }
+    .modal-body th, .modal-body td { border: 1px solid var(--border-color); padding: 6px 10px; text-align: left; }
+    .modal-body th { background: var(--bg-secondary); color: #aaa; }
+    .modal-body a { color: var(--accent); }
+    .modal-body hr { border: none; border-top: 1px solid var(--border-color); margin: 16px 0; }
+
+</style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="logo">
+      <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">
+      <span style="vertical-align: middle;">Axon Charts</span>
+    </div>
+    <button class="mobile-menu-button" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+      <i data-lucide="menu"></i>
+    </button>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#examples">Examples</a></li>
+      <li><a href="#api">API</a></li>
+      <li><a href="#demo">Live Demo</a></li>
+      <li><a href="docs.html">Docs</a></li>
+      <li><a href="https://github.com/yourusername/kybos_core" class="mobile-cta">
+        <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; fill: currentColor; vertical-align: middle; margin-right: 4px;" aria-label="GitHub">
+          <title>GitHub</title>
+          <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+        </svg>
+        GitHub
+      </a></li>
+    </ul>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="https://github.com/yourusername/kybos_core" class="cta-button desktop-only" style="display: inline-flex; align-items: center; gap: 8px;">
+      <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; fill: currentColor;" aria-label="GitHub">
+        <title>GitHub</title>
+        <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+      </svg>
+      GitHub
+    </a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-logo">
+      <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts Logo">
+
+    </div>
+    <h1>Axon Charts</h1>
+    <h2>Agent-Ready Financial<br>Charting Library</h2>
+    <div style="display: inline-block; background: var(--bg-secondary); color: var(--accent); padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 700; margin-bottom: 24px;">v1.1.0</div>
+
+    <p>AI agents discover your charts, read market data, and interact with them directly through native browser discovery. Built for the agentic trading era.</p>
+
+    <div class="hero-buttons">
+      <a href="#demo" class="hero-button primary">Try Live Demo</a>
+      <a href="https://github.com/yourusername/kybos_core" class="hero-button secondary">View on GitHub</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-value">21.8</div>
+        <div class="stat-label">KB Gzipped</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">85</div>
+        <div class="stat-label">Config Options</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">&lt;1</div>
+        <div class="stat-label">ms Tick Updates</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start Section -->
+  <section class="features" id="features">
+    <h2 class="section-title">Why Axon Charts?</h2>
+    <p class="section-subtitle">Designed for quants, traders, and AI agents who need charts that work — instantly.</p>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="brain-circuit"></i></div>
+        <h3>Native AI Discovery</h3>
+        <p>Every chart registers in a global discovery layer. AI agents find them, read structured market data, and interact directly — no middleware needed.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="zap"></i></div>
+        <h3>Sub-Millisecond Rendering</h3>
+        <p>Sub-millisecond tick updates. Zero dependencies, zero layout shifts, zero jank at any zoom level.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="layout-grid"></i></div>
+        <h3>Multi-Chart Dashboards</h3>
+        <p>Every chart gets a unique identifier. Agents target the right chart by name, ticker, or position. Commands land where they belong, even in dashboards with dozens of charts.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="shield-check"></i></div>
+        <h3>Data Control</h3>
+        <p>By default agents see chart dimensions and price ranges. One toggle unlocks full bar-level price and volume. Toggle discovery off to make charts invisible to AI entirely.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="sliders"></i></div>
+        <h3>Everything Configurable</h3>
+        <p>Layout, scales, crosshair, colors, timezone, percentage mode, right-click menu, streaming — every aspect has an option and a default. Changes apply immediately.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon"><i data-lucide="layers"></i></div>
+        <h3>TypeScript-Native Architecture</h3>
+        <p>Full type definitions, predictable APIs, and a clean extension model. Add custom indicators, overlays, or analysis logic by extending base classes.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Demo Section -->
+  <section class="demo-section" id="examples" style="padding: 100px 40px; background: var(--bg-primary);">
+    <h2 class="section-title">Built for Every Trading Style</h2>
+    <p class="section-subtitle">From classic candlesticks to trend-smoothed Heiken-Ashi -- six series types, volume, multiple price scales, structured LLM context exports. All in one library.</p>
+
+    <div style="max-width: 1200px; margin: 0 auto 28px auto;">
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; margin-bottom: 20px;">
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-size: 13px; font-weight: 600;">Candlestick + Volume</span>
+          <span style="font-size: 11px; padding: 2px 7px; border-radius: 3px; background: rgba(74, 222, 128, 0.12); color: #4ade80;">default</span>
+        </div>
+        <div id="chart-live-candle" style="width: 100%; height: 420px; position: relative;"></div>
+      </div>
+    </div>
+
+    <div style="text-align: center;">
+      <a href="examples.html" class="cta-button" target="_blank">
+        Browse All 11 Chart Examples <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i>
+      </a>
+    </div>
+  </section>
+
+  <!-- API Section --><!-- API Section -->
+  <section class="api-section" id="api">
+    <h2 class="section-title">Simple, Powerful API</h2>
+    <p class="section-subtitle">Designed for human developers and AI agents alike. Every method is predictable. Every option has a default. Every chart has an ID.</p>
+
+    <div class="api-grid">
+      <div class="api-card">
+        <h3><i data-lucide="chart-candlestick" style="vertical-align: middle; margin-right: 8px;"></i>Chart Creation</h3>
+        <code>const chart = AxonCharts.createChart('#container', options)</code>
+        <p>Create a new chart instance with container selector and initial options. Returns a chart object with full API access.</p>
+      </div>
+
+      <div class="api-card">
+        <h3><i data-lucide="settings" style="vertical-align: middle; margin-right: 8px;"></i>Set Options</h3>
+        <code>chart.setOptions({ volume: { show: true } })</code>
+        <p>Update any chart option dynamically. Changes are applied immediately without re-rendering the entire chart.</p>
+      </div>
+
+      <div class="api-card">
+        <h3><i data-lucide="trending-up" style="vertical-align: middle; margin-right: 8px;"></i>Load Data</h3>
+        <code>chart.setData([{ time, open, high, low, close, volume }])</code>
+        <p>Load OHLCV data array. Automatically scales and renders. Supports timestamps in milliseconds.</p>
+      </div>
+
+      <div class="api-card">
+        <h3><i data-lucide="activity" style="vertical-align: middle; margin-right: 8px;"></i>Real-time Updates</h3>
+        <code>chart.updateLastBar({ time, close, volume })</code>
+        <p>Update the latest candle efficiently. Perfect for WebSocket streams. Use <code>updateLastBarFast()</code> for high-frequency updates.</p>
+      </div>
+
+      <div class="api-card">
+        <h3><i data-lucide="database" style="vertical-align: middle; margin-right: 8px;"></i>Get Context</h3>
+        <code>const ctx = chart.getContext()</code>
+        <p>Get structured JSON with chart ID, viewport, visible bars, price ranges, and indicator data. The data source for your AI co-pilot. Controllable exposure with one flag.</p>
+      </div>
+
+      <div class="api-card">
+        <h3><i data-lucide="terminal" style="vertical-align: middle; margin-right: 8px;"></i>Execute Commands</h3>
+        <code>chart.execute({ type: 'fitContent' })</code>
+        <p>Universal command interface for zoom, pan, scale changes, and more. Type-safe and easy to use.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Use Cases Section -->
+  <section class="demo-section" id="demo">
+    <h2 class="section-title">Interactive Demo</h2>
+    <p class="section-subtitle">Toggle every setting, watch the chart respond, inspect the AI context — all in real time.</p>
+
+    <div class="demo-container">
+      <div class="demo-header">
+        <div>
+          <h2><i data-lucide="flask-conical" style="vertical-align: middle; margin-right: 8px;"></i>Test Suite</h2>
+          <p>Build your AI co-pilot config here</p>
+        </div>
+        <a href="demo.html" class="cta-button" target="_blank">Open in New Tab <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i></a>
+      </div>
+
+      <!-- Embedded iframe with the test page -->
+      <iframe src="demo.html"
+              style="width: 100%; height: 600px; border: none;"
+              title="Axon Charts Interactive Demo">
+      </iframe>
+    </div>
+  </section>
+
+  
+    <!-- Live Charts Section -->
+  <section style="padding: 100px 40px; background: var(--bg-tertiary);">
+    <h2 class="section-title">Use Cases</h2>
+    <p class="section-subtitle">Built for the next generation of intelligent trading systems.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto;">
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 20px; display: flex; justify-content: center;">
+          <i data-lucide="bot" style="color: var(--accent); width: 64px; height: 64px;"></i>
+        </div>
+        <h3 style="color: var(--text-primary); font-size: 24px; font-weight: 700; margin-bottom: 16px;">AI Trading Agents</h3>
+        <p style="color: var(--text-secondary); font-size: 16px; line-height: 1.6; margin: 0;">
+          Build autonomous trading agents with Claude, GPT-4, and custom bots. Agents discover charts, read market data, and execute commands in real-time.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 20px; display: flex; justify-content: center;">
+          <i data-lucide="monitor" style="color: var(--accent); width: 64px; height: 64px;"></i>
+        </div>
+        <h3 style="color: var(--text-primary); font-size: 24px; font-weight: 700; margin-bottom: 16px;">Trading Dashboards</h3>
+        <p style="color: var(--text-secondary); font-size: 16px; line-height: 1.6; margin: 0;">
+          Multi-chart layouts with unique IDs. Build custom trading floors with real-time market data. Perfect for prop trading firms, fintech platforms, and multi-pair dashboards.
+        </p>
+      </div>
+
+      <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; text-align: center;">
+        <div style="font-size: 64px; margin-bottom: 20px; display: flex; justify-content: center;">
+          <i data-lucide="brain" style="color: var(--accent); width: 64px; height: 64px;"></i>
+        </div>
+        <h3 style="color: var(--text-primary); font-size: 24px; font-weight: 700; margin-bottom: 16px;">Quant Research Platforms</h3>
+        <p style="color: var(--text-secondary); font-size: 16px; line-height: 1.6; margin: 0;">
+          Backtesting, strategy development, and custom indicators. Designed for algorithmic trading teams and quant research platforms.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sponsor Section -->
+  <section style="padding: 100px 40px; background: var(--bg-tertiary); text-align: center;">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h2 style="font-size: 42px; font-weight: 900; margin-bottom: 20px; color: var(--text-primary);">Support Open Source</h2>
+      <p style="font-size: 18px; color: var(--text-secondary); margin-bottom: 40px; line-height: 1.6;">
+        Axon Charts is free and open-source (Apache 2.0). We build this library for the agentic trading era — because financial markets need charts that AI can understand.
+        <br><br>
+        Your support helps us:
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; margin-bottom: 40px;">
+        <div style="background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div style="font-size: 48px; margin-bottom: 12px; display: flex; justify-content: center;"><i data-lucide="rocket" style="width: 48px; height: 48px;"></i></div>
+          <h3 style="color: var(--accent); margin-bottom: 8px; font-size: 18px;">Add New Features</h3>
+          <p style="color: var(--text-secondary); font-size: 14px;">More indicators, chart types, and capabilities</p>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div style="font-size: 48px; margin-bottom: 12px; display: flex; justify-content: center;"><i data-lucide="bug" style="width: 48px; height: 48px;"></i></div>
+          <h3 style="color: var(--accent); margin-bottom: 8px; font-size: 18px;">Fix Bugs Faster</h3>
+          <p style="color: var(--text-secondary); font-size: 14px;">Quick responses to issues and patches</p>
+        </div>
+
+        <div style="background: var(--bg-secondary); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+          <div style="font-size: 48px; margin-bottom: 12px; display: flex; justify-content: center;"><i data-lucide="book" style="width: 48px; height: 48px;"></i></div>
+          <h3 style="color: var(--accent); margin-bottom: 8px; font-size: 18px;">Improve Docs</h3>
+          <p style="color: var(--text-secondary); font-size: 14px;">Better examples, guides, and API reference</p>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="https://github.com/sponsors/yourusername" style="background: #4ade80; color: #000; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+          <i data-lucide="heart" style="width: 18px; height: 18px;"></i> Become a Sponsor
+        </a>
+        <a href="https://github.com/yourusername/kybos_core" style="background: transparent; color: var(--accent); border: 2px solid #4ade80; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 16px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;">
+          <i data-lucide="star" style="width: 18px; height: 18px;"></i> Star on GitHub
+        </a>
+      </div>
+
+      <p style="margin-top: 32px; color: var(--text-tertiary); font-size: 14px;">
+        No sponsors yet — be the first to support Axon Charts!
+      </p>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Axon Charts</h4>
+        <p style="color: var(--text-secondary); font-size: 14px; line-height: 1.6;">
+          Financial charting for the agentic trading era. AI agents discover, read, and interact with charts natively. Built for quants, traders, and the AI co-pilot revolution.
+        </p>
+      </div>
+
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#examples">Examples</a></li>
+          <li><a href="#api">API Reference</a></li>
+          <li><a href="#demo">Live Demo</a></li>
+          <li><a href="https://github.com/yourusername/kybos_core/blob/main/CHANGELOG.md">Changelog</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Resources</h4>
+        <ul>
+          <li><a href="docs.html#llm-integration">LLM Integration</a></li>
+          <li><a href="docs.html#streaming">Streaming Guide</a></li>
+          <li><a href="docs.html#settings-overview">Settings Reference</a></li>
+          <li><a href="docs.html#api-methods">API Docs</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="https://github.com/yourusername/kybos_core">GitHub</a></li>
+          <li><a href="https://github.com/yourusername/kybos_core/issues">Issues</a></li>
+          <li><a href="https://github.com/yourusername/kybos_core/discussions">Discussions</a></li>
+          <li><a href="https://github.com/yourusername/kybos_core/blob/main/LICENSE">License</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4 style="color: var(--accent);"><i data-lucide="heart" style="vertical-align: middle; margin-right: 6px;"></i>Sponsor</h4>
+        <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.6; margin-bottom: 12px;">
+          Support open-source development. Become a sponsor and help us build better tools for the community.
+        </p>
+        <ul>
+          <li><a href="https://github.com/sponsors/yourusername" style="color: var(--accent); font-weight: 600;">Become a Sponsor</a></li>
+          <li><a href="https://github.com/yourusername/kybos_core" style="color: var(--accent);"><i data-lucide="star" style="vertical-align: middle; width: 14px; height: 14px; margin-right: 4px;"></i>Star on GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>© 2026 Axon Charts. Apache 2.0 License. Built with <i data-lucide="heart" style="vertical-align: middle; width: 14px; height: 14px; color: var(--accent);"></i> for the AI age. <span style="color: var(--accent);">Open Source & Community-Driven</span></p>
+    </div>
+  </footer>
+
+  <!-- DOCS MODAL -->
+  <div class="modal-overlay" id="docs-modal" onclick="if(event.target===this)closeDocsModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="docs-modal-title">Documentation</h2>
+        <button class="modal-close" onclick="closeDocsModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="docs-modal-body">
+        <p style="color:#888">Loading...</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function toggleMobileMenu() {
+      const navLinks = document.querySelector('.nav-links');
+      navLinks.classList.toggle('active');
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('.nav-links a').forEach(link => {
+      link.addEventListener('click', () => {
+        const navLinks = document.querySelector('.nav-links');
+        navLinks.classList.remove('active');
+      });
+    });
+
+    function openDoc(url) {
+      const modal = document.getElementById('docs-modal');
+      const title = document.getElementById('docs-modal-title');
+      const body = document.getElementById('docs-modal-body');
+      if (!modal) return;
+      modal.classList.add('open');
+
+      const parts = url.split('#');
+      const fileUrl = parts[0];
+      const anchor = parts.length > 1 ? parts[1].toLowerCase() : null;
+
+      if (anchor) {
+        title.textContent = anchor.replace(/-/g, ' ').replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+      } else {
+        title.textContent = 'Loading...';
+      }
+      body.innerHTML = '<p style="color:#888;text-align:center;padding:40px;">Loading...</p>';
+
+      fetch(fileUrl)
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.text();
+        })
+        .then(function(md) {
+          const html = marked.parse(md);
+          if (!anchor) {
+            const h1 = md.match(/^#\s+(.+)$/m);
+            if (h1) title.textContent = h1[1];
+            else title.textContent = fileUrl.split('/').pop().replace('.md', '');
+            body.innerHTML = html;
+          } else {
+            const targetId = anchor.replace(/-/g, '').toLowerCase();
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            const headings = temp.querySelectorAll('h1, h2, h3, h4');
+            let found = null;
+            for (const h of headings) {
+              const hId = h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '');
+              if (hId.includes(targetId) || targetId.includes(hId)) {
+                found = h;
+                break;
+              }
+            }
+            if (found) {
+              const nodes = Array.from(temp.childNodes);
+              const idx = nodes.indexOf(found);
+              let content = [];
+              for (let i = idx; i < nodes.length; i++) {
+                if (i > idx && nodes[i].tagName && nodes[i].tagName.indexOf('H') === 0 && nodes[i].tagName === found.tagName) break;
+                content.push(nodes[i].outerHTML || nodes[i].textContent);
+              }
+              title.textContent = found.textContent.replace(/¶$/, '');
+              body.innerHTML = content.join('');
+              body.innerHTML += '<a href="docs.html#' + anchor + '" target="_blank" style="display:block;text-align:center;margin-top:20px;padding:10px;background:#111;border:1px solid #333;border-radius:6px;color:#4ade80;text-decoration:none;font-size:13px;"><i data-lucide="book-open" style="vertical-align:middle;width:14px;height:14px;margin-right:4px;"></i>View in Full Docs &rarr;</a>';
+            } else {
+              body.innerHTML = html;
+            }
+          }
+          body.querySelectorAll('table').forEach(function(t) { t.style.width = '100%'; });
+        })
+        .catch(function(err) {
+          body.innerHTML = '<p style="color:#ef4444;text-align:center;padding:40px;">Failed to load: ' + err.message + '</p>';
+        });
+    }
+    function closeDocsModal() {
+      var m = document.getElementById('docs-modal');
+      if (m) m.classList.remove('open');
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDocsModal();
+    });
+
+  </script>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+
+  <style>
+    /* Force Lucide icon sizes - must be after icon creation */
+    .feature-icon svg,
+    .feature-icon i svg,
+    .feature-icon i[data-lucide] svg {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    .feature-icon i,
+    .feature-icon i[data-lucide] {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    /* Use case section icons */
+    div[style*="font-size: 48px"] svg,
+    div[style*="font-size: 48px"] i[data-lucide] {
+      width: 48px !important;
+      height: 48px !important;
+    }
+
+    /* Who is using it section icons */
+    div[style*="font-size: 64px"] svg,
+    div[style*="font-size: 64px"] i[data-lucide] {
+      width: 64px !important;
+      height: 64px !important;
+    }
+
+    /* Sponsor section icons */
+    div[style*="display: flex"] i svg,
+    div[style*="display: flex"] i[data-lucide] svg {
+      width: 48px !important;
+      height: 48px !important;
+    }
+  </style>
+
+
+<script src="/dist/chart.js"></script>
+<script>
+// ---- Live chart examples ----
+(function() {
+  function generateData(bars, basePrice, vol) {
+    var data = [];
+    var t = 1704067200000;
+    var p = basePrice || 100;
+    for (var i = 0; i < bars; i++) {
+      var ch = (Math.random() - 0.48) * (vol || 2.5);
+      var o = p, c = p + ch;
+      var h = Math.max(o, c) + Math.random() * (vol || 2.5) * 0.6;
+      var l = Math.min(o, c) - Math.random() * (vol || 2.5) * 0.6;
+      data.push({ time: t, open: +o.toFixed(2), high: +h.toFixed(2), low: +l.toFixed(2), close: +c.toFixed(2), volume: Math.round(Math.random() * 5000 + 1000) });
+      p = c;
+      t += 60000;
+    }
+    return data;
+  }
+
+  var liveData = generateData(180, 100, 3);
+
+  // Candlestick + Volume
+  if (document.getElementById('chart-live-candle')) {
+    var cc = AxonCharts.createChart('#chart-live-candle', {
+      layout: { background: '#1a1a1a', textColor: '#999', fontSize: 11 },
+      grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
+      volume: { show: true, heightPercent: 0.2, upColor: '#4ade80', downColor: '#f87171' },
+      timeScale: { barSpacing: 8, rightOffset: 40 },
+      crosshair: { mode: 'magnet', showTooltip: true }
+    });
+    cc.setData(liveData);
+  }
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,2479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axon Charts - Documentation</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #111;
+      --text-primary: #ffffff;
+      --text-secondary: #888888;
+      --text-tertiary: #666666;
+      --border-color: #2a2a2a;
+      --border-light: #333333;
+      --accent: #4ade80;
+      --accent-hover: #22c55e;
+      --card-bg: #1a1a1a;
+      --sidebar-bg: #111;
+    }
+
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      
+    }
+
+    /* Mobile menu button */
+    .mobile-menu-btn {
+      display: none;
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 2000;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      color: #4ade80;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mobile-menu-btn:hover {
+      background: var(--bg-secondary);
+      border-color: #4ade80;
+    }
+
+    /* Top Navigation Bar */
+    .top-nav {
+      position: fixed;
+      top: 0;
+      left: 280px;
+      right: 0;
+      height: 60px;
+      background: var(--bg-primary);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      z-index: 100;
+
+  }
+    .top-nav .logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .top-nav .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .top-nav .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .top-nav .nav-links a:hover {
+      color: var(--accent);
+    }
+
+    .top-nav .nav-links a.highlight {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      padding: 6px 14px;
+      border-radius: 4px;
+      color: var(--accent);
+    }
+
+    .top-nav .nav-links a.highlight:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--accent);
+    }
+
+
+    .top-nav .nav-links a.highlight {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      padding: 6px 14px;
+      border-radius: 4px;
+      color: #4ade80;
+    }
+
+    .top-nav .nav-links a.highlight:hover {
+      background: var(--bg-secondary);
+      border-color: #4ade80;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+
+    .sidebar-overlay.active {
+      display: block;
+    }
+
+    /* Right Sidebar (Table of Contents) */
+    .toc-sidebar {
+      width: 240px;
+      padding-left: 40px;
+      display: none;
+      flex-direction: column;
+      position: sticky;
+      top: 40px;
+      height: calc(100vh - 80px);
+      overflow-y: auto;
+      align-self: flex-start;
+      z-index: 50;
+    }
+
+    .toc-sidebar::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .toc-sidebar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .toc-sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 2px;
+    }
+
+    .toc-sidebar .toc-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      position: sticky;
+      top: 0;
+      background: var(--bg-primary);
+      padding-bottom: 8px;
+      z-index: 1;
+    }
+
+    .toc-sidebar ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .toc-sidebar li {
+      margin: 0;
+      padding: 0;
+    }
+
+    .toc-sidebar a {
+      display: block;
+      padding: 6px 0;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 12px;
+      border-left: 2px solid transparent;
+      padding-left: 12px;
+      transition: all 0.15s;
+      position: relative;
+    }
+
+    .toc-sidebar a .header-link {
+      display: none !important;
+    }
+
+    .toc-sidebar a:hover {
+      color: #4ade80;
+      border-left-color: #4ade80;
+    }
+
+    .toc-sidebar a.active {
+      color: #4ade80;
+      border-left-color: #4ade80;
+      font-weight: 600;
+    }
+
+    .toc-sidebar .toc-level-3 {
+      padding-left: 16px;
+    }
+
+    .sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .sidebar::-webkit-scrollbar-track {
+      background: var(--bg-tertiary);
+    }
+    .sidebar::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 3px;
+    }
+
+    .sidebar-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-header h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #4ade80;
+    }
+
+    .sidebar-header .version {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .nav-section {
+      padding: 16px 0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 24px 8px;
+    }
+
+    .nav-section ul {
+      list-style: none;
+    }
+
+    .nav-section li {
+      margin: 0;
+    }
+
+    .nav-section a {
+      display: block;
+      padding: 8px 24px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+      transition: all 0.15s;
+      border-left: 2px solid transparent;
+    }
+
+    .nav-section a:hover {
+      color: var(--text-primary);
+      background: var(--bg-secondary);
+    }
+
+    .nav-section a.active {
+      color: #4ade80;
+      border-left-color: #4ade80;
+      background: var(--bg-secondary);
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 100px 60px 80px 60px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .content-wrapper {
+      display: flex;
+      gap: 40px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .content {
+      flex: 1;
+      min-width: 0;
+      max-width: 680px;
+    }
+
+    .main-content::-webkit-scrollbar {
+      width: 8px;
+    }
+    .main-content::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+    .main-content::-webkit-scrollbar-thumb {
+      background: var(--border-light);
+      border-radius: 4px;
+    }
+
+    .breadcrumb {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+
+    .breadcrumb a {
+      color: #4ade80;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    /* Section Navigation */
+    .section-nav {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid #222;
+      gap: 20px;
+      padding-bottom: 60px;
+    }
+
+
+    .section-nav a {
+      flex: 1;
+      padding: 16px 20px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .section-nav a:hover {
+      background: var(--bg-secondary);
+      border-color: #4ade80;
+    }
+
+    .section-nav .nav-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .section-nav .nav-title {
+      font-size: 14px;
+      color: #4ade80;
+      font-weight: 700;
+    }
+
+    .section-nav .nav-prev {
+      align-items: flex-start;
+    }
+
+    .section-nav .nav-next {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+
+    /* Copy button for code blocks */
+    .code-block-wrapper {
+      position: relative;
+      margin: 16px 0;
+    }
+
+    .copy-button {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-light);
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.2s;
+      opacity: 0.7;
+      z-index: 10;
+    }
+
+    .copy-button:hover {
+      background: var(--bg-tertiary);
+      color: #4ade80;
+      opacity: 1;
+    }
+
+    .copy-button.copied {
+      background: #4ade80;
+      color: #000;
+      border-color: #4ade80;
+    }
+
+    /* Toast notification */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--bg-secondary);
+      border: 1px solid #4ade80;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 13px;
+      color: #4ade80;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: auto;
+    }
+
+    .toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    @media (max-width: 768px) {
+      .section-nav {
+        padding-bottom: 60px;
+        flex-direction: column;
+      }
+
+      .section-nav a {
+        align-items: center !important;
+        text-align: center !important;
+      }
+    }
+
+    .content h1 {
+      font-size: 36px;
+      font-weight: 800;
+      color: #4ade80;
+      margin-bottom: 12px;
+    }
+
+    .content .subtitle {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .content h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 48px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .content h3 {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 32px 0 12px;
+    }
+
+    .content h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 24px 0 8px;
+    }
+
+    .content p {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin: 12px 0;
+    }
+
+    .content code {
+      background: var(--bg-secondary);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      color: #4ade80;
+    }
+
+    .content pre {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 16px;
+      margin: 16px 0;
+      overflow-x: auto;
+    }
+
+    .content pre code {
+      background: none;
+      padding: 0;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .content ul, .content ol {
+      margin: 12px 0;
+      padding-left: 24px;
+    }
+
+    .content li {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin: 6px 0;
+    }
+
+    .content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    .content table th,
+    .content table td {
+      border: 1px solid var(--border-light);
+      padding: 12px 16px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .content table th {
+      background: var(--bg-secondary);
+      color: #4ade80;
+      font-weight: 600;
+    }
+
+    .content table code {
+      font-size: 12px;
+    }
+
+    .content a {
+      color: #4ade80;
+      text-decoration: none;
+    }
+
+    .content a:hover {
+      text-decoration: underline;
+    }
+
+    /* Paragraph symbols for headings */
+    .header-link {
+      opacity: 0;
+      margin-left: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.8em;
+      transition: opacity 0.15s;
+    }
+
+    .header-link:hover {
+      color: #4ade80;
+    }
+
+    .content h1:hover .header-link,
+    .content h2:hover .header-link,
+    .content h3:hover .header-link,
+    .content h4:hover .header-link {
+      opacity: 1;
+    }
+
+    .content hr {
+      border: none;
+      border-top: 1px solid #222;
+      margin: 32px 0;
+    }
+
+    .content blockquote {
+      border-left: 3px solid #4ade80;
+      padding-left: 16px;
+      margin: 16px 0;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* Page Sections */
+    .doc-section {
+      display: none;
+    }
+    .doc-section.active {
+      display: block;
+    }
+
+    /* Responsive */
+    @media (min-width: 1400px) {
+      .toc-sidebar {
+        display: flex;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .top-nav {
+        left: 0;
+        padding: 0 20px;
+      }
+
+      .top-nav .nav-links {
+        gap: 16px;
+      }
+
+      .main-content {
+        padding: 100px 40px 80px 40px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .mobile-menu-btn {
+        display: block;
+      }
+
+      .top-nav {
+        display: none;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.mobile-visible {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        padding: 24px;
+        padding-top: 60px;
+        padding-bottom: 60px;
+        width: 100%;
+      }
+
+      .content-wrapper {
+        flex-direction: column;
+      }
+
+      .content {
+        max-width: 100%;
+      }
+
+      .toc-sidebar {
+        display: none;
+      }
+
+      .content h1 {
+        font-size: 28px;
+      }
+
+      .content h2 {
+        font-size: 22px;
+      }
+
+      .content h3 {
+        font-size: 18px;
+      }
+
+      .content h4 {
+        font-size: 16px;
+      }
+
+      .content table {
+        font-size: 11px;
+      }
+
+      .content table th,
+      .content table td {
+        padding: 8px 10px;
+      }
+
+      .content code {
+        font-size: 12px;
+      }
+
+      .pre code {
+        font-size: 11px;
+      }
+
+
+      /* Try It button */
+      .try-it-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        padding: 8px 16px;
+        background: #4ade80;
+        color: #000;
+        text-decoration: none;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+      }
+
+      .try-it-button:hover {
+        background: #22c55e;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(74, 222, 128, 0.3);
+      }
+
+      .try-it-button i {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Mobile Menu Button -->
+  <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+
+  <!-- Sidebar Overlay -->
+  <div class="sidebar-overlay" onclick="closeMobileMenu()"></div>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>Axon Charts</h1>
+      <div class="version">v1.1.0</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Getting Started</div>
+      <ul>
+        <li><a href="#introduction" class="nav-link active">Introduction</a></li>
+        <li><a href="#installation" class="nav-link">Installation</a></li>
+        <li><a href="#quick-start" class="nav-link">Quick Start</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Configuration</div>
+      <ul>
+        <li><a href="#settings-overview" class="nav-link">Settings Overview</a></li>
+        <li><a href="#layout" class="nav-link">Layout</a></li>
+        <li><a href="#grid" class="nav-link">Grid</a></li>
+        <li><a href="#series" class="nav-link">Series</a></li>
+        <li><a href="#price-scale" class="nav-link">Price Scale</a></li>
+        <li><a href="#time-scale" class="nav-link">Time Scale</a></li>
+        <li><a href="#crosshair" class="nav-link">Crosshair</a></li>
+        <li><a href="#menu" class="nav-link">Menu</a></li>
+        <li><a href="#behavior" class="nav-link">Behavior</a></li>
+        <li><a href="#data" class="nav-link">Data</a></li>
+        <li><a href="#market" class="nav-link">Market Header</a></li>
+        <li><a href="#context" class="nav-link">Context (LLM)</a></li>
+        <li><a href="#watermark" class="nav-link">Watermark</a></li>
+        <li><a href="#volume" class="nav-link">Volume</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">API Reference</div>
+      <ul>
+        <li><a href="#api-methods" class="nav-link">Methods</a></li>
+        <li><a href="#api-events" class="nav-link">Events</a></li>
+        <li><a href="#api-types" class="nav-link">Types</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Advanced</div>
+      <ul>
+        <li><a href="#llm-integration" class="nav-link">LLM Integration</a></li>
+        <li><a href="#streaming" class="nav-link">Streaming Data</a></li>
+        <li><a href="#performance" class="nav-link">Performance</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Top Navigation Bar -->
+  <nav class="top-nav">
+    <div class="logo">Axon Charts</div>
+    <ul class="nav-links">
+      <li><a href="examples.html">Examples</a></li>
+      <li><a href="#api-methods">API</a></li>
+      <li><a href="https://github.com" target="_blank">GitHub</a></li>
+      <li><a href="demo.html" class="highlight">Settings Demo</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="content-wrapper">
+      <div class="content">
+      <!-- Introduction -->
+      <section id="introduction" class="doc-section active">
+        <div class="breadcrumb">Documentation / Getting Started</div>
+        <h1>Introduction</h1>
+        <p class="subtitle">LLM-first financial charting library for modern web applications.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>What is Axon Charts?</h2>
+        <p>Axon Charts is a high-performance, canvas-based financial charting library built from the ground up for AI agents and developers. It provides:</p>
+        <ul>
+          <li><strong>LLM-First Design:</strong> Every feature is accessible via simple, predictable APIs that AI agents can discover and use</li>
+          <li><strong>Lightning Fast:</strong> Handles 5000+ candles at 60fps with optimized draw calls</li>
+          <li><strong>85 Configuration Options:</strong> Customize every aspect of appearance and behavior</li>
+          <li><strong>TypeScript Support:</strong> Full type definitions for excellent developer experience</li>
+          <li><strong>Production Ready:</strong> Volume sub-panes, streaming support, market headers, and more</li>
+        </ul>
+
+        <h2>Key Features</h2>
+        <table>
+          <tr>
+            <th>Feature</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><i data-lucide="activity" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>Real-time Updates</td>
+            <td>WebSocket support with <code>updateLastBar()</code> and <code>updateLastBarFast()</code> methods</td>
+          </tr>
+          <tr>
+            <td><i data-lucide="bar-chart" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>Volume Sub-pane</td>
+            <td>Display volume histogram below main chart with auto precision detection</td>
+          </tr>
+          <tr>
+            <td><i data-lucide="crosshair" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>Crosshair Modes</td>
+            <td>Normal, magnet (snap-to-bar), and disabled modes</td>
+          </tr>
+          <tr>
+            <td><i data-lucide="search" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>Context Export</td>
+            <td><code>getContext()</code> returns structured JSON for LLM analysis</td>
+          </tr>
+          <tr>
+            <td><i data-lucide="settings" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>85 Options</td>
+            <td>Layout, grid, scales, colors, behavior, and more</td>
+          </tr>
+        </table>
+
+        <h2>Browser Support</h2>
+        <p>Works on all modern browsers that support ES6 and Canvas API:</p>
+        <ul>
+          <li>Chrome 90+</li>
+          <li>Firefox 88+</li>
+          <li>Safari 14+</li>
+          <li>Edge 90+</li>
+        </ul>
+      </section>
+
+      <!-- Installation -->
+      <section id="installation" class="doc-section">
+        <div class="breadcrumb">Documentation / Getting Started</div>
+        <h1>Installation</h1>
+
+        <h2>NPM</h2>
+        <pre><code>npm install axon-charts</code></pre>
+
+        <h2>Yarn</h2>
+        <pre><code>yarn add axon-charts</code></pre>
+
+        <h2>CDN</h2>
+        <pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/axon-charts/dist/chart.js"&gt;&lt;/script&gt;</code></pre>
+
+        <h2>Bundled Size</h2>
+        <ul>
+          <li><strong>Unminified source:</strong> ~85 KB</li>
+          <li><strong>Minified + IIFE:</strong> ~80 KB</li>
+          <li><strong>Gzipped:</strong> ~22.6 KB</li>
+        </ul>
+      </section>
+
+      <!-- Quick Start -->
+      <section id="quick-start" class="doc-section">
+        <div class="breadcrumb">Documentation / Getting Started</div>
+        <h1>Quick Start</h1>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Basic Chart</h2>
+        <pre><code>// Import the library
+import { createChart } from 'axon-charts';
+
+// Create a chart
+const chart = createChart('#container', {
+  layout: {
+    background: '#1a1a1a',
+    textColor: '#aaa',
+  },
+  grid: {
+    show: true,
+    vertLines: { color: '#2a2a2a' },
+    horzLines: { color: '#2a2a2a' },
+  },
+});
+
+// Load data
+chart.setData([
+  { time: 1609459200000, open: 100, high: 105, low: 98, close: 103 },
+  { time: 1609459260000, open: 103, high: 107, low: 102, close: 105 },
+  // ... more data
+]);</code></pre>
+
+        <h2>Real-time Updates</h2>
+        <pre><code>// Update the latest candle
+chart.updateLastBar({
+  time: Date.now(),
+  open: 105,
+  high: 108,
+  low: 104,
+  close: 107,
+});</code></pre>
+
+        <h2>Get Chart State</h2>
+        <pre><code>// Export chart context for LLM analysis
+const ctx = chart.getContext();
+console.log(ctx.visibleBars);
+console.log(ctx.viewport);
+console.log(ctx.priceRange);</code></pre>
+      </section>
+
+      <!-- Settings Overview -->
+      <section id="settings-overview" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Settings Overview</h1>
+        <p class="subtitle">85 configuration options across 13 categories</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>How to Set Options</h2>
+        <pre><code>// Set options during initialization
+const chart = createChart('#container', {
+  layout: { background: '#1a1a1a' },
+  grid: { show: true },
+});
+
+// Update options dynamically
+chart.setOptions({
+  volume: { show: true, heightPercent: 0.25 },
+  crosshair: { mode: 'magnet' },
+});</code></pre>
+
+        <h2>Categories</h2>
+        <table>
+          <tr>
+            <th>Category</th>
+            <th>Options</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><a href="#layout">Layout</a></td>
+            <td>10</td>
+            <td>Dimensions, colors, fonts, padding</td>
+          </tr>
+          <tr>
+            <td><a href="#grid">Grid</a></td>
+            <td>7</td>
+            <td>Background grid lines</td>
+          </tr>
+          <tr>
+            <td><a href="#series">Series</a></td>
+            <td>2</td>
+            <td>Candle colors</td>
+          </tr>
+          <tr>
+            <td><a href="#price-scale">Price Scale</a></td>
+            <td>15</td>
+            <td>Y-axis mode, margins, format, current price, and reverse</td>
+          </tr>
+          <tr>
+            <td><a href="#time-scale">Time Scale</a></td>
+            <td>11</td>
+            <td>X-axis visibility, spacing, format, and timezone</td>
+          </tr>
+          <tr>
+            <td><a href="#crosshair">Crosshair</a></td>
+            <td>9</td>
+            <td>Cursor overlay and tooltip</td>
+          </tr>
+          <tr>
+            <td><a href="#menu">Menu</a></td>
+            <td>2</td>
+            <td>Right-click context menu</td>
+          </tr>
+          <tr>
+            <td><a href="#behavior">Behavior</a></td>
+            <td>6</td>
+            <td>Drag, zoom, pan, and auto-scroll flags</td>
+          </tr>
+          <tr>
+            <td><a href="#data">Data</a></td>
+            <td>2</td>
+            <td>Data management and limits</td>
+          </tr>
+          <tr>
+            <td><a href="#volume">Volume</a></td>
+            <td>6</td>
+            <td>Volume histogram sub-pane</td>
+          </tr>
+          <tr>
+            <td><a href="#market">Market</a></td>
+            <td>6</td>
+            <td>Trading pair and exchange info</td>
+          </tr>
+          <tr>
+            <td><a href="#context">Context (LLM)</a></td>
+            <td>3</td>
+            <td>LLM data exposure, AI agent discovery, chart ID</td>
+          </tr>
+          <tr>
+            <td><a href="#watermark">Watermark</a></td>
+            <td>6</td>
+            <td>Semi-transparent overlay</td>
+          </tr>
+        </table>
+      </section>
+
+
+      <!-- Layout -->
+      <section id="layout" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Layout</h1>
+        <p class="subtitle">Chart dimensions, colors, fonts, and padding — 10 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Width &amp; Height</h2>
+        <p>Set to <code>'auto'</code> (reads container size) or a fixed pixel value. Auto is recommended for responsive layouts.</p>
+        <pre><code>layout: {
+  width: 'auto',    // reads container.clientWidth
+  height: 'auto',   // reads container.clientHeight
+  background: '#1a1a1a',
+  textColor: '#aaaaaa',
+  fontSize: 12,
+  fontFamily: 'system-ui'
+}</code></pre>
+
+        <h2>Padding</h2>
+        <p>Controls chart margins. Maps directly to internal state variables.</p>
+        <pre><code>layout: {
+  padding: {
+    top: 40,     // → state.topMargin
+    right: 60,   // → state.axisWidth
+    bottom: 35,  // → state.bottomMargin
+    left: 10     // reserved
+  }
+}</code></pre>
+
+        <h2>Dynamic Updates</h2>
+        <pre><code>chart.setOptions({ layout: { background: '#000000', textColor: '#ffffff' } });
+chart.setOptions({ layout: { padding: { top: 20, right: 40 } } });</code></pre>
+      </section>
+
+      <!-- Grid -->
+      <section id="grid" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Grid</h1>
+        <p class="subtitle">Background grid lines — 7 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Master Toggle</h2>
+        <p><code>grid.show</code> acts as a master switch. When false, all grid lines are hidden regardless of sub-settings.</p>
+
+        <h2>Vertical &amp; Horizontal Lines</h2>
+        <p>Each axis has independent show/color/width controls:</p>
+        <pre><code>grid: {
+  show: true,
+  vertLines: { show: true, color: '#2a2a2a', width: 1 },
+  horzLines: { show: true, color: '#2a2a2a', width: 1 }
+}</code></pre>
+        <pre><code>chart.setOptions({ grid: { show: false } });           // hide all
+chart.setOptions({ grid: { vertLines: { color: '#333' } } });  // recolor</code></pre>
+      </section>
+
+      <!-- Series -->
+      <section id="series" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Series</h1>
+        <p class="subtitle">Candle and line colors — 2 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Up / Down Colors</h2>
+        <p>Controls the fill color of bullish and bearish candles. Also affects the current price line color.</p>
+        <pre><code>series: {
+  upColor: '#22c55e',   // green candle body
+  downColor: '#ef4444'  // red candle body
+}</code></pre>
+        <pre><code>chart.setOptions({ series: { upColor: '#00ff00', downColor: '#ff0000' } });</code></pre>
+      </section>
+
+      <!-- Price Scale -->
+      <section id="price-scale" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Price Scale</h1>
+        <p class="subtitle">Y-axis behavior and formatting — 15 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Scale Mode</h2>
+        <p>Linear is standard for most charts. Logarithmic is useful for assets with large price ranges.</p>
+        <pre><code>priceScale: {
+  mode: 'linear',           // 'linear' | 'logarithmic' | 'percentage'
+  scaleMargins: {
+    top: 0.1,               // 10% padding above max price
+    bottom: 0.1             // 10% padding below min price
+  }
+}</code></pre>
+
+        <h3>Percentage Mode</h3>
+        <p>Normalizes all prices relative to the close price of the leftmost visible bar. The reference updates dynamically as you scroll or zoom. Display-only — internal data remains in original prices. Switch back to linear mode to restore numeric axis labels.</p>
+        <p>Axis labels, current price line, and crosshair price label use smart adaptive formatting:</p>
+        <table>
+          <tr>
+            <th>Change</th>
+            <th>Display</th>
+            <th>Range</th>
+          </tr>
+          <tr><td>+2.45</td><td><code>+2.45%</code></td><td>Small changes (2 decimal places)</td></tr>
+          <tr><td>+245.8</td><td><code>+245.8%</code></td><td>Medium changes (1 decimal place)</td></tr>
+          <tr><td>+8,450</td><td><code>+8,450%</code></td><td>Large changes (thousands separator, 0 decimals)</td></tr>
+          <tr><td>+80,500</td><td><code>+805.0×</code></td><td>Extreme moves ≥10,000% (× multiplier)</td></tr>
+        </table>
+        <p><code>×</code> multiplier activates for changes of 100× or more (e.g. Bitcoin from $100 to $80k+). Formatting uses <code>Intl.NumberFormat</code> for proper locale-aware thousands separators.</p>
+
+        <h2>Price Format</h2>
+        <pre><code>priceScale: {
+  priceFormat: {
+    type: 'price',           // 'price' | 'volume' | 'percent'
+    precision: 2,            // decimal places
+    minMove: 0.01            // tick increment (derives precision if not set)
+  }
+}</code></pre>
+
+        <h2>Current Price Line</h2>
+        <p>Dashed horizontal line at the latest close price with a label on the Y-axis. Colors cascade: if not set explicitly, they follow <a href="#series">series colors</a> and <code>layout.textColor</code>.</p>
+        <pre><code>priceScale: {
+  currentPrice: {
+    show: true,              // master toggle for line + label
+    showLine: true,          // show/hide only the dashed line
+    showCountdown: true,     // candle-close countdown timer
+    countdownColor: 'rgba(255, 255, 255, 0.8)',
+    upColor: null,           // bull line color — falls back to series.upColor
+    downColor: null,         // bear line color — falls back to series.downColor
+    lineStyle: 'dashed',     // 'dashed' | 'solid'
+    textColor: null          // label text — falls back to layout.textColor
+  }
+}</code></pre>
+        <ul>
+          <li><strong>upColor / downColor</strong> — when <code>null</code>, follows candle colors. Set explicitly to decouple from candles.</li>
+          <li><strong>textColor</strong> — when <code>null</code>, follows <code>layout.textColor</code>. Essential for light backgrounds where white text would be invisible.</li>
+          <li><strong>showLine</strong> — hides only the dashed horizontal line while keeping the price label visible.</li>
+          <li><strong>countdownColor</strong> — when <code>null</code>, falls back to <code>textColor</code>, then <code>layout.textColor</code>.</li>
+          <li><strong>lineStyle</strong> — <code>dashed</code> (default) or <code>solid</code>.</li>
+        </ul>
+        <p>The label background uses the line color at 80% opacity. Line style supports both dashed (default) and solid.</p>
+        <pre><code>chart.setOptions({ priceScale: { currentPrice: { textColor: '#000000', lineStyle: 'solid' } } });</code></pre>
+
+        <h2>Reverse</h2>
+        <p>Inverts the price axis so high prices appear at the bottom:</p>
+        <pre><code>chart.priceScale().setReverse(true);
+chart.execute({ type: 'setReverse', reverse: true });</code></pre>
+      </section>
+
+      <!-- Time Scale -->
+      <section id="time-scale" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Time Scale</h1>
+        <p class="subtitle">X-axis behavior, timezone, and formatting — 11 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Visibility &amp; Format</h2>
+        <pre><code>timeScale: {
+  visible: true,
+  timeVisible: true,         // show time on axis (false = date only)
+  secondsVisible: false,     // HH:mm:ss format
+  showFullDate: true,        // crosshair: "Fri 03 Jan'26 17:55"
+  showDayOfWeek: true,       // show "Mon", "Tue" prefix in crosshair
+  dateFormat: 'MMM dd, yyyy' // tokens: yyyy, yy, MMM, MM, dd
+}</code></pre>
+
+        <h2>Timezone</h2>
+        <p>Controls how timestamps are displayed on the axis and crosshair. By default, uses the browser's local timezone.</p>
+        <pre><code>timeScale: {
+  timezone: undefined         // browser local (default)
+  // timezone: 'UTC'          // universal time
+  // timezone: 'America/New_York'   // any IANA name
+}</code></pre>
+        <p>Uses <code>Intl.DateTimeFormat</code> — handles daylight saving automatically. The crosshair tooltip and all axis labels respect the configured timezone.</p>
+
+        <h2>Bar Spacing</h2>
+        <pre><code>timeScale: {
+  barSpacing: 11,            // base bar width in pixels
+  minBarSpacing: 4,          // zoom-in boundary
+  maxBarSpacing: 1000        // zoom-out boundary
+}</code></pre>
+        <pre><code>chart.timeScale().setBarSpacing(20);</code></pre>
+
+        <h2>Right Offset</h2>
+        <p>Gap in pixels between the last bar and the right edge of the chart area:</p>
+        <pre><code>timeScale: {
+  rightOffset: 80
+}</code></pre>
+        <pre><code>chart.setOptions({ timeScale: { rightOffset: 40 } });
+chart.setOptions({ timeScale: { timezone: 'UTC', dateFormat: 'yyyy-MM-dd' } });  // ISO-style</code></pre>
+      </section>
+
+      <!-- Crosshair -->
+      <section id="crosshair" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Crosshair</h1>
+        <p class="subtitle">Cursor overlay and tooltip — 9 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Mode</h2>
+        <ul>
+          <li><code>'magnet'</code> (default) — snaps to nearest bar</li>
+          <li><code>'normal'</code> — free-floating cursor</li>
+          <li><code>'none'</code> — crosshair hidden</li>
+        </ul>
+        <pre><code>chart.crosshairAPI().setMode('magnet');
+chart.execute({ type: 'setCrosshair', mode: 'none' });</code></pre>
+
+        <h2>Labels &amp; Tooltip</h2>
+        <pre><code>crosshair: {
+  showLabels: true,          // axis highlight labels
+  showTooltip: true          // OHLC tooltip near cursor
+}</code></pre>
+
+        <h2>Line Styling</h2>
+        <pre><code>crosshair: {
+  vertLine: { color: '#555555', width: 1, style: 'dashed' },
+  horzLine: { color: '#555555', width: 1, style: 'dashed' }
+}</code></pre>
+        <pre><code>chart.crosshairAPI().setVerticalLine({ color: '#ff0000', width: 2 });</code></pre>
+      </section>
+      <!-- Menu -->
+      <section id="menu" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Menu</h1>
+        <p class="subtitle">Right-click context menu — 2 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Master Toggle</h2>
+        <p>Enable or disable the right-click context menu entirely.</p>
+        <pre><code>menu: {
+  enabled: true          // true = show, false = hide
+}</code></pre>
+        <pre><code>chart.setOptions({ menu: { enabled: false } });</code></pre>
+
+        <h2>Custom Item Order &amp; Filtering</h2>
+        <p>Control which items appear in the menu and in what order. Set to <code>null</code> or omit to show all default items. Provide an array of item IDs to filter and reorder.</p>
+        <pre><code>menu: {
+  items: ['copy', 'save', 'grid', 'volume', 'fullscreen']     // filtered list
+}
+
+menu: {
+  items: null                                                   // defaults: all items
+}</code></pre>
+        <pre><code>chart.setOptions({ menu: { items: ['fullscreen', 'reset-price', 'grid'] } });</code></pre>
+
+        <h3>Available Item IDs</h3>
+        <table>
+          <tr>
+            <th>ID</th>
+            <th>Label</th>
+            <th>Type</th>
+          </tr>
+          <tr><td><code>copy</code></td><td>Copy Chart Image</td><td>Action</td></tr>
+          <tr><td><code>save</code></td><td>Save Chart Image As...</td><td>Action</td></tr>
+          <tr><td><code>grid</code></td><td>Grid</td><td>Toggle</td></tr>
+          <tr><td><code>volume</code></td><td>Volume</td><td>Toggle</td></tr>
+          <tr><td><code>crosshair</code></td><td>Crosshair</td><td>Toggle</td></tr>
+          <tr><td><code>market</code></td><td>Market Header</td><td>Toggle</td></tr>
+          <tr><td><code>watermark</code></td><td>Watermark</td><td>Toggle</td></tr>
+          <tr><td><code>fit-content</code></td><td>Fit Content</td><td>Action</td></tr>
+          <tr><td><code>reset-price</code></td><td>Reset Price Scale</td><td>Action</td></tr>
+          <tr><td><code>reverse</code></td><td>Reverse Price Scale</td><td>Toggle</td></tr>
+          <tr><td><code>fullscreen</code></td><td>Fullscreen / Exit Fullscreen</td><td>Action</td></tr>
+        </table>
+        <h3>Dividers / Separators</h3>
+        <p>The default order includes three dividers that group items logically:</p>
+        <table>
+          <tr>
+            <th>Divider ID</th>
+            <th>Position (default order)</th>
+            <th>Separates</th>
+          </tr>
+          <tr><td><code>divider1</code></td><td>After <code>save</code></td><td>Actions (Copy, Save) from toggles</td></tr>
+          <tr><td><code>divider2</code></td><td>After <code>watermark</code></td><td>Toggles from remaining actions (Fit Content, Reset Price, Reverse)</td></tr>
+          <tr><td><code>divider3</code></td><td>After <code>reverse</code></td><td>Actions from Fullscreen</td></tr>
+        </table>
+        <p><strong>Any ID starting with <code>divider</code> creates a divider</strong> — <code>divider1</code>, <code>divider2</code>, <code>divider</code>, <code>divider-anything</code>. You can add as many as you want anywhere in a custom <code>items</code> array. Dividers do <strong>not</strong> auto-insert in custom arrays — they only appear where you explicitly place them.</p>
+        <pre><code>menu: {
+  items: ['copy', 'save', 'divider', 'grid', 'volume', 'divider2', 'fullscreen']
+}</code></pre>
+        <p>Toggle items show their state via <strong>bold</strong> (enabled) vs normal (disabled) weight.</p>
+      </section>
+
+      <!-- Behavior -->
+      <section id="behavior" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Behavior</h1>
+        <p class="subtitle">Interaction controls — 6 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <p>All behavior flags are boolean toggles that affect mouse/touch interaction. Changes take effect immediately on the next user action.</p>
+        <pre><code>behavior: {
+  dragToZoom: true,          // time-axis drag-zoom
+  scrollToZoom: true,        // mouse wheel zoom
+  pinchToZoom: true,         // touch pinch-zoom
+  panOnMouseDrag: true,      // chart-area panning
+  dragPriceScale: true,      // Y-axis drag zoom
+  autoScroll: true           // viewport follows latest bar
+}</code></pre>
+        <pre><code>chart.setOptions({ behavior: { panOnMouseDrag: false } });  // disable pan</code></pre>
+      </section>
+      <!-- Data -->
+      <section id="data" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Data</h1>
+        <p class="subtitle">Data management and limits — 2 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+        <p>Controls how the chart manages its internal data buffer — useful for long-running streaming sessions.</p>
+        <pre><code>data: {
+  maxBars: 5000,       // max candles kept in memory (1-1,000,000)
+  autoCleanup: true    // auto-trim old bars when limit is exceeded
+}</code></pre>
+        <pre><code>chart.setOptions({ data: { maxBars: 10000 } });</code></pre>
+        <h2>maxBars</h2>
+        <p>Maximum number of bars stored in memory. Older bars are trimmed when this limit is exceeded. Default is <code>5000</code>. Higher values consume more memory but allow further panning into history.</p>
+        <h2>autoCleanup</h2>
+        <p>When <code>true</code> (default), the chart automatically removes bars from the beginning of the dataset when <code>maxBars</code> is exceeded. Set to <code>false</code> if you manage trimming manually.</p>
+      </section>
+
+      <!-- Volume -->
+      <section id="volume" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Volume</h1>
+        <p class="subtitle">Volume histogram sub-pane — 6 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Volume Sub-Pane</h2>
+        <p>The volume histogram displays below the main chart with an independent Y-axis, draggable separator, and zoom/pan support.</p>
+        <pre><code>volume: {
+  show: false,               // toggle visibility
+  upColor: '#22c55e',        // bullish volume color
+  downColor: '#ef4444',      // bearish volume color
+  heightPercent: 0.2,        // 20% of total chart height (0.05-0.5)
+  precision: null,           // decimal places (null = auto-detect)
+  minMove: null              // min increment (derives precision)
+}</code></pre>
+
+        <h2>Features</h2>
+        <ul>
+          <li>Independent Y-axis with K/M suffix formatting</li>
+          <li>Draggable separator (6px hit zone, ns-resize cursor)</li>
+          <li>Scroll wheel and drag zoom (1x-10x)</li>
+          <li>Double-click reset on sub-pane axis</li>
+          <li>Crosshair spans entire chart including sub-pane</li>
+          <li>Current value dashed line with axis label</li>
+          <li>Volume tooltip at top-left of sub-pane</li>
+          <li>Bars colored per candle direction (up/down)</li>
+          <li>Precision auto-detected from data (or explicit via options)</li>
+        </ul>
+
+        <pre><code>chart.setOptions({ volume: { show: true, heightPercent: 0.25 } });</code></pre>
+      </section>
+
+      <!-- Market -->
+      <section id="market" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Market Header</h1>
+        <p class="subtitle">Trading pair and exchange info — 6 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <p>Displays an in-chart label at the top-left showing the market pair, timeframe, and source.</p>
+        <pre><code>market: {
+  show: false,               // toggle visibility
+  baseAsset: 'BTC',          // base asset name
+  quoteAsset: 'USDT',        // quote asset name
+  timeframe: '1m',           // chart timeframe
+  source: '',                // exchange / source name
+  fontSize: 20               // header font size in px (default: 20)
+}</code></pre>
+        <p><strong>Format:</strong> <code>BTC/USDT | 1m | Binance</code></p>
+        <p>The header text is rendered at the configured <code>fontSize</code> (default <strong>20px</strong>). The tooltip below it is offset by <code>fontSize + 4</code> pixels so they don't overlap.</p>
+        <pre><code>chart.setOptions({ market: { fontSize: 16 } });  // smaller header
+chart.setOptions({ market: { fontSize: 24 } });  // larger header
+chart.setOptions({ market: { baseAsset: 'ETH', quoteAsset: 'USDT', source: 'Hyperliquid', show: true } });</code></pre>
+      </section>
+
+      <!-- Context -->
+      <section id="context" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Context (LLM Exposure)</h1>
+        <p class="subtitle">Control what AI agents can discover and read — 3 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <p>These options control the AI agent integration layer. Three settings are available:</p>
+
+        <h2>exposeData</h2>
+        <p>Controls what <code>getContext()</code> returns. When <code>false</code> (default), only viewport metadata is returned — visible bars, latest bar, and sub-pane data are excluded. When <code>true</code>, full trading data is available to agents.</p>
+        <pre><code>context: {
+  exposeData: false    // metadata only — safe default
+  // exposeData: true  // full OHLCV data exposure
+}</code></pre>
+        <p>Runtime-toggleable via <code>chart.setOptions({ context: { exposeData: true } })</code>.</p>
+
+        <h2>discoverable</h2>
+        <p>Controls whether the chart registers in the global <code>window.__AXON_CHARTS__</code> registry. When <code>true</code> (default), AI agents with the Axon Charts skill can discover and interact with the chart. Set to <code>false</code> for stealth mode.</p>
+        <pre><code>context: {
+  discoverable: true   // visible to AI agents — default
+  // discoverable: false // stealth mode
+}</code></pre>
+
+        <h2>id</h2>
+        <p>Optional identifier for the chart in the AI agent registry. Used to target specific charts in multi-chart environments.</p>
+        <ul>
+          <li><strong>If set explicitly:</strong> used as-is (e.g. <code>'Bitcoin-1m'</code>)</li>
+          <li><strong>If not set:</strong> auto-generated opaque token (e.g. <code>ax-uhq8fz</code>) — no pair inference, no stale associations</li>
+        </ul>
+        <p>Opaque IDs prevent stale instrument associations. Agents must read <code>state.market</code> in <code>getContext()</code> to determine the current instrument.</p>
+        <p>The ID is used as both the registry key and the <code>data-axon-charts-id</code> DOM attribute on the container element.</p>
+        <pre><code>// Create with explicit ID
+const chart = createChart('#container', {
+  context: { id: 'Bitcoin-1m' },
+  // ... other options
+});
+
+// Agent discovery in multi-chart page
+window.__AXON_CHARTS__.charts['Bitcoin-1m'].setOptions({
+  context: { exposeData: true }
+});</code></pre>
+
+        <h2>Agent Discovery Flow</h2>
+        <ol>
+          <li>Agent checks <code>window.__AXON_CHARTS__</code> — sees chart ID and version</li>
+          <li>Agent calls <code>chart.getContext()</code> — gets metadata (<code>exposeData: false</code> by default)</li>
+          <li>Agent decides to request data access via <code>chart.setOptions({ context: { exposeData: true } })</code></li>
+          <li>Full context with bars, latest bar, and sub-panes is now available for analysis</li>
+        </ol>
+      </section>
+
+      <!-- Watermark -->
+      <section id="watermark" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Watermark</h1>
+        <p class="subtitle">Semi-transparent overlay — 6 options.</p>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <p>Displays auto-scaling text over the chart. Falls back to the market pair if text is empty.</p>
+        <pre><code>watermark: {
+  show: false,               // toggle visibility
+  text: '',                  // custom text (falls back to pair)
+  color: '#ffffff',
+  fontSize: null,            // null = auto-scale to ~30% chart width
+  opacity: 0.07,             // 0.01 - 1.0
+  rotate: false              // true = -45° diagonal
+}</code></pre>
+        <pre><code>chart.setOptions({ watermark: { text: 'DEMO', show: true, opacity: 0.05 } });</code></pre>
+      </section>
+      <section id="api-methods" class="doc-section">
+        <div class="breadcrumb">Documentation / API Reference</div>
+        <h1>API Methods</h1>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Chart Methods</h2>
+        <table>
+          <tr>
+            <th>Method</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><code>setData(data)</code></td>
+            <td>Load OHLCV data array</td>
+          </tr>
+          <tr>
+            <td><code>updateLastBar(bar)</code></td>
+            <td>Update the latest candle</td>
+          </tr>
+          <tr>
+            <td><code>updateLastBarFast(bar)</code></td>
+            <td>Fast update for high-frequency streams</td>
+          </tr>
+          <tr>
+            <td><code>setOptions(options)</code></td>
+            <td>Update chart options</td>
+          </tr>
+          <tr>
+            <td><code>getContext()</code></td>
+            <td>Get structured chart state</td>
+          </tr>
+          <tr>
+            <td><code>execute(command)</code></td>
+            <td>Execute universal command</td>
+          </tr>
+          <tr>
+            <td><code>toDataURL()</code></td>
+            <td>Export chart as image</td>
+          </tr>
+          <tr>
+            <td><code>toBlob()</code></td>
+            <td>Export chart as Blob (async)</td>
+          </tr>
+          <tr>
+            <td><code>saveState()</code></td>
+            <td>Serialize chart state</td>
+          </tr>
+          <tr>
+            <td><code>loadState(state)</code></td>
+            <td>Restore chart state</td>
+          </tr>
+          <tr>
+            <td><code>appendBar(bar)</code></td>
+            <td>Append a completed bar</td>
+          </tr>
+          <tr>
+            <td><code>getData()</code></td>
+            <td>Get full data array</td>
+          </tr>
+          <tr>
+            <td><code>getBarAtTime(ts)</code></td>
+            <td>Lookup bar by timestamp</td>
+          </tr>
+        </table>
+
+        <h2>Component APIs</h2>
+        <table>
+          <tr>
+            <th>API</th>
+            <th>Methods</th>
+          </tr>
+          <tr>
+            <td><code>chart.priceScale()</code></td>
+            <td><code>setMode()</code>, <code>setMargins()</code>, <code>setReverse()</code>, <code>getReverse()</code></td>
+          </tr>
+          <tr>
+            <td><code>chart.timeScale()</code></td>
+            <td><code>setVisibleRange()</code>, <code>fitContent()</code>, <code>scrollToTime()</code>, <code>setBarSpacing()</code>, <code>zoomIn()</code>, <code>zoomOut()</code></td>
+          </tr>
+          <tr>
+            <td><code>chart.crosshairAPI()</code></td>
+            <td><code>setMode()</code>, <code>getMode()</code>, <code>setVisible()</code>, <code>isVisible()</code>, <code>setShowLabels()</code>, <code>getShowLabels()</code>, <code>setShowTooltip()</code>, <code>getShowTooltip()</code>, <code>setVerticalLine()</code>, <code>setHorizontalLine()</code>, <code>setOptions()</code>, <code>getOptions()</code></td>
+          </tr>
+        </table>
+      </section>
+
+      <section id="llm-integration" class="doc-section">
+        <div class="breadcrumb">Documentation / Advanced</div>
+        <h1>LLM Integration</h1>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>Read Chart State</h2>
+        <pre><code>const ctx = chart.getContext();
+
+// Visible bars in current viewport
+console.log(ctx.visibleBars);
+
+// Price range
+console.log(ctx.priceRange);
+
+// Viewport info
+console.log(ctx.viewport);</code></pre>
+
+        <h2>Control Chart</h2>
+        <pre><code>// Universal command interface
+chart.execute({ type: 'setPriceScale', mode: 'logarithmic' });
+chart.execute({ type: 'fitContent' });
+chart.execute({ type: 'zoomIn', factor: 1.5 });</code></pre>
+
+        <h2>React to Events</h2>
+        <p>Subscribe to chart events for interactive LLM workflows. See <a href="#api-events" onclick="event.preventDefault();showSection('#api-events')">Events section</a> for the full list.</p>
+
+        <h2>Live Streaming</h2>
+        <p>For real-time data integration patterns, see the <a href="#streaming" onclick="event.preventDefault();showSection('#streaming')">Streaming Data</a> section.</p>
+
+        <h2>Export for Vision LLMs</h2>
+        <pre><code>// Get base64 screenshot
+const screenshot = chart.toDataURL('image/png');
+
+// Send to vision-capable LLM for analysis</code></pre>
+      </section>
+
+      <section id="streaming" class="doc-section">
+        <div class="breadcrumb">Documentation / Advanced</div>
+        <h1>Streaming Data</h1>
+        <a href="demo.html" target="_blank" class="try-it-button">
+          <i data-lucide="flask-conical"></i> Try It Live
+        </a>
+
+        <h2>WebSocket Integration</h2>
+        <pre><code>const ws = new WebSocket('wss://api.example.com/stream');
+
+ws.onmessage = (event) => {
+  const data = JSON.parse(event.data);
+
+  chart.updateLastBar({
+    time: data.time,
+    open: data.open,
+    high: data.high,
+    low: data.low,
+    close: data.close,
+    volume: data.volume,
+  });
+};</code></pre>
+
+        <h2>High-Frequency Updates</h2>
+        <p>For tick-by-tick updates (20+ per second), use <code>updateLastBarFast()</code>:</p>
+        <pre><code>// Fast path for every tick during live streaming
+chart.updateLastBarFast(currentCandle);
+
+// The current price line and label update atomically with every tick — no extra calls needed.
+// The axis range auto-expands when price moves beyond a 1.5% hysteresis threshold.
+// A full chart.render() is only needed on candle close or when manually syncing.</code></pre>
+      </section>
+
+      <!-- API Events -->
+      <section id="api-events" class="doc-section">
+        <div class="breadcrumb">Documentation / API Reference</div>
+        <h1>Events</h1>
+        <p class="subtitle">React to user interactions and chart state changes.</p>
+
+        <h2>Crosshair Move</h2>
+        <p>Fired when the user moves the cursor over the chart. Returns the bar under cursor, price, and timestamp.</p>
+        <pre><code>chart.onCrosshairMove(({ bar, price, time }) => {
+  console.log(`Price: $${price} at ${new Date(time)}`);
+  console.log(`OHLC: O=${bar.open} H=${bar.high} L=${bar.low} C=${bar.close}`);
+});</code></pre>
+
+        <h2>Bar Click</h2>
+        <p>Fired when the user clicks on a specific bar/candle.</p>
+        <pre><code>chart.onBarClick(({ bar, index }) => {
+  console.log(`Clicked bar #${index}:`, bar);
+});</code></pre>
+
+        <h2>Visible Range Change</h2>
+        <p>Fired when the viewport changes (pan, zoom, resize). Returns the visible time range.</p>
+        <pre><code>chart.onVisibleRangeChange(({ from, to }) => {
+  console.log(`Viewing: ${new Date(from)} to ${new Date(to)}`);
+});</code></pre>
+
+        <h2>Scroll Lock Change</h2>
+        <p>Fired when auto-scroll locks/unlocks as the user pans through history.</p>
+        <pre><code>chart.onScrollLockChange((locked) => {
+  console.log(locked ? 'Exploring history' : 'Watching live');
+});</code></pre>
+
+        <h2>Event Reference</h2>
+        <table>
+          <tr>
+            <th>Event</th>
+            <th>Callback Parameter</th>
+            <th>Description</th>
+          </tr>
+          <tr>
+            <td><code>onCrosshairMove</code></td>
+            <td><code>{ bar, price, time }</code></td>
+            <td>Cursor position changed</td>
+          </tr>
+          <tr>
+            <td><code>onBarClick</code></td>
+            <td><code>{ bar, index }</code></td>
+            <td>Bar/candle was clicked</td>
+          </tr>
+          <tr>
+            <td><code>onVisibleRangeChange</code></td>
+            <td><code>{ from, to, fromIndex, toIndex }</code></td>
+            <td>Viewport changed via pan/zoom/resize</td>
+          </tr>
+          <tr>
+            <td><code>onScrollLockChange</code></td>
+            <td><code>locked: boolean</code></td>
+            <td>Auto-scroll state changed</td>
+          </tr>
+        </table>
+      </section>
+
+      <!-- API Types -->
+      <section id="api-types" class="doc-section">
+        <div class="breadcrumb">Documentation / API Reference</div>
+        <h1>Types</h1>
+        <p class="subtitle">Complete type definitions for the library.</p>
+
+        <h2>Bar (OHLCV Data Point)</h2>
+        <pre><code>interface Bar {
+  time: number;       // Timestamp in milliseconds
+  open: number;       // Opening price
+  high: number;       // Highest price
+  low: number;        // Lowest price
+  close: number;      // Closing price
+  volume?: number;    // Optional volume data
+}</code></pre>
+
+        <h2>ChartOptions</h2>
+        <p>The main configuration object. All fields are optional — defaults fill in the rest.</p>
+        <pre><code>interface ChartOptions {
+  layout?: {
+    width?: number | 'auto';      // default: 'auto'
+    height?: number | 'auto';     // default: 'auto'
+    background?: string;          // default: '#1a1a1a'
+    textColor?: string;           // default: '#aaaaaa'
+    fontSize?: number;            // default: 12
+    fontFamily?: string;          // default: 'system-ui'
+    padding?: {
+      top?: number;               // default: 40
+      right?: number;             // default: 60
+      bottom?: number;            // default: 35
+      left?: number;              // default: 10
+    };
+  };
+  grid?: {
+    show?: boolean;               // default: true
+    vertLines?: { show?, color?, width? };
+    horzLines?: { show?, color?, width? };
+  };
+  series?: {
+    upColor?: string;             // default: '#22c55e'
+    downColor?: string;           // default: '#ef4444'
+  };
+  priceScale?: {
+    mode?: 'linear' | 'logarithmic' | 'percentage';  // default: 'linear'
+    scaleMargins?: { top?, bottom? };
+    priceFormat?: { type?, precision?, minMove? };
+    currentPrice?: {
+      show?: boolean;                    // default: true
+      showLine?: boolean;                // default: true
+      showCountdown?: boolean;          // default: true
+      countdownColor?: string;          // default: 'rgba(255, 255, 255, 0.8)'
+      upColor?: string;                 // default: null (follows series.upColor)
+      downColor?: string;               // default: null (follows series.downColor)
+      lineStyle?: 'dashed' | 'solid';   // default: 'dashed'
+      textColor?: string;               // default: null (follows layout.textColor)
+    };
+    reverse?: boolean;            // default: false
+  };
+  timeScale?: {
+    visible?: boolean;            // default: true
+    timeVisible?: boolean;        // default: true
+    secondsVisible?: boolean;     // default: false
+    showFullDate?: boolean;       // default: true
+    showDayOfWeek?: boolean;      // default: true
+    dateFormat?: string;          // default: 'MMM dd, yyyy'
+    timezone?: string;            // default: undefined (browser local)
+    rightOffset?: number;         // default: 80
+    barSpacing?: number;          // default: 11
+    minBarSpacing?: number;       // default: 4
+    maxBarSpacing?: number;       // default: 1000
+  };
+  crosshair?: {
+    mode?: 'normal' | 'magnet' | 'none';  // default: 'magnet'
+    showLabels?: boolean;         // default: true
+    showTooltip?: boolean;        // default: true
+    vertLine?: { color?, width?, style? };
+    horzLine?: { color?, width?, style? };
+  };
+  menu?: {
+    enabled?: boolean;            // default: true
+    items?: string[] | null;      // default: null (all items, auto-dividers)
+  };
+  behavior?: {
+    dragToZoom?: boolean;         // default: true
+    scrollToZoom?: boolean;       // default: true
+    pinchToZoom?: boolean;        // default: true
+    panOnMouseDrag?: boolean;     // default: true
+    dragPriceScale?: boolean;     // default: true
+    autoScroll?: boolean;         // default: true
+  };
+  data?: {
+    maxBars?: number;             // default: 5000
+    autoCleanup?: boolean;        // default: true
+  };
+  market?: {
+    show?: boolean;               // default: false
+    baseAsset?: string;           // default: 'BTC'
+    quoteAsset?: string;          // default: 'USDT'
+    timeframe?: string;           // default: '1m'
+    source?: string;              // default: ''
+    fontSize?: number;            // default: 20
+  };
+  watermark?: {
+    show?: boolean;               // default: false
+    text?: string;                // default: '' (pair fallback)
+    color?: string;               // default: '#ffffff'
+    fontSize?: number | null;     // default: null (auto-scale)
+    opacity?: number;             // default: 0.07
+    rotate?: boolean;             // default: false
+  };
+  volume?: {
+    show?: boolean;               // default: false
+    upColor?: string;             // default: '#22c55e'
+    downColor?: string;           // default: '#ef4444'
+    heightPercent?: number;       // default: 0.2
+    precision?: number | null;    // default: null (auto-detect)
+    minMove?: number | null;      // default: null
+  };
+  context?: {
+    exposeData?: boolean;          // default: false (metadata only)
+    discoverable?: boolean;        // default: true (visible to AI agents)
+    id?: string;                   // default: auto-generated opaque token (ax-xxxxxx)
+  };
+  devicePixelRatio?: number;      // default: window.devicePixelRatio (init only)
+}</code></pre>
+
+        <h2>ChartCommand</h2>
+        <p>Discriminated union for the <code>execute()</code> method.</p>
+        <pre><code>type ChartCommand =
+  | { type: 'setVisibleRange'; from: number; to: number }
+  | { type: 'scrollToTime'; time: number }
+  | { type: 'zoomIn'; factor?: number }
+  | { type: 'zoomOut'; factor?: number }
+  | { type: 'fitContent' }
+  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
+  | { type: 'setSubPane'; id: string; show: boolean }
+  | { type: 'setReverse'; reverse: boolean };</code></pre>
+
+        <h2>ChartContext (LLM Output)</h2>
+        <p>The structured object returned by <code>getContext()</code>.</p>
+        <pre><code>interface ChartContext {
+  viewport: {
+    width: number;
+    height: number;
+    rightGap: number;
+    visibleRange: {
+      fromIndex: number;
+      toIndex: number;
+      fromTime: number;
+      toTime: number;
+    };
+    priceRange: { min: number; max: number };
+    scales: {
+      pricePerPixel: number;
+      timePerBar: number;
+      barWidth: number;
+    };
+  };
+  state: {
+    totalBars: number;
+    isAutoScrolling: boolean;
+  };
+  visibleBars: Bar[];
+  latestBar: Bar;
+  subPanes: Record&lt;string, any&gt;;
+}</code></pre>
+      </section>
+
+      <!-- Performance -->
+      <section id="performance" class="doc-section">
+        <div class="breadcrumb">Documentation / Advanced</div>
+        <h1>Performance</h1>
+        <p class="subtitle">Benchmarks and optimization guidelines.</p>
+
+        <h2>Benchmark Results</h2>
+        <table>
+          <tr>
+            <th>Metric</th>
+            <th>Target</th>
+            <th>Actual</th>
+          </tr>
+          <tr>
+            <td>Minified bundle</td>
+            <td>&lt;25 KB gzipped</td>
+            <td><strong>22.6 KB gzipped</strong> ✓</td>
+          </tr>
+          <tr>
+            <td>First render (500 bars)</td>
+            <td>&lt;16ms</td>
+            <td><strong>~8ms</strong> ✓</td>
+          </tr>
+          <tr>
+            <td>Live tick update</td>
+            <td>&lt;2ms</td>
+            <td><strong>&lt;1ms</strong> ✓</td>
+          </tr>
+          <tr>
+            <td>Mousemove overlay</td>
+            <td>&lt;1ms</td>
+            <td><strong>&lt;0.3ms</strong> ✓</td>
+          </tr>
+          <tr>
+            <td>Memory (5000 bars)</td>
+            <td>&lt;12 MB</td>
+            <td><strong>~4 MB</strong> ✓</td>
+          </tr>
+        </table>
+
+        <h2>Architecture</h2>
+        <p>The library uses a three-layer canvas architecture for maximum performance:</p>
+        <table>
+          <tr>
+            <th>Layer</th>
+            <th>Canvas</th>
+            <th>Renders</th>
+          </tr>
+          <tr>
+            <td>Background</td>
+            <td><code>bgCanvas</code></td>
+            <td>Fill, grid lines, price/time axes, watermark, volume sub-pane, percentage reference line</td>
+          </tr>
+          <tr>
+            <td>Main</td>
+            <td><code>mainCanvas</code></td>
+            <td>Candles (offscreen-buffered) + current price line (atomic render pass)</td>
+          </tr>
+          <tr>
+            <td>Overlay</td>
+            <td><code>overlayCanvas</code></td>
+            <td>Crosshair, tooltip, market header</td>
+          </tr>
+        </table>
+
+        <h3>Offscreen Buffer</h3>
+        <p>The candle buffer is rendered at identity scale (1:1 pixel ratio) into an offscreen canvas. Only the visible portion is composited to the display canvas every frame. When a single candle updates (tick stream), only <code>updateLastCandleInBuffer()</code> is called — no full re-render.</p>
+
+        <h2>Optimization Tips</h2>
+        <ul>
+          <li><strong>Streaming:</strong> Use <code>updateLastBarFast()</code> for tick-by-tick updates (10-1000/sec). Call <code>chart.render()</code> every 20 ticks to refresh axes/grid.</li>
+          <li><strong>Data Limits:</strong> Set <code>data.maxBars</code> to the minimum required for your viewport. 500 bars is sufficient for most charts.</li>
+          <li><strong>Sub-Panes:</strong> Only enable volume/indicators when needed — each sub-pane adds render overhead.</li>
+          <li><strong>Resize:</strong> The library uses ResizeObserver with a re-entrancy guard — avoid manual resize calls when using auto-sizing containers.</li>
+          <li><strong>Canvas Export:</strong> <code>toDataURL()</code> is the most expensive operation — debounce to every 500ms.</li>
+        </ul>
+
+        <h2>Bundle Size</h2>
+        <ul>
+          <li><strong>Unminified source:</strong> ~85 KB</li>
+          <li><strong>Minified + IIFE:</strong> ~80 KB</li>
+          <li><strong>Gzipped:</strong> ~22.6 KB</li>
+          <li><strong>Zero external dependencies</strong></li>
+        </ul>
+            </section>
+    </div>
+
+    <!-- Table of Contents (Right Sidebar) -->
+    <aside class="toc-sidebar" id="toc">
+      <div class="toc-title">On this page</div>
+      <ul id="toc-list">
+        <!-- Generated by JavaScript -->
+      </ul>
+    </aside>
+  </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize all navigation
+      initNavigation();
+    });
+
+    function initNavigation() {
+      // Add header links and section navigation
+      addHeaderLinks();
+      addSectionNavigation();
+      makeBreadcrumbsClickable();
+      generateTableOfContents();
+      updateActiveTocItem();
+      addCopyButtons();
+    }
+
+    // Navigation
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.doc-section');
+
+    function showSection(hash) {
+      const targetId = hash.replace('#', '') || 'introduction';
+
+      // Update active nav link
+      navLinks.forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + targetId) {
+          link.classList.add('active');
+        }
+      });
+
+      // Show target section
+      sections.forEach(section => {
+        section.classList.remove('active');
+        if (section.id === targetId) {
+          section.classList.add('active');
+        }
+      });
+
+      // Update URL
+      if (history.pushState) {
+        history.pushState(null, null, '#' + targetId);
+      }
+    }
+
+    // Handle nav clicks
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        showSection(link.getAttribute('href'));
+      });
+    });
+
+    // Handle initial hash
+    const initialHash = window.location.hash.slice(1);
+    if (initialHash) {
+      showSection('#' + initialHash);
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('hashchange', () => {
+      showSection(window.location.hash);
+    });
+
+    // Add paragraph symbols to headings
+    function addHeaderLinks() {
+      const content = document.querySelector('.content');
+      if (!content) return;
+
+      const headings = content.querySelectorAll('h2, h3, h4');
+      const usedIds = new Set();
+
+      headings.forEach((heading, index) => {
+        // Skip if already has a header link
+        if (heading.querySelector('.header-link')) return;
+
+        // Get the parent section ID
+        const section = heading.closest('.doc-section');
+        if (!section) return;
+
+        const sectionId = section.id;
+
+        // Create ID from heading text if it doesn't have one
+        if (!heading.id) {
+          const baseId = heading.textContent
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+          // Ensure uniqueness within this section
+          let uniqueId = baseId;
+          let counter = 1;
+          while (usedIds.has(uniqueId)) {
+            uniqueId = `${baseId}-${counter++}`;
+          }
+          usedIds.add(uniqueId);
+          heading.id = uniqueId;
+        } else {
+          usedIds.add(heading.id);
+        }
+
+        // Create and append the paragraph link
+        const link = document.createElement('a');
+        link.href = `#${sectionId}`;
+        link.className = 'header-link';
+        link.textContent = '¶';
+        link.title = 'Link to this section';
+        heading.appendChild(link);
+
+        // Handle click on the paragraph link
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Scroll to heading smoothly
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+          // Copy URL to clipboard (using section hash for compatibility)
+          const url = window.location.href.split('#')[0] + `#${sectionId}`;
+          navigator.clipboard.writeText(url).then(() => {
+            // Show feedback
+            const originalText = link.textContent;
+            link.textContent = '✓';
+            setTimeout(() => {
+              link.textContent = originalText;
+            }, 1000);
+          }).catch(err => {
+            console.error('Failed to copy:', err);
+          });
+        });
+      });
+    }
+
+    // Add section navigation (prev/next)
+    function addSectionNavigation() {
+      // Check if navigation already exists
+      if (document.querySelector('.section-nav')) return;
+
+      const allSections = Array.from(document.querySelectorAll('.doc-section'));
+      const sectionData = allSections.map(section => ({
+        id: section.id,
+        title: section.querySelector('h1')?.textContent || section.id,
+        element: section
+      }));
+
+      sectionData.forEach((data, index) => {
+        const prev = index > 0 ? sectionData[index - 1] : null;
+        const next = index < sectionData.length - 1 ? sectionData[index + 1] : null;
+
+        if (prev || next) {
+          const nav = document.createElement('div');
+          nav.className = 'section-nav';
+
+          if (prev) {
+            const prevLink = document.createElement('a');
+            prevLink.href = `#${prev.id}`;
+            prevLink.className = 'nav-prev';
+            prevLink.innerHTML = `
+              <span class="nav-label"><i data-lucide="chevron-left" style="vertical-align: middle; width: 16px; height: 16px;"></i> Previous</span>
+              <span class="nav-title">${prev.title}</span>
+            `;
+            prevLink.addEventListener('click', (e) => {
+              e.preventDefault();
+              showSection(`#${prev.id}`);
+            });
+            nav.appendChild(prevLink);
+          } else {
+            const spacer = document.createElement('div');
+            spacer.style.flex = '1';
+            nav.appendChild(spacer);
+          }
+
+          if (next) {
+            const nextLink = document.createElement('a');
+            nextLink.href = `#${next.id}`;
+            nextLink.className = 'nav-next';
+            nextLink.innerHTML = `
+              <span class="nav-label">Next <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i></span>
+              <span class="nav-title">${next.title}</span>
+            `;
+            nextLink.addEventListener('click', (e) => {
+              e.preventDefault();
+              showSection(`#${next.id}`);
+            });
+            nav.appendChild(nextLink);
+          } else {
+            const spacer = document.createElement('div');
+            spacer.style.flex = '1';
+            nav.appendChild(spacer);
+          }
+
+          data.element.appendChild(nav);
+        }
+      });
+    }
+
+    // Make breadcrumbs clickable
+    function makeBreadcrumbsClickable() {
+      document.querySelectorAll('.breadcrumb').forEach(breadcrumb => {
+        const text = breadcrumb.textContent;
+        const parts = text.split(' / ').filter(p => p.trim());
+
+        // Build breadcrumb links
+        const links = parts.map((part, index) => {
+          if (index === 0) {
+            // "Documentation" - goes to Introduction
+            return `<a href="#introduction">${part}</a>`;
+          } else if (index === 1) {
+            // Category name - find matching nav section
+            const sectionMap = {
+              'Getting Started': 'introduction',
+              'Configuration': 'settings-overview',
+              'API Reference': 'api-methods',
+              'Advanced': 'llm-integration'
+            };
+            const sectionId = sectionMap[part] || 'introduction';
+            return `<a href="#${sectionId}">${part}</a>`;
+          }
+          return part;
+        });
+
+        breadcrumb.innerHTML = links.join(' <span style="color:#444">/</span> ');
+
+        // Add click handlers
+        breadcrumb.querySelectorAll('a').forEach(link => {
+          link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = link.getAttribute('href').substring(1);
+            showSection(`#${targetId}`);
+          });
+        });
+      });
+    }
+
+    // Add copy buttons to all code blocks
+    function addCopyButtons() {
+      const codeBlocks = document.querySelectorAll('pre code');
+
+      codeBlocks.forEach((codeBlock) => {
+        // Skip if already has a copy button
+        if (codeBlock.parentElement.querySelector('.copy-button')) return;
+
+        // Create wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-block-wrapper';
+
+        // Get the pre element
+        const pre = codeBlock.parentElement;
+
+        // Wrap the pre element
+        pre.parentNode.insertBefore(wrapper, pre);
+        wrapper.appendChild(pre);
+
+        // Create copy button
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-button';
+        copyButton.textContent = 'Copy';
+        copyButton.type = 'button';
+
+        // Add click handler
+        copyButton.addEventListener('click', async () => {
+          const code = codeBlock.textContent;
+
+          try {
+            await navigator.clipboard.writeText(code);
+            showToast('Code copied to clipboard!');
+          } catch (err) {
+            console.error('Failed to copy code:', err);
+            showToast('Failed to copy code');
+          }
+        });
+
+        wrapper.appendChild(copyButton);
+      });
+    }
+
+    // Toast notification function
+    function showToast(message) {
+      let container = document.getElementById('toast-container');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span style="display:flex;align-items:center;gap:8px"><i data-lucide="check" style="width:16px;height:16px"></i>${message}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          toast.classList.add('show');
+        });
+      });
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+
+    // Mobile menu functions
+    function toggleMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      sidebar.classList.toggle('mobile-visible');
+      overlay.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.querySelector('.sidebar-overlay');
+      sidebar.classList.remove('mobile-visible');
+      overlay.classList.remove('active');
+    }
+
+    // Close mobile menu when clicking a nav link
+    document.querySelectorAll('.nav-link').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          closeMobileMenu();
+        }
+      });
+    });
+
+    // Generate table of contents for current section
+    function generateTableOfContents() {
+      const tocList = document.getElementById('toc-list');
+      if (!tocList) return;
+
+      const activeSection = document.querySelector('.doc-section.active');
+      if (!activeSection) return;
+
+      // Clear existing TOC
+      tocList.innerHTML = '';
+
+      // Get all h2 and h3 headings in the active section
+      const headings = activeSection.querySelectorAll('h2, h3');
+
+      headings.forEach((heading, index) => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+
+        // Get text content excluding the paragraph symbol
+        const headingText = heading.childNodes[0].textContent || heading.textContent.replace('¶', '').trim();
+        a.textContent = headingText;
+        a.href = `#${heading.id}`;
+
+        // Add level class for indentation
+        if (heading.tagName === 'H3') {
+          a.classList.add('toc-level-3');
+        }
+
+        // Click handler
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        li.appendChild(a);
+        tocList.appendChild(li);
+      });
+    }
+
+    // Update active TOC item on scroll
+    function updateActiveTocItem() {
+      const tocLinks = document.querySelectorAll('.toc-sidebar a');
+      if (tocLinks.length === 0) return;
+
+      const headings = Array.from(document.querySelectorAll('.doc-section.active h2, .doc-section.active h3'));
+
+      // Remove active class from all links
+      tocLinks.forEach(link => link.classList.remove('active'));
+
+      // Find the heading that's currently in view
+      const scrollPosition = window.scrollY + 100; // Offset for header
+
+      let activeHeading = null;
+      for (const heading of headings) {
+        if (heading.offsetTop <= scrollPosition) {
+          activeHeading = heading;
+        } else {
+          break;
+        }
+      }
+
+      // Set active class
+      if (activeHeading) {
+        const activeLink = document.querySelector(`.toc-sidebar a[href="#${activeHeading.id}"]`);
+        if (activeLink) {
+          activeLink.classList.add('active');
+        }
+      }
+    }
+
+    // Update TOC when section changes
+    const observer = new MutationObserver(() => {
+      generateTableOfContents();
+      updateActiveTocItem();
+    });
+
+    observer.observe(document.querySelector('.content'), {
+      childList: true,
+      subtree: true
+    });
+
+    // Update active TOC item on scroll
+    let scrollTimeout;
+    window.addEventListener('scroll', () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(updateActiveTocItem, 50);
+    });
+
+    // Regenerate TOC when section changes
+    const originalShowSection = showSection;
+    showSection = function(hash) {
+      originalShowSection(hash);
+      setTimeout(() => {
+        generateTableOfContents();
+        updateActiveTocItem();
+      }, 100);
+    };
+  </script>
+
+
+    // Initialize Lucide icons
+    lucide.createIcons();
+  </script>
+
+  <style>
+    /* Force Lucide icon sizes - must be after icon creation */
+    .try-it-button svg,
+    .copy-button svg {
+      width: 16px !important;
+      height: 16px !important;
+    }
+  </style>
+
+</body>
+</html>

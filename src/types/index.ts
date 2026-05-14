@@ -254,6 +254,23 @@ export interface ChartState {
 }
 
 /**
+ * A persistent drawing on the chart (arrow, label, line, etc.)
+ * Rendered on the overlay canvas. Used by plugins and drawing tools.
+ */
+export interface Drawing {
+  id: string;
+  /** Arrow direction, text label, or reference line */
+  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
+  /** Bar index this drawing attaches to */
+  barIndex: number;
+  /** Price level (for arrows, labels, horizontal lines) */
+  price: number;
+  color: string;
+  text?: string;
+  /** For hline: the price level. For vline: the barIndex position. */
+}
+
+/**
  * Interface for the main Chart component to enable circular type safety in sub-modules
  */
 export interface IChart {
@@ -307,6 +324,7 @@ export interface IChart {
   onCrosshairMove?: CrosshairMoveCallback;
   onBarClick?: BarClickCallback;
   onVisibleRangeChange?: VisibleRangeChangeCallback;
+  onDataUpdate?: ((bars: Bar[]) => void) | null;
   timeScale(): import('../api/time-scale.js').TimeScaleAPI;
   setOptions(partial: Partial<ChartOptions>): void;
   getActiveSubPanes(): import('../subpanes/SubPane.js').SubPane[];
@@ -314,4 +332,9 @@ export interface IChart {
   isAutoScrolling(): boolean;
   scrollToLatest(): void;
   triggerVisibleRangeChange(): void;
+  /** Drawing API — add/remove/list persistent chart drawings */
+  addDrawing(drawing: Drawing): void;
+  removeDrawing(id: string): void;
+  clearDrawings(): void;
+  getDrawings(): Drawing[];
 }

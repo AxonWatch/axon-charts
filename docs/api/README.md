@@ -1,4 +1,4 @@
-# API Reference — Axon Charts v1.0.0
+# API Reference — Axon Charts v1.1.0
 
 This document provides the complete API surface for the Axon Charts library. The library exposes an `AxonCharts` global (when loaded via script tag) or named exports (when used as an ES module).
 
@@ -28,6 +28,26 @@ const chart = createChart('#chart', { /* options */ });
 
 ---
 
+### `generateChartId(options?)`
+
+Generates a chart ID for the global `__AXON_CHARTS__` registry.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `options` | `ChartOptions` | `{}` | Chart options (reads `context.id` if set) |
+
+**Returns:** `string` — opaque ID (`'ax-xxxxxx'`) or user-provided `context.id`.
+
+```typescript
+const id = generateChartId({ context: { id: 'btc-usdt' } });
+// => 'btc-usdt'
+
+const id2 = generateChartId();
+// => 'ax-a1b2c3'
+```
+
+---
+
 ### `Chart` Instance Methods
 
 #### Data Operations
@@ -35,27 +55,56 @@ const chart = createChart('#chart', { /* options */ });
 ```typescript
 chart.setData(bars: Bar[]): void
 ```
-Replaces all chart data with a new set of bars. Validates the first and last bar.
+Replaces all chart data with a new set of bars. Validates structural integrity (every bar must have valid time, open, high, low, close). Auto-scrolls viewport to latest bar.
 
 ```typescript
 chart.appendBar(bar: Bar): void
 ```
-Appends a new completed bar to the end. Auto-scrolls to latest if enabled.
+Appends a new completed bar to the end. Calls `ensureRightGapAndRoll()` for auto-scroll if enabled. Fires `onDataUpdate` callback.
 
 ```typescript
 chart.updateLastBar(bar: Bar): void
 ```
-Updates the last (current/live) bar. If the timestamp doesn't match, appends a new bar instead.
+Updates the last (current/live) bar. If the timestamp doesn't match the last bar, appends a new bar internally. Fires `onDataUpdate` callback.
 
 ```typescript
 chart.updateLastBarFast(bar: Bar): void
 ```
-High-frequency tick update (10-1000 ticks/sec). Skips axis/grid/buffer redraw — only re-draws the last candle. Falls back to full render on new candle. See docs/STREAMING.md.
+High-frequency tick update (10-1000 ticks/sec). Uses lightweight path:
+- Skips full buffer re-render — only re-draws the last candle in buffer
+- Skips grid/axis redraw unless price range expanded beyond 1.5% hysteresis
+- Falls back to full render on new candle (time advanced)
+- **~10-20x faster** than `updateLastBar()` for rapid stream updates. See `docs/STREAMING.md`.
 
 ```typescript
 chart.render(): void
 ```
-Manually triggers a full re-render of the chart.
+Manually triggers a full re-render: recalculates sub-pane geometry, updates price scale, re-renders buffer, redraws background, composites viewport, draws crosshair.
+
+```typescript
+chart.getData(): Bar[]
+```
+Returns a shallow copy of all bars in the data manager. (Not a live reference — mutations don't affect the chart.)
+
+```typescript
+chart.getBar(index: number): Bar | undefined
+```
+Returns the bar at the given index, or `undefined` if out of bounds.
+
+```typescript
+chart.getBarAtTime(time: number): Bar | undefined
+```
+Returns the bar matching the given timestamp via binary search, or `undefined`.
+
+```typescript
+chart.getBars(startIndex: number, count: number): Bar[]
+```
+Returns a slice of bars starting at `startIndex` with `count` bars.
+
+```typescript
+chart.getBarsInRange(startTime: number, endTime: number): Bar[]
+```
+Returns all bars whose `time` falls within `[startTime, endTime]`.
 
 #### Viewport
 
@@ -69,6 +118,7 @@ Resizes the chart to specified dimensions, or reads container size if omitted.
 - If **auto-scroll is disabled** — preserves the visible center point
 - Re-entrant calls prevented via `isResizing` guard
 - `ResizeObserver` and `window.resize` events both handled with deduplication
+- Skips resize if width/height haven't actually changed
 
 ```typescript
 chart.getContext(): ChartContext
@@ -83,33 +133,159 @@ Returns a structured JSON object with current viewport state, visible bars, pric
     priceRange: { min, max },
     scales: { pricePerPixel, timePerBar, barWidth }
   },
-  state: { totalBars, isAutoScrolling },
+  state: {
+    id: 'ax-a1b2c3',
+    version: '1.1.0',
+    totalBars: 150,
+    isAutoScrolling: true,
+    market: { baseAsset: 'BTC', quoteAsset: 'USDT', timeframe: '1m', source: 'Binance' }
+  },
+  // Only if context.exposeData !== false:
   visibleBars: Bar[],
-  latestBar: Bar
+  latestBar: Bar,
+  subPanes: { volume: { ... } }
 }
 ```
 
 ```typescript
 chart.scrollToLatest(): void
 ```
-Snaps the viewport to show the latest candle at the right edge.
+Snaps the viewport to show the latest candle at the right edge. Delegates to `eventManager.scrollToLatest()`.
 
 ```typescript
 chart.isAutoScrolling(): boolean
 ```
 Returns `true` if the viewport is currently tracking the latest candle.
 
-#### Lifecycle
+```typescript
+chart.triggerVisibleRangeChange(): void
+```
+Manually fires the `onVisibleRangeChange` callback with the current visible range. Throttled to 200ms between calls. Also called internally after resize and render.
+
+#### LLM Control
 
 ```typescript
-chart.destroy(): void
+chart.execute(command: ChartCommand): void
 ```
-Cleanly destroys the chart: stops countdown timer, removes all event listeners, disconnects ResizeObserver, removes canvas elements, nulls references.
+Execute a command for LLM-driven chart control. Supported command types:
+
+| Command | Parameters | Description |
+|---------|-----------|-------------|
+| `setVisibleRange` | `from: number, to: number` | Set visible time range |
+| `scrollToTime` | `time: number` | Scroll to a specific timestamp (right-aligned) |
+| `zoomIn` | `factor?: number` (default: 1.5) | Zoom in on time scale |
+| `zoomOut` | `factor?: number` (default: 1.5) | Zoom out on time scale |
+| `fitContent` | *(none)* | Fit all data in view |
+| `setPriceScale` | `mode: 'linear' \| 'logarithmic' \| 'percentage'` | Switch price scale mode |
+| `setCrosshair` | `mode: 'normal' \| 'magnet' \| 'none'` | Set crosshair mode |
+| `setSubPane` | `id: string, show: boolean` | Toggle sub-pane visibility |
+| `setReverse` | `reverse: boolean` | Invert price axis |
+
+```typescript
+chart.execute({ type: 'scrollToTime', time: 1704067200000 });
+chart.execute({ type: 'setPriceScale', mode: 'logarithmic' });
+chart.execute({ type: 'setSubPane', id: 'volume', show: true });
+```
+
+#### Export
+
+```typescript
+chart.toDataURL(): string
+```
+Export the current chart view as a PNG data URL. Merges all canvas layers (background + main + crosshair overlay).
+
+```typescript
+chart.toBlob(): Promise<Blob>
+```
+Export the current chart view as a PNG Blob. Same layer merge as `toDataURL()`.
+
+#### State Persistence
+
+```typescript
+chart.saveState(): ChartState
+```
+Returns a serializable object with current options, data, reference price, price scale mode, reverse state, and viewport settings (offsetX, barWidth, priceScale, priceOffset).
+
+```typescript
+chart.loadState(state: ChartState): void
+```
+Restores options, data, and viewport from a previously saved state. Calls `setOptions()` → `setData()` → restores viewport geometry → `render()`.
+
+#### Sub-Pane Management
+
+```typescript
+chart.addSubPane(pane: SubPane): void
+chart.removeSubPane(id: string): void
+chart.getSubPane(id: string): SubPane | undefined
+chart.getActiveSubPanes(): SubPane[]
+```
+Manage sub-pane instances (indicators, volume histogram, etc.). `getActiveSubPanes()` filters to only those with `show: true`.
+
+#### Drawing API
+
+```typescript
+chart.addDrawing(drawing: Drawing): void
+chart.removeDrawing(id: string): void
+chart.clearDrawings(): void
+chart.getDrawings(): Drawing[]
+```
+Manage persistent chart drawings rendered on the overlay canvas. Each drawing is an object:
+
+```typescript
+interface Drawing {
+  id: string;          // Unique identifier
+  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
+  barIndex: number;    // Bar index this drawing attaches to
+  price: number;       // Price level
+  color: string;       // CSS color
+  text?: string;       // Optional text (for 'label' type)
+}
+```
+
+#### Events / Callbacks
 
 ```typescript
 chart.onScrollLockChange?: (locked: boolean) => void
 ```
 Callback invoked when auto-scroll state changes (locked/unlocked).
+
+```typescript
+chart.onCrosshairMove?: CrosshairMoveCallback
+```
+Callback invoked on crosshair position change:
+```typescript
+type CrosshairMoveCallback = (param: {
+  time: number;
+  price: number;
+  bar?: Bar;
+}) => void;
+```
+
+```typescript
+chart.onBarClick?: BarClickCallback
+```
+Callback invoked when a bar is clicked:
+```typescript
+type BarClickCallback = (bar: Bar, index: number) => void;
+```
+
+```typescript
+chart.onVisibleRangeChange?: VisibleRangeChangeCallback
+```
+Callback invoked when the visible range changes:
+```typescript
+type VisibleRangeChangeCallback = (range: {
+  fromIndex: number;
+  toIndex: number;
+  fromTime: number;
+  toTime: number;
+}) => void;
+```
+
+```typescript
+chart.onDataUpdate?: ((bars: Bar[]) => void) | null
+```
+Callback fired on every data mutation: `appendBar()`, `updateLastBar()`, and `updateLastBarFast()`. Receives the bar(s) that were updated. Designed for plugin/indicator re-evaluation.
 
 #### Configuration
 
@@ -128,18 +304,23 @@ Updates chart options at runtime using deep merge. Validates all inputs before a
 | `timeScale.minBarSpacing` / `maxBarSpacing` | Stored in options (enforced in events.ts) |
 | `priceScale.mode` | State update + render |
 | `priceScale.priceFormat` | PriceFormatter recreate + render |
-|| `priceScale.reverse` | State update + render |
-| `priceScale.currentPrice` | Countdown timer restart + render |
-| `layout.width` / `height` | Full resize |
-| `layout.background` / `textColor` / `fontSize` / `fontFamily` | Render |
-| `layout.padding` | State update + render |
+| `priceScale.reverse` | State update + render |
+| `priceScale.currentPrice.*` | Countdown timer restart + render |
+| `layout.width` / `height` | Full resize (ResizeObserver + dedup) |
+| `layout.background` / `textColor` / `fontSize` / `fontFamily` / `borderVisible` | Render |
+| `layout.padding.*` | State update + render |
 | `grid.*` | Render |
 | `crosshair.*` | Crosshair overlay redraw (no full render) |
-| `behavior.*` | No immediate update — flags read directly on next event |
-| `volume.*` | State update + buffer recreation + render |
-| `market.*` | Render (crosshair overlay) |
+| `series.type` | Series renderer swap + buffer recreate + render |
+| `series.*Color` / `showMarkers` / `showLatestPriceMarker` / `showLatestPriceAnimation` | Buffer recreate + render |
+| `behavior.*` | No immediate update — flags read on next event |
+| `data.maxBars` | DataManager update + render |
+| `data.autoCleanup` | DataManager mode update (no render) |
+| `market.*` | Render |
 | `watermark.*` | Render (bg canvas) |
-| `series.*` | Render (candle colors) |
+| `context.*` | No immediate effect (read on getContext) |
+| `volume.*` | State update + buffer recreation + render |
+| `menu.*` | No immediate effect (next right-click) |
 
 ```typescript
 chart.getOptions(): Readonly<ChartOptions>
@@ -149,7 +330,16 @@ Returns a deep-cloned snapshot of current options.
 ```typescript
 chart.resetOptions(): void
 ```
-Resets all options to factory defaults and re-renders.
+Resets all options to factory defaults: `deepClone(DEFAULT_OPTIONS)`, resets `state.reverse`, `state.priceScale`, `state.priceOffset`, recreates series renderer, re-renders.
+
+#### Lifecycle
+
+```typescript
+chart.destroy(): void
+```
+Cleanly destroys the chart: stops countdown timer (`cancelAnimationFrame`), removes event listeners (`resize`, `ResizeObserver`), destroys event manager (wheel, mouse, touch, keyboard), removes canvas DOM elements, destroys crosshair overlay, nullifies all references. Sets `_destroyed = true` guard.
+
+AI agent cleanup: unregisters from `window.__AXON_CHARTS__` registry by deleting `charts[axonId]`.
 
 ---
 
@@ -160,8 +350,8 @@ Resets all options to factory defaults and re-renders.
 Controls the Y-axis price scale. **Type:** `PriceScaleAPI`
 
 ```typescript
-chart.priceScale().setMode('linear' | 'logarithmic'): void
-chart.priceScale().getMode(): 'linear' | 'logarithmic'
+chart.priceScale().setMode('linear' | 'logarithmic' | 'percentage'): void
+chart.priceScale().getMode(): 'linear' | 'logarithmic' | 'percentage'
 chart.priceScale().setMargins({ top: number, bottom: number }): void
 chart.priceScale().getMargins(): { top: number; bottom: number }
 chart.priceScale().setReverse(reverse: boolean): void
@@ -169,6 +359,12 @@ chart.priceScale().getReverse(): boolean
 chart.priceScale().setOptions(options: Partial<ChartOptions['priceScale']>): void
 chart.priceScale().getOptions(): PriceScaleOptions
 ```
+
+**Notes:**
+- `setMode('percentage')` converts prices to percentage space relative to first visible bar's open.
+- `setMargins()` validates top/bottom are 0-1 range.
+- `setReverse(true)` inverts axis (high at bottom, low at top).
+- `setOptions()` dispatches to individual setters: mode, margins, priceFormat, currentPrice.
 
 ---
 
@@ -186,6 +382,9 @@ chart.timeScale().zoomIn(factor?: number, x?: number): void
 chart.timeScale().zoomOut(factor?: number, x?: number): void
 ```
 
+- `setVisibleRange(from, to)` — adjusts barWidth and offsetX to fit the time range. Throws if timestamps not found or `from >= to`.
+- `zoomIn(factor, x?)` — zooms toward center (default) or specified x-coordinate. Clamped by min/max barSpacing. `zoomOut()` is `zoomIn(1/factor)`.
+
 #### Scrolling
 
 ```typescript
@@ -194,6 +393,7 @@ chart.timeScale().scrollToTime(timestamp: number, position?: 'left' | 'center' |
 - `'right'` (default): Places bar at right edge
 - `'center'`: Centers the bar in viewport
 - `'left'`: Places bar at left edge
+- Throws if timestamp not found in data.
 
 #### Coordinate Mapping
 
@@ -202,6 +402,9 @@ chart.timeScale().getCoordinate(timestamp: number): number | null
 chart.timeScale().getBarIndex(x: number): number | null
 chart.timeScale().getBarAtTime(timestamp: number): Bar | null
 ```
+- `getCoordinate()` — returns screen X coordinate for a bar's timestamp.
+- `getBarIndex()` — returns bar index at a screen X position (inverse of getCoordinate).
+- `getBarAtTime()` — delegates to `DataManager.getBarAtTime()` (binary search).
 
 #### Bar Spacing
 
@@ -236,6 +439,7 @@ chart.crosshairAPI().isVisible(): boolean
 - `'none'` — Crosshair completely hidden
 - `'magnet'` — Crosshair snaps to the nearest bar center
 - `'normal'` — Crosshair follows mouse freely (no snap)
+- `setVisible(false)` internally calls `setMode('none')`. `setVisible(true)` restores previous mode.
 
 #### Labels & Tooltip
 
@@ -245,6 +449,8 @@ chart.crosshairAPI().getShowLabels(): boolean
 chart.crosshairAPI().setShowTooltip(show: boolean): void
 chart.crosshairAPI().getShowTooltip(): boolean
 ```
+- Labels appear on price axis (Y) and time axis (X) when crosshair is active.
+- Tooltip shows OHLC values (or HA-computed values for heiken-ashi) at top-left.
 
 #### Line Styling
 
@@ -267,116 +473,152 @@ All options are optional with sensible defaults.
 interface ChartOptions {
   // === Layout ===
   layout?: {
-    width?: number | 'auto';        // default: 'auto'
-    height?: number | 'auto';       // default: 'auto'
-    background?: string;            // default: '#1a1a1a'
-    textColor?: string;             // default: '#aaaaaa'
-    fontSize?: number;              // default: 12 (1-72)
-    fontFamily?: string;            // default: 'system-ui'
-    padding?: { top?: number;       // default: 40
-                right?: number;     // default: 60
-                bottom?: number;    // default: 35
-                left?: number };    // default: 10
+    width?: number | 'auto';          // default: 'auto'
+    height?: number | 'auto';         // default: 'auto'
+    background?: string;              // default: '#1a1a1a'
+    textColor?: string;               // default: '#aaaaaa'
+    fontSize?: number;                // default: 12 (1-72)
+    fontFamily?: string;              // default: 'system-ui'
+    padding?: { top?: number;         // default: 40
+                right?: number;       // default: 60
+                bottom?: number;      // default: 35
+                left?: number };      // default: 10
+    borderVisible?: boolean;          // default: true (axis border lines)
   };
 
   // === Grid ===
   grid?: {
-    show?: boolean;                 // default: true
+    show?: boolean;                   // default: true
     vertLines?: { show?: boolean; color?: string; width?: number };
     horzLines?: { show?: boolean; color?: string; width?: number };
   };
 
-  // === Series (Candle Colors) ===
+  // === Series ===
   series?: {
-    upColor?: string;               // default: '#22c55e'
-    downColor?: string;             // default: '#ef4444'
+    type?: 'candlestick' | 'line' | 'area' | 'bar' | 'heiken-ashi' | 'hollow';
+                                       // default: 'candlestick'
+    upColor?: string;                  // default: '#22c55e'
+    downColor?: string;                // default: '#ef4444'
+    lineColor?: string;                // default: '#1E90FF' (line/area only)
+    showMarkers?: boolean;             // default: false (line/area dots)
+    showLatestPriceMarker?: boolean;   // default: true (latest dot)
+    showLatestPriceAnimation?: boolean; // default: true (pulse on change)
   };
 
   // === Price Scale ===
-    reverse?: boolean;             // default: false (true = inverted, high at bottom)
   priceScale?: {
-    mode?: 'linear' | 'logarithmic';  // default: 'linear'
+    mode?: 'linear' | 'logarithmic' | 'percentage';  // default: 'linear'
     scaleMargins?: { top?: number; bottom?: number };  // 0-1 range
-    priceFormat?: { type?, precision?, minMove?, formatter? };
+    priceFormat?: PriceFormat;
     currentPrice?: {
-      showCountdown?: boolean;     // default: true
-      countdownColor?: string;     // default: 'rgba(255,255,255,0.8)'
+      show?: boolean;                  // default: true
+      showLine?: boolean;              // default: true
+      showCountdown?: boolean;         // default: true
+      countdownColor?: string;         // default: 'rgba(255,255,255,0.8)'
+      upColor?: string;                // fallback: series.upColor
+      downColor?: string;              // fallback: series.downColor
+      lineStyle?: 'dashed' | 'solid';  // default: 'dashed'
+      textColor?: string;              // fallback: layout.textColor
     };
+    reverse?: boolean;                // default: false
   };
 
   // === Time Scale ===
   timeScale?: {
-    visible?: boolean;              // default: true
-    timeVisible?: boolean;          // default: true
-    secondsVisible?: boolean;       // default: false
-    showFullDate?: boolean;         // default: true ("Fri 03 Jan'26 17:55")
-    rightOffset?: number;           // default: 80
-    barSpacing?: number;            // default: 11
-    minBarSpacing?: number;         // default: 4
-    maxBarSpacing?: number;         // default: 1000
+    visible?: boolean;                 // default: true
+    timeVisible?: boolean;             // default: true
+    secondsVisible?: boolean;          // default: false
+    showFullDate?: boolean;            // default: true
+    showDayOfWeek?: boolean;           // default: true
+    dateFormat?: string;               // default: 'MMM dd, yyyy'
+    timezone?: string;                 // IANA timezone (omitted = local)
+    rightOffset?: number;              // default: 80
+    barSpacing?: number;               // default: 11
+    minBarSpacing?: number;            // default: 4
+    maxBarSpacing?: number;            // default: 1000
   };
 
   // === Crosshair ===
   crosshair?: {
     mode?: 'normal' | 'magnet' | 'none';  // default: 'magnet'
-    showLabels?: boolean;           // default: true
-    showTooltip?: boolean;          // default: true
+    showLabels?: boolean;              // default: true
+    showTooltip?: boolean;             // default: true
     vertLine?: { color?, width?, style? };
     horzLine?: { color?, width?, style? };
   };
 
   // === Right-Click Context Menu ===
   menu?: {
-    enabled?: boolean;              // default: true
+    enabled?: boolean;                 // default: true
+    items?: string[];                  // ordered menu item IDs
   };
 
   // === Behavior ===
   behavior?: {
-    dragToZoom?: boolean;           // default: true
-    scrollToZoom?: boolean;         // default: true
-    pinchToZoom?: boolean;          // default: true
-    panOnMouseDrag?: boolean;       // default: true
-    dragPriceScale?: boolean;       // default: true
-    autoScroll?: boolean;           // default: true
+    dragToZoom?: boolean;              // default: true
+    scrollToZoom?: boolean;            // default: true
+    pinchToZoom?: boolean;             // default: true
+    panOnMouseDrag?: boolean;          // default: true
+    dragPriceScale?: boolean;          // default: true
+    autoScroll?: boolean;              // default: true
   };
 
   // === Data ===
   data?: {
-    maxBars?: number;               // default: 5000
-    autoCleanup?: boolean;          // default: true
+    maxBars?: number;                  // default: 5000
+    autoCleanup?: boolean;             // default: true
   };
 
   // === Market Info ===
   market?: {
-    show?: boolean;                 // default: false
-    baseAsset?: string;             // default: 'BTC'
-    quoteAsset?: string;            // default: 'USDT'
-    timeframe?: string;             // default: '1m'
-    source?: string;                // default: ''
+    baseAsset?: string;                // default: 'BTC'
+    quoteAsset?: string;               // default: 'USDT'
+    timeframe?: string;                // default: '1m'
+    source?: string;                   // default: ''
+    show?: boolean;                    // default: false
+    fontSize?: number;                 // default: 20
   };
 
   // === Watermark ===
   watermark?: {
-    show?: boolean;                 // default: false
-    text?: string;                  // default: '' (pair fallback)
-    color?: string;                 // default: '#ffffff'
-    fontSize?: number | null;       // default: null (auto-scale)
-    opacity?: number;               // default: 0.07
-    rotate?: boolean;               // default: false (horizontal). true = -45 diagonal
+    text?: string;                     // default: '' (falls back to market pair)
+    color?: string;                    // default: '#ffffff'
+    fontSize?: number | null;          // default: null (auto-scale)
+    opacity?: number;                  // default: 0.07
+    show?: boolean;                    // default: false
+    rotate?: boolean;                  // default: false
+  };
+
+  // === LLM Context ===
+  context?: {
+    exposeData?: boolean;              // default: false (metadata only)
+    discoverable?: boolean;            // default: true (AI agent registry)
+    id?: string;                       // default: auto-generated 'ax-xxxxxx'
   };
 
   // === Volume Sub-Pane ===
   volume?: {
-    show?: boolean;                 // default: false
-    upColor?: string;               // default: '#22c55e'
-    downColor?: string;             // default: '#ef4444'
-    heightPercent?: number;         // default: 0.2 (20%, range 0.05-0.5)
-    precision?: number | null;    // default: null (auto-detect from data)
-    minMove?: number | null;       // default: null (infer precision from minMove)
+    show?: boolean;                    // default: false
+    upColor?: string;                  // default: '#22c55e'
+    downColor?: string;                // default: '#ef4444'
+    heightPercent?: number;            // default: 0.2 (0.05-0.5)
+    precision?: number | null;         // default: null (auto-detect)
+    minMove?: number | null;           // default: null (derive precision)
   };
 
   // === Init-Only ===
-  devicePixelRatio?: number;        // default: window.devicePixelRatio
+  devicePixelRatio?: number;           // default: window.devicePixelRatio
+}
+```
+
+### `PriceFormat`
+
+```typescript
+interface PriceFormat {
+  type: 'price' | 'volume' | 'percent' | 'custom';
+  precision?: number;
+  minMove?: number;
+  formatter?: (price: number) => string;
 }
 ```
 
@@ -389,7 +631,54 @@ interface Bar {
   high: number;       // High price
   low: number;        // Low price
   close: number;      // Close price
-  volume?: number;    // Optional volume
+  volume?: number;    // Optional volume (required for volume sub-pane)
+}
+```
+
+### `Drawing` Data Format
+
+```typescript
+interface Drawing {
+  id: string;            // Unique identifier
+  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
+  barIndex: number;      // Bar index this drawing attaches to
+  price: number;         // Price level
+  color: string;         // CSS color
+  text?: string;         // Optional text (for 'label' type)
+}
+```
+
+### `ChartCommand` Type
+
+```typescript
+type ChartCommand =
+  | { type: 'setVisibleRange'; from: number; to: number }
+  | { type: 'scrollToTime'; time: number }
+  | { type: 'zoomIn'; factor?: number }
+  | { type: 'zoomOut'; factor?: number }
+  | { type: 'fitContent' }
+  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
+  | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
+  | { type: 'setSubPane'; id: string; show: boolean }
+  | { type: 'setReverse'; reverse: boolean };
+```
+
+### `ChartState` (Persistence)
+
+```typescript
+interface ChartState {
+  version: string;
+  options: Required<ChartOptions>;
+  data: Bar[];
+  referencePrice: number;
+  priceScaleMode: 'linear' | 'logarithmic' | 'percentage';
+  reverse: boolean;
+  viewport: {
+    offsetX: number;
+    barWidth: number;
+    priceScale: number;
+    priceOffset: number;
+  };
 }
 ```
 
@@ -406,8 +695,9 @@ These are accepted for backward compatibility but mapped to the hierarchical str
 | `colors.background` | `layout.background` | Supported |
 | `colors.text` | `layout.textColor` | Supported |
 | `colors.grid` | `grid.vertLines.color` + `grid.horzLines.color` | Supported |
-| `colors.up` | (direct) Bullish candle color | Supported |
-| `colors.down` | (direct) Bearish candle color | Supported |
+| `colors.up` | `series.upColor` | Supported |
+| `colors.down` | `series.downColor` | Supported |
+| `colors.crosshair` | *(direct)* Crosshair line color | Supported |
 | `rightGap` | `timeScale.rightOffset` | Supported |
 | `autoScroll` | `behavior.autoScroll` | Supported |
 | `baseBarWidth` | `timeScale.barSpacing` | Supported |
@@ -441,24 +731,64 @@ chart.crosshairAPI().setMode('normal');
 chart.setOptions({ volume: { show: true, heightPercent: 0.25 } });
 
 // Market header
-chart.setOptions({ market: { baseAsset: 'BTC', quoteAsset: 'USDT', timeframe: '1m', source: 'Binance', show: true } });
+chart.setOptions({
+  market: { baseAsset: 'BTC', quoteAsset: 'USDT', timeframe: '1m', source: 'Binance', show: true }
+});
 
 // Watermark
 chart.setOptions({ watermark: { text: 'AXON CHARTS', show: true, opacity: 0.05 } });
+
+// Line series with independent color
+chart.setOptions({
+  series: { type: 'line', lineColor: '#FF6B35', showMarkers: true }
+});
 
 // LLM integration
 const context = chart.getContext();
 chart.execute({ type: 'scrollToTime', time: 1704067200000 });
 chart.execute({ type: 'setCrosshair', mode: 'none' });
 chart.execute({ type: 'setReverse', reverse: true });
+chart.execute({ type: 'setSubPane', id: 'volume', show: true });
+
+// Drawing API
+chart.addDrawing({
+  id: 'ann1', type: 'arrow_up', barIndex: 5, price: 108, color: '#22c55e', text: 'Breakout'
+});
+chart.addDrawing({
+  id: 'ann2', type: 'hline', barIndex: 0, price: 95, color: '#ef4444'
+});
 
 // Events
 chart.onCrosshairMove(({ time, price, bar }) => {
   console.log(`At cursor: $${price}`);
 });
 
+chart.onBarClick((bar, index) => {
+  console.log(`Bar ${index}: O=${bar.open} H=${bar.high} L=${bar.low} C=${bar.close}`);
+});
+
+chart.onVisibleRangeChange((range) => {
+  console.log(`View: bars ${range.fromIndex}-${range.toIndex}`);
+});
+
+chart.onDataUpdate((bars) => {
+  console.log('Data updated:', bars);
+});
+
 // Streaming
 chart.updateLastBarFast({ time: Date.now(), open: 105, high: 108, low: 104, close: 107, volume: 5000 });
+
+// Export
+const dataUrl = chart.toDataURL();
+const blob = await chart.toBlob();
+
+// Persistence
+const state = chart.saveState();
+// ... later ...
+chart.loadState(state);
+
+// Cleanup
+chart.destroy();
 ```
 
 ---
@@ -474,7 +804,9 @@ chart.setOptions({
     show: true,             // Toggle visibility
     upColor: '#22c55e',     // Green for up bars
     downColor: '#ef4444',   // Red for down bars
-    heightPercent: 0.2      // 20% of chart height (0.05-0.5)
+    heightPercent: 0.2,     // 20% of chart height (0.05-0.5)
+    precision: 0,           // Optional: force 0 decimal places
+    minMove: 1              // Optional: derive precision (1 → 0 decimals)
   }
 });
 ```
@@ -491,3 +823,59 @@ chart.setOptions({
 - Crosshair spans full chart height including sub-pane
 - Vertical grid lines align with main chart via same `calculateTimeStep()` function
 - Data must include `volume` field on Bar objects (optional, defaults to 0)
+- Precision auto-detected from data values when `precision: null`
+
+---
+
+## AI Agent Integration
+
+Axon Charts automatically registers in `window.__AXON_CHARTS__` for AI agent discovery:
+
+```javascript
+// Global registry structure
+window.__AXON_CHARTS__ = {
+  version: '1.1.0',
+  charts: {
+    'ax-a1b2c3': chartInstance,   // Keyed by axonId
+    'btc-usdt': chartInstance       // User-provided context.id
+  }
+};
+```
+
+- Each chart instance has a `data-axon-charts-id` attribute on its container element.
+- `context.discoverable: false` disables registration (stealth mode).
+- `context.id` provides a human-readable identifier.
+- Use `chart.getContext()` for LLM-friendly chart state introspection.
+- Use `chart.execute()` for LLM-driven chart control.
+
+---
+
+## Exported Types & Classes
+
+All exported from the package entry point:
+
+| Export | Type | Description |
+|--------|------|-------------|
+| `createChart` | function | Create a new chart instance |
+| `generateChartId` | function | Generate or resolve chart ID |
+| `Chart` | class | Main chart class |
+| `DataManager` | class | Data storage and management |
+| `Renderer` | class | Canvas rendering engine |
+| `Crosshair` | class | Crosshair overlay |
+| `Axes` | class | Grid and axis rendering |
+| `EventManager` | class | Mouse/touch/keyboard events |
+| `PriceScaleAPI` | class | Price scale control API |
+| `TimeScaleAPI` | class | Time scale control API |
+| `CrosshairAPI` | class | Crosshair control API |
+| `SubPane` | interface | Sub-pane contract |
+| `ScalePane` | class | Abstract scale pane base |
+| `VolumeSubPane` | class | Volume histogram sub-pane |
+| `Bar` | interface | OHLCV data type |
+| `ChartOptions` | interface | Full options schema |
+| `PriceFormat` | interface | Price formatting |
+| `ChartCommand` | type | LLM command union |
+| `ChartState` | interface | Persistence format |
+| `Drawing` | interface | Annotation data type |
+| `LAYOUT` | const | Layout constants |
+| `ValidationError` | class | Option validation error |
+| `Projection` | namespace | priceToY, yToPrice, indexToX, xToIndex |

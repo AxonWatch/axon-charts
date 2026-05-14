@@ -37,12 +37,13 @@ Returns everything an LLM needs to reason about the current chart state:
     "priceRange": { "min": 95.50, "max": 115.30 },
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
-  "state": { "totalBars": 5000, "isAutoScrolling": true },
-  "visibleBars": [
-    { "time": 1704067200000, "open": 100, "high": 105, "low": 98, "close": 103, "volume": 15000 },
-    // ... all visible bars
-  ],
-  "latestBar": { "time": 1704153600000, "open": 112, "high": 113, "low": 110.5, "close": 112.8 }
+  "state": {
+    "id": "ax-a1b2c3", "version": "1.1.0", "totalBars": 5000, "isAutoScrolling": true,
+    "market": { "baseAsset": "BTC", "quoteAsset": "USDT", "timeframe": "1m", "source": "Binance" }
+  },
+  "visibleBars": [ /* OHLCV bars visible on screen */ ],
+  "latestBar": { "time": ..., "open": ..., "high": ..., "low": ..., "close": ..., "volume": ... },
+  "subPanes": { "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0 } }
 }
 ```
 
@@ -52,16 +53,16 @@ Returns everything an LLM needs to reason about the current chart state:
 - The time window (from/to timestamps)
 - Total dataset size vs visible window
 - Whether the chart is auto-scrolling
-- The current (latest) candle
-- Volume data is included on each bar if available
+- The current (latest) candle with volume
+- All active sub-panes with their current scale/offset
 
-**Note:** All active sub-panes (volume, RSI, etc.) are auto-exposed via `getContext().subPanes`. Each sub-pane reports `show`, `heightPercent`, `scale`, and `offset` through the generic SubPane interface.
+**Note:** `context.exposeData` controls whether visible bars, latest bar, and sub-panes are returned. When `false` (default), only viewport metadata is returned — reduces token cost for agents that only need spatial reasoning.
 
 ### getData() / getBars() — Full Data Access
 
 ```typescript
-const allData = chart.getData();        // Entire dataset
-const last100 = chart.getBars(100);     // Last N bars
+const allData = chart.getData();        // Entire dataset (copy)
+const last100 = chart.getBars(0, 100);  // Bars 0-99
 const range = chart.getBarsInRange(     // Bars between timestamps
   1704067200000, 1704153600000
 );
@@ -84,15 +85,19 @@ The `execute()` method accepts typed action objects. It routes to the correct AP
 
 ```typescript
 // Mode and visibility
-chart.execute({ type: 'setPriceScale', mode: 'log' });
+chart.execute({ type: 'setPriceScale', mode: 'logarithmic' });
+chart.execute({ type: 'setPriceScale', mode: 'percentage' });
 chart.execute({ type: 'setCrosshair', mode: 'none' });
+chart.execute({ type: 'setReverse', reverse: true });
 
 // Viewport
 chart.execute({ type: 'scrollToTime', time: timestamp });
 chart.execute({ type: 'fitContent' });
 chart.execute({ type: 'zoomIn', factor: 1.5 });
-chart.execute({ type: 'zoomOut', factor: 2 });
 chart.execute({ type: 'setVisibleRange', from: 1704067200000, to: 1704153600000 });
+
+// Sub-panes
+chart.execute({ type: 'setSubPane', id: 'volume', show: true });
 ```
 
 **Supported actions (discriminated union):**
@@ -104,23 +109,46 @@ type ChartCommand =
   | { type: 'zoomIn'; factor?: number }
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
-  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' }
+  | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
   | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
-  | { type: 'setSubPane'; id: string; show: boolean };
+  | { type: 'setSubPane'; id: string; show: boolean }
+  | { type: 'setReverse'; reverse: boolean };
 ```
 
 ### Direct API Access
 
 ```typescript
-chart.priceScale().setMode('logarithmic');
+chart.priceScale().setMode('percentage');
 chart.timeScale().setVisibleRange(from, to);
 chart.timeScale().fitContent();
 chart.timeScale().scrollToTime(timestamp, 'center');
 chart.crosshairAPI().setMode('magnet');
 chart.setOptions({ grid: { show: false } });
 chart.setOptions({ volume: { show: true, heightPercent: 0.25 } });
-chart.setOptions({ market: { baseAsset: 'BTC', quoteAsset: 'USDT', show: true } });
-chart.setOptions({ watermark: { text: 'DEMO', show: true } });
+chart.setOptions({ series: { type: 'heiken-ashi' } });
+chart.setOptions({ series: { type: 'line', lineColor: '#FF6B35', showMarkers: true } });
+```
+
+### Drawing API
+
+```typescript
+// Add persistent annotations
+chart.addDrawing({
+  id: 'ann1', type: 'arrow_up',
+  barIndex: 42, price: 105.50, color: '#22c55e', text: 'Breakout'
+});
+
+chart.addDrawing({
+  id: 'sup1', type: 'hline',
+  barIndex: 0, price: 95.00, color: '#ef4444'
+});
+
+// Remove or clear
+chart.removeDrawing('ann1');
+chart.clearDrawings();
+
+// Read back
+const drawings = chart.getDrawings();
 ```
 
 ---
@@ -131,25 +159,29 @@ chart.setOptions({ watermark: { text: 'DEMO', show: true } });
 
 ```typescript
 // User moves cursor over chart
-chart.onCrosshairMove(({ bar, price, time, x, y }) => {
-  console.log(`Bar at cursor: O=${bar.open} H=${bar.high} L=${bar.low} C=${bar.close}`);
-  console.log(`Price at cursor: $${price}`);
-});
+chart.onCrosshairMove = ({ time, price, bar }) => {
+  console.log(`At cursor: $${price}, bar O=${bar?.open}`);
+};
 
 // User clicks on a bar
-chart.onBarClick(({ bar, index }) => {
+chart.onBarClick = (bar, index) => {
   console.log(`Clicked bar #${index}: $${bar.close}`);
-});
+};
 
-// User pans or zooms
-chart.onVisibleRangeChange(({ from, to }) => {
-  console.log(`Now viewing: ${new Date(from)} to ${new Date(to)}`);
-});
+// User pans or zooms — visible range changed
+chart.onVisibleRangeChange = ({ fromIndex, toIndex, fromTime, toTime }) => {
+  console.log(`Now viewing bars ${fromIndex}-${toIndex}`);
+};
 
 // Auto-scroll state changes
-chart.onScrollLockChange((locked) => {
+chart.onScrollLockChange = (locked) => {
   console.log(locked ? 'Exploring history' : 'Watching live');
-});
+};
+
+// Data updated (tick, bar, append)
+chart.onDataUpdate = (bars) => {
+  console.log(`Received ${bars.length} bar(s)`);
+};
 ```
 
 ### Practical LLM Integration Pattern
@@ -162,10 +194,10 @@ const ctx = JSON.stringify(chart.getContext(), null, 2);
 chart.execute({ type: 'scrollToTime', time: 1704067200000 });
 
 // 3. Chart fires events when user interacts
-chart.onVisibleRangeChange((range) => {
+chart.onVisibleRangeChange = (range) => {
   const updated = chart.getContext();
   sendToLLM(updated);
-});
+};
 ```
 
 ---
@@ -193,8 +225,11 @@ import { LAYOUT } from 'axon-charts';
 ## Screenshot for Vision LLMs
 
 ```typescript
-// Get a base64 data URL (merges all three canvas layers + volume sub-pane)
-const screenshot = chart.toDataURL('image/png');
+// Get a base64 data URL (merges all canvas layers)
+const screenshot = chart.toDataURL();
+
+// Or get a Blob (async)
+const blob = await chart.toBlob();
 
 // Send to vision-capable LLM
 // The LLM can SEE the chart AND read the structured JSON
@@ -214,7 +249,7 @@ const newChart = createChart('#container');
 newChart.loadState(state);
 ```
 
-The saved state includes: chart options, zoom level, scroll position, all bar data, volume sub-pane settings.
+The saved state includes: chart options, zoom level, scroll position, all bar data, volume sub-pane settings, and viewport geometry (offsetX, barWidth, priceScale, priceOffset).
 
 ---
 
@@ -229,26 +264,7 @@ chart.updateLastBarFast(currentCandle);
 // Periodically call chart.render() to refresh axes/grid every 20 ticks
 ```
 
-See [docs/STREAMING.md](./docs/STREAMING.md) for detailed patterns and throttling strategies.
-
----
-
-## Open Source vs Advanced Capabilities
-
-| Capability | Open Source | Advanced |
-|-----------|:-----------:|:--------:|
-| Read chart state (getContext, getData) | ✅ | ✅ |
-| Control chart (execute, setOptions) | ✅ | ✅ |
-| Event callbacks (onCrosshairMove) | ✅ | ✅ |
-| Screenshot capture | ✅ | ✅ |
-| State save/restore | ✅ | ✅ |
-| Volume sub-pane (render, tooltip, zoom) | ✅ | ✅ |
-| Volume state in getContext | ✅ | ✅ |
-| Series types (line, area, bar) | ❌ v1.1.0 | — |
-| Trend / volatility helpers | — | ✅ |
-| Support/resistance detection | — | ✅ |
-| Heiken Ashi candle mode | — | ✅ |
-| Pattern recognition | — | ✅ |
+See [STREAMING.md](./STREAMING.md) for detailed patterns and throttling strategies.
 
 ---
 
@@ -262,13 +278,14 @@ You have access to a chart instance. Use these methods:
 READ:
   chart.getContext()         → JSON with visible bars, price range, scales
   chart.getData()            → full Bar[] array
-  chart.getBars(N)           → last N bars
+  chart.getBars(N, count)    → range of bars
   chart.getBarAtTime(ts)     → single bar by timestamp
 
 CONTROL:
   chart.execute({ type, ... })
-    - { type: 'setPriceScale', mode: 'linear'|'log' }
+    - { type: 'setPriceScale', mode: 'linear'|'logarithmic'|'percentage' }
     - { type: 'setCrosshair', mode: 'normal'|'magnet'|'none' }
+    - { type: 'setReverse', reverse: boolean }
     - { type: 'scrollToTime', time: timestamp }
     - { type: 'fitContent' }
     - { type: 'zoomIn', factor?: number }
@@ -277,11 +294,13 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
+  chart.addDrawing({ ... })   → persistent annotations
 
 REACT:
-  chart.onCrosshairMove(cb)           → fires on cursor move
-  chart.onBarClick(cb)                → fires on bar click
-  chart.onVisibleRangeChange(cb)      → fires on pan/zoom
+  chart.onCrosshairMove = fn     → fires on cursor move
+  chart.onBarClick = fn          → fires on bar click
+  chart.onVisibleRangeChange = fn → fires on pan/zoom
+  chart.onDataUpdate = fn        → fires on data mutation
 
 EXPORT:
   chart.toDataURL()           → base64 PNG screenshot
@@ -300,4 +319,3 @@ EXPORT:
 - `toDataURL()` is the most expensive operation (canvas → base64) — debounce to every 500ms
 - `getBars()` returns a new array each call — internal array never exposed
 - `updateLastBarFast()` is ~10-20x faster than `updateLastBar()` for high-frequency streams
-

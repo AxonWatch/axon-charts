@@ -2,7 +2,7 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, Bar, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback } from '../types/index.js';
+import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback } from '../types/index.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
@@ -197,6 +197,8 @@ export class Chart {
   public onCrosshairMove?: CrosshairMoveCallback;
   public onBarClick?: BarClickCallback;
   public onVisibleRangeChange?: VisibleRangeChangeCallback;
+  public onDataUpdate?: ((bars: Bar[]) => void) | null = null;
+  private _drawings: Drawing[] = [];
 
   // Event handlers stored for proper removal
   private readonly handleResizeBound: () => void;
@@ -686,6 +688,7 @@ export class Chart {
     this.dataManager.appendBar(bar);
     this.ensureRightGapAndRoll();
     this.render();
+    if (this.onDataUpdate) this.onDataUpdate([bar]);
   }
 
   public updateLastBar(bar: Bar): void {
@@ -699,6 +702,7 @@ export class Chart {
     }
 
     this.render();
+    if (this.onDataUpdate && this.dataManager.length > 0) this.onDataUpdate([bar]);
   }
 
   /**
@@ -727,6 +731,9 @@ export class Chart {
     // Fast price scale check: update priceMin/priceMax if range expanded
     // beyond hysteresis threshold (1.5%). Only redraws background when needed.
     const rangeChanged = this.updatePriceScaleFast();
+
+    // Notify plugins of new tick (indicator re-evaluation)
+    if (this.onDataUpdate) this.onDataUpdate([bar]);
 
     // Lightweight path: only update last candle in buffer, then composite
     this.renderer.updateLastCandleInBuffer();
@@ -1035,6 +1042,23 @@ export class Chart {
    */
   public getActiveSubPanes(): SubPane[] {
     return Array.from(this.subPanes.values()).filter(p => p.getOptions()?.show);
+  }
+
+  // ── Drawing API ──────────────────────────────────────────
+  addDrawing(drawing: Drawing): void {
+    this._drawings.push(drawing);
+    this.render();
+  }
+  removeDrawing(id: string): void {
+    this._drawings = this._drawings.filter(d => d.id !== id);
+    this.render();
+  }
+  clearDrawings(): void {
+    this._drawings = [];
+    this.render();
+  }
+  getDrawings(): Drawing[] {
+    return this._drawings;
   }
 
   public destroy(): void {
