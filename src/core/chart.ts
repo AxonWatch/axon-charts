@@ -149,6 +149,7 @@ export class Chart {
 
   // Sub-panes (indicators, volume, etc.)
   private subPanes: Map<string, SubPane> = new Map();
+  private _subPaneShow: Map<string, boolean> = new Map();
   public volumeSubPane!: VolumeSubPane;
 
   // Chart state
@@ -334,6 +335,7 @@ export class Chart {
   }
 
   public resize(width?: number, height?: number): void {
+    if (this._destroyed) return;
     // Prevent reentrant resize calls (can happen with ResizeObserver + window resize)
     if (this.isResizing) {
       return;
@@ -599,6 +601,7 @@ export class Chart {
   }
 
   public render(): void {
+    if (this._destroyed) return;
     this.state.data = this.dataManager.data;
 
     // === NEW: Generic sub-pane geometry ===
@@ -976,6 +979,7 @@ export class Chart {
     if (!this.options.priceScale.currentPrice?.showCountdown) return;
 
     const updateCountdown = () => {
+      if (this._destroyed) return;
       const now = Date.now();
       // Throttle to 100ms to save CPU
       if (now - this.lastCountdownUpdate >= 100) {
@@ -1138,11 +1142,15 @@ export class Chart {
       case 'setSubPane':
         const pane = this.getSubPane(command.id);
         if (pane) {
+          // Try options schema key first (volume uses this.options.volume.show)
           const currentOpts = this.options[command.id as keyof ChartOptions] as any;
           if (currentOpts) {
             currentOpts.show = command.show;
-            this.render();
+          } else {
+            // Custom sub-pane without top-level options key: store in a visibility map
+            this._subPaneShow.set(command.id, command.show);
           }
+          this.render();
         }
         break;
       case 'setReverse':
@@ -1234,6 +1242,8 @@ export class Chart {
     this.state.priceScale = state.viewport.priceScale;
     this.state.priceOffset = state.viewport.priceOffset;
 
+    // Re-render with restored viewport
+    this.render();
   }
 
   /**

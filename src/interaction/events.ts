@@ -429,9 +429,17 @@ export class EventManager {
     } else if (mouseY >= chartBottomEdge - 6 && mouseY <= h - bottomMargin) {
       // Check for separator drag (6px zone, matching highlight threshold)
       const SEPARATOR_DRAG_THRESHOLD = 6;
-      if (Math.abs(mouseY - chartBottomEdge) < SEPARATOR_DRAG_THRESHOLD) {
-        this.dragMode = 'separator';
-      } else {
+      let currentSepTop = chartBottomEdge;
+      let foundSeparator = false;
+      for (const pane of this.chart.getActiveSubPanes()) {
+        if (Math.abs(mouseY - currentSepTop) < SEPARATOR_DRAG_THRESHOLD) {
+          this.dragMode = 'separator';
+          foundSeparator = true;
+          break;
+        }
+        currentSepTop += pane.computeHeight(this.chart.state, pane.getOptions());
+      }
+      if (!foundSeparator) {
         // Check if over any sub-pane axis
         let currentTop = chartBottomEdge;
         let foundPane = false;
@@ -703,6 +711,8 @@ export class EventManager {
         this.lastTouchDistance = currentDistance;
         this.requestRender();
         this.chart.triggerVisibleRangeChange();
+      } else {
+        this.lastTouchDistance = currentDistance;
       }
     }
   }

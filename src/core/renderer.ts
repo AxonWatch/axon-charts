@@ -118,7 +118,7 @@ export class Renderer {
     
     // 3. Center the render range within the buffer
     const screenBars = Math.ceil(w / barWidth);
-    const spareBars = maxBarsInBuffer - screenBars;
+    const spareBars = Math.max(0, maxBarsInBuffer - screenBars);
     
     const renderStart = Math.max(0, visibleStartIdx - Math.floor(spareBars / 2));
     const renderEnd = Math.min(data.length, renderStart + maxBarsInBuffer);
@@ -293,7 +293,7 @@ export class Renderer {
     const labelHeight = showCountdown ? LAYOUT.CURRENT_PRICE_LABEL_HEIGHT : LAYOUT.LABEL_HEIGHT;
     
     // Use the same clamped Y for the label so it stays in the chart area
-    const labelY = Math.min(yClose, clipBottom);
+    const labelY = Math.max(this.chart.state.topMargin, Math.min(yClose, clipBottom));
     ctx.fillStyle = this.hexToRgba(lineColor ?? '#888', LAYOUT.CURRENT_PRICE_LABEL_ALPHA);
     ctx.fillRect(w - axisWidth, labelY - labelHeight / 2, axisWidth, labelHeight);
 
@@ -361,10 +361,10 @@ export class Renderer {
     const haY = priceToY(haClose, this.chart.state);
     const realY = priceToY(realClose, this.chart.state);
     const clipBottom = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
-    const y = Math.min(haY, clipBottom);
+    const y = Math.max(this.chart.state.topMargin, Math.min(haY, clipBottom));
 
     // Compute the real close label's full occupied region (including countdown text below)
-    const realCY = Math.min(realY, clipBottom);
+    const realCY = Math.max(this.chart.state.topMargin, Math.min(realY, clipBottom));
     const realHalfH = mainLabelH / 2;
     const realTop = realCY - realHalfH;
     // Countdown text draws at labelY + 3 with 10px font — extends realBottom by ~13px
@@ -379,7 +379,7 @@ export class Renderer {
         ? realTop - haHalfH - 4
         : realBottom + haHalfH + 4;
       // Clamp within chart area
-      const minY = haHalfH + 2;
+      const minY = Math.max(haHalfH + 2, this.chart.state.topMargin + haHalfH + 2);
       const maxY = clipBottom - haHalfH - 2;
       labelY = Math.max(minY, Math.min(labelY, maxY));
     }
