@@ -9,7 +9,5 @@ esbuild.config.js
 .DS_Store
 .vscode/
 .idea/
-.claude/
-.hermes/
 CONTRIBUTING.md
 RELEASE_CHECKLIST.md
