@@ -45,6 +45,14 @@
   ],
   "author": "Axon Charts",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AxonWatch/axon-charts"
+  },
+  "homepage": "https://github.com/AxonWatch/axon-charts#readme",
+  "bugs": {
+    "url": "https://github.com/AxonWatch/axon-charts/issues"
+  },
   "devDependencies": {
     "typescript": "^5.0.0",
     "esbuild": "^0.20.0"
