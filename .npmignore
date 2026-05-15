@@ -1,8 +1,6 @@
 # npm uses files field in package.json — this is just a safety net
 src/
 tests/
-docs/
-archive/
 design/
 tsconfig.json
 esbuild.config.js
@@ -14,16 +12,4 @@ esbuild.config.js
 .claude/
 .hermes/
 CONTRIBUTING.md
-ROADMAP.md
-STRATEGIC_PLAN.md
 RELEASE_CHECKLIST.md
-*.html
-!demo.html
-!docs.html
-!index.html
-# Test files
-rugpull-test.html
-forex-weekend-gaps.html
-.html-maintenance-checklist.md
-EXAMPLES.md
-EURUSD*.csv
