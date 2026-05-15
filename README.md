@@ -3,7 +3,7 @@
 **A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration.**
 
 <p align="center">
-  <img src="assets/images/axon_charts.png" alt="Axon Charts" width="600">
+  <img src="html/assets/images/axon_charts.png" alt="Axon Charts" width="600">
 </p>
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -60,7 +60,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 
 <p align="center">
   <a href="html/examples.html">
-    <img src="assets/images/chart-example.png" alt="Axon Charts example" width="800" style="border-radius: 8px; border: 1px solid #333;">
+    <img src="html/assets/images/chart-example.png" alt="Axon Charts example" width="800" style="border-radius: 8px; border: 1px solid #333;">
   </a>
   <br>
   <em><a href="html/examples.html">See live examples &rarr;</a></em>
