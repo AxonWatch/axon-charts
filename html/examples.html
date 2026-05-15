@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Axon Charts - Examples</title>
+  <script src="/dist/chart.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #111;
+      --bg-card: #1a1a1a;
+      --text-primary: #ffffff;
+      --text-secondary: #888;
+      --border: #2a2a2a;
+      --accent: #4ade80;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .top-bar {
+      height: 56px;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .top-bar h1 { font-size: 16px; font-weight: 600; }
+    .top-bar h1 span { color: var(--accent); }
+    .top-bar .back-link {
+      margin-left: auto;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .top-bar .back-link:hover { color: var(--accent); }
+    .page { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+    .page > h2 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+    .page > .sub { color: var(--text-secondary); font-size: 14px; margin-bottom: 40px; line-height: 1.6; }
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 28px;
+    }
+    .card-hdr {
+      padding: 16px 20px 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-hdr h3 { font-size: 15px; font-weight: 600; }
+    .card-hdr .tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(74, 222, 128, 0.12);
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .card-hdr .tag.purple { background: rgba(147, 51, 234, 0.12); color: #a855f7; }
+    .card-hdr .tag.orange { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+    .card-hdr .tag.blue { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
+    .card-hdr .tag.pink { background: rgba(236, 72, 153, 0.12); color: #f472b6; }
+    .card-hdr .tag.yellow { background: rgba(250, 204, 21, 0.12); color: #facc15; }
+    .desc { padding: 10px 20px 0 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+    .codebar {
+      display: flex;
+      align-items: stretch;
+      margin: 12px 20px 0 20px;
+      background: #0d0d0d;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .codebar code {
+      flex: 1;
+      padding: 12px 14px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #ccc;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .codebar .cp {
+      flex-shrink: 0;
+      width: 40px;
+      background: #181818;
+      border: none;
+      border-left: 1px solid var(--border);
+      color: #666;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background .15s, color .15s;
+    }
+    .codebar .cp:hover { background: #222; color: #ccc; }
+    .codebar .cp.done { background: rgba(74, 222, 128, 0.15); color: var(--accent); }
+    .chartbox { padding: 12px 20px 16px 20px; }
+    .chartbox .ch { width: 100%; height: 380px; position: relative; border-radius: 6px; overflow: hidden; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1><span>Axon</span> Charts &mdash; Examples</h1>
+  <a href="/html/docs.html" class="back-link">Docs &rarr;</a>
+</div>
+
+<div class="page">
+
+<h2>Series Types &amp; Features</h2>
+<p class="sub">Every chart type and option demonstrated live. Hover for crosshair, scroll to zoom, drag to pan.<br>Click the <span style="color:#888;">&#x2398;</span> on any code block to copy the config.</p>
+
+<div id="cards"></div>
+
+</div>
+
+<script>
+// --- helpers ---
+var opts = {
+  layout: { background: '#1a1a1a', textColor: '#aaa', fontSize: 11 },
+  grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
+  timeScale: { barSpacing: 7 }
+};
+
+var charts = [];
+
+function gendat(bars, base, vol, trend) {
+  var d = [], t = 1704067200000, p = base||100, v = vol||2.5, tr = trend||0;
+  for (var i=0; i<bars; i++) {
+    var ch = tr + (Math.random()-0.5)*v;
+    var o=p, c=p+ch, h=Math.max(o,c)+Math.random()*v*0.5, l=Math.min(o,c)-Math.random()*v*0.5;
+    d.push({time:t, open:+o.toFixed(2), high:+h.toFixed(2), low:+l.toFixed(2), close:+c.toFixed(2), volume:Math.round(Math.random()*5000+1000)});
+    p=c; t+=60000;
+  }
+  return d;
+}
+
+var d1 = gendat(200,100,2.5);
+var d2 = gendat(200,100,2.0,0.04);
+var d3 = gendat(200,30,1.2,0.02);
+
+function mkChart(id, overrides, data) {
+  var o = JSON.parse(JSON.stringify(opts));
+  for (var k in overrides) {
+    if (typeof overrides[k] === 'object' && !Array.isArray(overrides[k]) && overrides[k] !== null) {
+      o[k] = o[k] || {};
+      for (var k2 in overrides[k]) o[k][k2] = overrides[k][k2];
+    } else { o[k] = overrides[k]; }
+  }
+  var c = AxonCharts.createChart('#'+id, o);
+  c.setData(data);
+  charts.push(c);
+}
+
+function cp(btn) {
+  var txt = btn.previousElementSibling.textContent;
+  navigator.clipboard.writeText(txt).then(function() {
+    btn.textContent = '✓';
+    btn.classList.add('done');
+    setTimeout(function() { btn.textContent = '⎘'; btn.classList.remove('done'); }, 1500);
+  });
+}
+
+var items = [
+  {title:'Candlestick', tag:'green', label:'default', desc:'Standard OHLC candlesticks. Green body for up-close, red for down-close. The classic.', code:'{ }  // candlestick is the default', cid:'x1', over:{}, data:d1},
+  {title:'Line', tag:'purple', label:"type:'line'", desc:'Polyline connecting close prices. Uses lineColor which is independent of upColor/downColor.', code:"{ series: { type: 'line', lineColor: '#a855f7', showMarkers: true } }", cid:'x2', over:{series:{type:'line',lineColor:'#a855f7',showMarkers:true}}, data:d1},
+  {title:'Area', tag:'orange', label:"type:'area'", desc:'Filled polyline with gradient. Latest price marker pulses on price changes.', code:"{ series: { type: 'area', lineColor: '#fb923c', showMarkers: true, showLatestPriceAnimation: true } }", cid:'x3', over:{series:{type:'area',lineColor:'#fb923c',showMarkers:true,showLatestPriceMarker:true,showLatestPriceAnimation:true}}, data:d2},
+  {title:'Bar (OHLC)', tag:'blue', label:"type:'bar'", desc:'Open notch on the left, close tick on the right, high-low stem. Traditional style.', code:"{ series: { type: 'bar' } }", cid:'x4', over:{series:{type:'bar'}}, data:d1},
+  {title:'Heiken-Ashi', tag:'pink', label:"type:'heiken-ashi'", desc:'Smoothed candles via HA formula. Separate compact price label at HA close level.', code:"{ series: { type: 'heiken-ashi' } }", cid:'x5', over:{series:{type:'heiken-ashi'}}, data:d2},
+  {title:'Hollow', tag:'green', label:"type:'hollow'", desc:'Trend-colored bodies: filled = bear trend, hollow = bull trend. Wicks show direction.', code:"{ series: { type: 'hollow' } }", cid:'x6', over:{series:{type:'hollow'}}, data:d1},
+  {title:'Candle + Volume', tag:'blue', label:'volume', desc:'Volume histogram with independent Y-axis. Drag separator to resize. Scroll axis to zoom.', code:"{ volume: { show: true, heightPercent: 0.25 } }", cid:'x7', over:{volume:{show:true,heightPercent:0.25,upColor:'#4ade80',downColor:'#f87171'}}, data:d1},
+  {title:'Percentage Mode', tag:'orange', label:"mode:'percentage'", desc:"Y-axis shows % change from first visible bar's open. Solid 0% reference line.", code:"{ priceScale: { mode: 'percentage' }, series: { type: 'line', lineColor: '#60a5fa' } }", cid:'x8', over:{priceScale:{mode:'percentage'},series:{type:'line',lineColor:'#60a5fa'}}, data:d2},
+  {title:'Logarithmic Scale', tag:'purple', label:"mode:'logarithmic'", desc:'Log scale maps equal % moves as equal vertical distances. Good for volatile assets.', code:"{ priceScale: { mode: 'logarithmic' } }", cid:'x9', over:{priceScale:{mode:'logarithmic'}}, data:d1},
+  {title:'Reversed Axis', tag:'pink', label:'reverse:true', desc:'Inverted Y-axis: high at bottom, low at top. Common in crypto derivatives.', code:"{ priceScale: { reverse: true }, series: { type: 'line', lineColor: '#f472b6' } }", cid:'x10', over:{priceScale:{reverse:true},series:{type:'line',lineColor:'#f472b6'}}, data:d3},
+  {title:'Fully Loaded', tag:'yellow', label:'all features', desc:'Market header, watermark, styled crosshair, volume sub-pane, custom colors, axis borders.', code:"{ market: { show: true, baseAsset: 'BTC', quoteAsset: 'USDT' }, watermark: { text: 'AXON CHARTS', show: true, opacity: 0.06 }, volume: { show: true } }", cid:'x11', over:{market:{baseAsset:'BTC',quoteAsset:'USDT',timeframe:'1m',source:'Binance',show:true,fontSize:16},watermark:{text:'AXON CHARTS',show:true,opacity:0.06,color:'#ffffff'},crosshair:{vertLine:{color:'#4ade80',style:'dashed'},horzLine:{color:'#4ade80',style:'dashed'}},volume:{show:true,heightPercent:0.2},series:{type:'candlestick',upColor:'#4ade80',downColor:'#f87171'}}, data:d2}
+];
+
+var html = '';
+for (var i = 0; i < items.length; i++) {
+  var it = items[i];
+  html += '<div class="card">'
+    + '<div class="card-hdr"><h3>' + it.title + '</h3><span class="tag ' + it.tag + '">' + it.label + '</span></div>'
+    + '<div class="desc">' + it.desc + '</div>'
+    + '<div class="codebar"><code>' + it.code + '</code><button class="cp" onclick="cp(this)">&#x2398;</button></div>'
+    + '<div class="chartbox"><div class="ch" id="' + it.cid + '"></div></div>'
+    + '</div>';
+}
+document.getElementById('cards').innerHTML = html;
+
+for (var i = 0; i < items.length; i++) {
+  var it = items[i];
+  mkChart(it.cid, it.over, it.data);
+}
+</script>
+
+</body>
+</html>
