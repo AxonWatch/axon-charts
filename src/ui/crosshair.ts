@@ -236,8 +236,8 @@ export class Crosshair {
 
     const headerText = parts.join(' | ');
 
-    this.overlayCtx.fillStyle = '#888';
-    this.overlayCtx.font = 'bold ' + (this.chart.options.market.fontSize || 20) + 'px ' + this.chart.options.layout.fontFamily;
+    this.overlayCtx.fillStyle = this.chart.options.layout.textColor ?? '#888';
+    this.overlayCtx.font = (this.chart.options.market.fontSize || 15) + 'px ' + this.chart.options.layout.fontFamily;
     this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
     this.overlayCtx.fillText(headerText, LAYOUT.TOOLTIP_MARGIN_X, LAYOUT.TOOLTIP_MARGIN_Y);
@@ -260,54 +260,38 @@ export class Crosshair {
 
     // 2. Determine color based on bar direction (HA direction for HA mode)
     const isUp = haBar ? (haBar.c >= haBar.o) : (bar.close >= bar.open);
-    const color = isUp ? (this.chart.options.series.upColor ?? '#26a69a') : (this.chart.options.series.downColor ?? '#ef5350');
+    const color = isUp ? (this.chart.options.series.upColor ?? '#10B981') : (this.chart.options.series.downColor ?? '#E11D48');
 
     // 3. Position: Top Left with small margin
     // Account for market header line if shown (one line of bold 14px text ≈ 18px)
-    const headerFontSize = (this.chart.options.market.fontSize || 20);
+    const headerFontSize = (this.chart.options.market.fontSize || 15);
     const headerOffset = this.chart.options.market?.show ? (headerFontSize + 4) : 0;
     const startX = LAYOUT.TOOLTIP_MARGIN_X;
     const startY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset;
 
-    this.overlayCtx.font = 'bold ' + this.chart.options.layout.fontSize + 'px ' + this.chart.options.layout.fontFamily;
+    this.overlayCtx.font = this.chart.options.layout.fontSize + 'px ' + this.chart.options.layout.fontFamily;
     this.overlayCtx.textBaseline = 'top';
     this.overlayCtx.textAlign = 'left';
 
     // Label styling
-    const labelColor = '#888';
-    // Use standard O/H/L/C labels even for HA mode (values are HA-computed)
-    
-    // Draw O: value
+    // Draw O:val H:val L:val C:val (labels in neutral color, values in direction color)
+    const pairs = [
+      { label: 'O', val: open },
+      { label: 'H', val: high },
+      { label: 'L', val: low },
+      { label: 'C', val: close }
+    ];
+    const gap = 6;
+    const labelColor = this.chart.options.layout.textColor ?? '#888';
     let currentX = startX;
-    this.overlayCtx.fillStyle = labelColor;
-    this.overlayCtx.fillText('O', currentX, startY);
-    currentX += LAYOUT.TOOLTIP_LABEL_SPACING;
-    this.overlayCtx.fillStyle = color;
-    this.overlayCtx.fillText(open, currentX, startY);
-    currentX += this.overlayCtx.measureText(open).width + LAYOUT.TOOLTIP_LABEL_SPACING;
-
-    // Draw H: value
-    this.overlayCtx.fillStyle = labelColor;
-    this.overlayCtx.fillText('H', currentX, startY);
-    currentX += LAYOUT.TOOLTIP_LABEL_SPACING;
-    this.overlayCtx.fillStyle = color;
-    this.overlayCtx.fillText(high, currentX, startY);
-    currentX += this.overlayCtx.measureText(high).width + LAYOUT.TOOLTIP_LABEL_SPACING;
-
-    // Draw L: value
-    this.overlayCtx.fillStyle = labelColor;
-    this.overlayCtx.fillText('L', currentX, startY);
-    currentX += LAYOUT.TOOLTIP_LABEL_SPACING;
-    this.overlayCtx.fillStyle = color;
-    this.overlayCtx.fillText(low, currentX, startY);
-    currentX += this.overlayCtx.measureText(low).width + LAYOUT.TOOLTIP_LABEL_SPACING;
-
-    // Draw C: value
-    this.overlayCtx.fillStyle = labelColor;
-    this.overlayCtx.fillText('C', currentX, startY);
-    currentX += LAYOUT.TOOLTIP_LABEL_SPACING;
-    this.overlayCtx.fillStyle = color;
-    this.overlayCtx.fillText(close, currentX, startY);
+    for (const p of pairs) {
+      this.overlayCtx.fillStyle = labelColor;
+      this.overlayCtx.fillText(p.label + ':', currentX, startY);
+      currentX += this.overlayCtx.measureText(p.label + ':').width;
+      this.overlayCtx.fillStyle = color;
+      this.overlayCtx.fillText(p.val, currentX, startY);
+      currentX += this.overlayCtx.measureText(p.val).width + gap;
+    }
 
   }
 

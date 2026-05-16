@@ -12,9 +12,9 @@
 
 ## Overview
 
-Axon Charts is a high-performance, minimal-dependency candlestick charting library designed for modern web applications and AI agents. Built with a focus on:
+Axon Charts is a minimal-dependency candlestick charting library for modern web applications and AI agents. Built with a focus on:
 
-- **Performance** -- <8ms first render, <0.2ms tick updates
+- **Performance** -- ~3ms first render, ~0.002ms tick updates, 24.9KB gzipped
 - **AI-First** -- Native LLM integration with structured context export
 - **Lightweight** -- Only 24.9KB gzipped (zero external dependencies)
 - **Customizable** -- 91 configuration options across 14 categories
@@ -25,7 +25,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 ### Core Charting
 - 6 series types: candlestick, bar, line, area, heiken-ashi, hollow
 - Volume histogram sub-pane with independent Y-axis (ScalePane architecture)
-- Real-time updates with sub-millisecond rendering
+- Real-time updates with updateLastBarFast()
 - Smooth pan and zoom (mouse + touch)
 - Multiple price scales (linear, logarithmic, percentage)
 - Crosshair with magnetic snapping, OHLC tooltip, full-date labels
@@ -53,7 +53,7 @@ Axon Charts is a high-performance, minimal-dependency candlestick charting libra
 - Drawing API for persistent annotations
 
 ### Developer Experience
-- Clean, intuitive API with 3 component APIs
+- 3 component APIs (priceScale, timeScale, crosshair)
 - Comprehensive configuration system (91 options across 14 categories)
 - Runtime option updates with validation
 - Zero external dependencies
@@ -89,7 +89,7 @@ npm install axon-charts
   <div id="chart"></div>
   <script>
     const chart = AxonCharts.createChart('#chart', {
-      layout: { background: '#1a1a1a', textColor: '#aaaaaa' },
+      layout: { background: '#1a1a1a', textColor: '#ffffff' },
       grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } }
     });
 
@@ -217,13 +217,19 @@ interface Bar {
 
 ## Performance
 
-| Metric | Target | Actual |
-|--------|--------|--------|
-| Minified bundle | <25 KB gzipped | **24.9 KB gzipped** |
-| First render (500 bars) | <16ms | ~8ms |
-| Live tick update | <2ms | **<0.2ms** |
-| Mousemove overlay | <1ms | <0.3ms |
-| Memory (5000 bars) | <12 MB | ~4 MB |
+| Measure | Result |
+|---------|--------|
+| First render (5000 bars, candle + volume) | ~4ms |
+| Live tick (tight loop) | ~0.001ms |
+| Live tick (async 50Hz) | ~0.13ms |
+| Full bar update (grid + axes) | ~0.03ms |
+| Crosshair draw | ~0.02ms |
+| Large dataset render (5000 bars) | ~1.4ms |
+| Series type render (500 bars) | ~0.3ms |
+| Bundle (gzipped) | 24.9KB |
+| Memory (5000 bars) | <0.1MB |
+| Bundle (gzipped) | 24.9KB |
+| Memory (5000 bars) | \<0.1MB |
 
 ## Browser Support
 

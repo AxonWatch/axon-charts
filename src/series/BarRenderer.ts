@@ -18,7 +18,7 @@ export class BarRenderer implements SeriesRenderer {
     const cx = (index - startIdx) * barWidth + barWidth / 2;
     const yH = priceToY(bar.high, chart.state), yL = priceToY(bar.low, chart.state);
     const yO = priceToY(bar.open, chart.state), yC = priceToY(bar.close, chart.state);
-    const col = (bar.close >= bar.open) ? (chart.options.series.upColor ?? '#22c55e') : (chart.options.series.downColor ?? '#ef4444');
+    const col = (bar.close >= bar.open) ? (chart.options.series.upColor ?? '#10B981') : (chart.options.series.downColor ?? '#E11D48');
     ctx.strokeStyle = col;
     ctx.beginPath(); ctx.moveTo(cx, yH); ctx.lineTo(cx, yL); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx - 4, yO); ctx.lineTo(cx, yO); ctx.stroke();

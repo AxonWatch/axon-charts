@@ -64,7 +64,7 @@ All notable changes to this project will be documented in this file.
 - Core candlestick rendering engine with dual-canvas architecture
 - Smart resize behavior (preserves center or anchors to latest based on autoScroll)
 - Crosshair with magnetic snapping, OHLC tooltip, and axis labels
-- Real-time updates with sub-millisecond tick rendering (updateLastBarFast)
+- Real-time updates with updateLastBarFast()
 - Streaming support (docs/STREAMING.md)
 - Event callbacks (onCrosshairMove, onBarClick, onVisibleRangeChange)
 - Query methods (getData, getBar, getBarAtTime, getBars, getBarsInRange)

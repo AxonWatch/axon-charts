@@ -74,7 +74,7 @@ High-frequency tick update (10-1000 ticks/sec). Uses lightweight path:
 - Skips full buffer re-render — only re-draws the last candle in buffer
 - Skips grid/axis redraw unless price range expanded beyond 1.5% hysteresis
 - Falls back to full render on new candle (time advanced)
-- **~10-20x faster** than `updateLastBar()` for rapid stream updates. See `docs/STREAMING.md`.
+- Uses a lighter render path than `updateLastBar()`. See `STREAMING.md` for details.
 
 ```typescript
 chart.render(): void
@@ -476,14 +476,14 @@ interface ChartOptions {
     width?: number | 'auto';          // default: 'auto'
     height?: number | 'auto';         // default: 'auto'
     background?: string;              // default: '#1a1a1a'
-    textColor?: string;               // default: '#aaaaaa'
+    textColor?: string;               // default: '#ffffff'
     fontSize?: number;                // default: 12 (1-72)
     fontFamily?: string;              // default: 'system-ui'
     padding?: { top?: number;         // default: 40
                 right?: number;       // default: 60
                 bottom?: number;      // default: 35
                 left?: number };      // default: 10
-    borderVisible?: boolean;          // default: true (axis border lines)
+    borderVisible?: boolean;          // default: false (axis border lines)
   };
 
   // === Grid ===
@@ -497,8 +497,8 @@ interface ChartOptions {
   series?: {
     type?: 'candlestick' | 'line' | 'area' | 'bar' | 'heiken-ashi' | 'hollow';
                                        // default: 'candlestick'
-    upColor?: string;                  // default: '#22c55e'
-    downColor?: string;                // default: '#ef4444'
+    upColor?: string;                  // default: '#10B981'
+    downColor?: string;                // default: '#E11D48'
     lineColor?: string;                // default: '#1E90FF' (line/area only)
     showMarkers?: boolean;             // default: false (line/area dots)
     showLatestPriceMarker?: boolean;   // default: true (latest dot)
@@ -513,7 +513,7 @@ interface ChartOptions {
     currentPrice?: {
       show?: boolean;                  // default: true
       showLine?: boolean;              // default: true
-      showCountdown?: boolean;         // default: true
+      showCountdown?: boolean;         // default: false
       countdownColor?: string;         // default: 'rgba(255,255,255,0.8)'
       upColor?: string;                // fallback: series.upColor
       downColor?: string;              // fallback: series.downColor
@@ -599,8 +599,8 @@ interface ChartOptions {
   // === Volume Sub-Pane ===
   volume?: {
     show?: boolean;                    // default: false
-    upColor?: string;                  // default: '#22c55e'
-    downColor?: string;                // default: '#ef4444'
+    upColor?: string;                  // default: '#10B981'
+    downColor?: string;                // default: '#E11D48'
     heightPercent?: number;            // default: 0.2 (0.05-0.5)
     precision?: number | null;         // default: null (auto-detect)
     minMove?: number | null;           // default: null (derive precision)

@@ -19,11 +19,11 @@ const DEFAULT_OPTIONS = {
     width: 'auto',
     height: 'auto',
     background: '#1a1a1a',
-    textColor: '#aaaaaa',
+    textColor: '#ffffff',
     fontSize: 12,
     fontFamily: 'system-ui',
     padding: { top: 40, right: 60, bottom: 35, left: 10 },
-    borderVisible: true
+    borderVisible: false
   },
   grid: {
     show: true,
@@ -32,8 +32,8 @@ const DEFAULT_OPTIONS = {
   },
   series: {
     type: 'candlestick',
-    upColor: '#22c55e',
-    downColor: '#ef4444',
+    upColor: '#10B981',
+    downColor: '#E11D48',
     lineColor: '#1E90FF',
     showMarkers: false,
     showLatestPriceMarker: true,
@@ -45,7 +45,7 @@ const DEFAULT_OPTIONS = {
     currentPrice: {
       show: true,
       showLine: true,
-      showCountdown: true,
+      showCountdown: false,
       countdownColor: 'rgba(255, 255, 255, 0.8)',
       lineStyle: 'dashed'
     },
@@ -93,7 +93,7 @@ const DEFAULT_OPTIONS = {
     timeframe: '1m',
     source: '',
     show: false,
-    fontSize: 20
+    fontSize: 15
   },
   watermark: {
     text: '',
@@ -108,8 +108,8 @@ const DEFAULT_OPTIONS = {
   },
   volume: {
     show: false,
-    upColor: '#22c55e',
-    downColor: '#ef4444',
+    upColor: '#10B981',
+    downColor: '#E11D48',
     heightPercent: 0.2
   }
 };
@@ -867,6 +867,7 @@ export class Chart {
           normalizedPartial.layout.textColor !== undefined ||
           normalizedPartial.layout.fontSize !== undefined ||
           normalizedPartial.layout.fontFamily !== undefined) {
+        this.priceFormatter.resetMeasurement();
         needsRender = true;
       }
       if (normalizedPartial.layout.borderVisible !== undefined) {

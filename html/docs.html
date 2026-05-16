@@ -845,7 +845,7 @@
     <ul class="nav-links">
       <li><a href="examples.html">Examples</a></li>
       <li><a href="#api-methods">API</a></li>
-      <li><a href="https://github.com" target="_blank">GitHub</a></li>
+      <li><a href="https://github.com/AxonWatch/axon-charts" target="_blank">GitHub</a></li>
       <li><a href="demo.html" class="highlight">Settings Demo</a></li>
     </ul>
   </nav>
@@ -864,7 +864,7 @@
         </a>
 
         <h2>What is Axon Charts?</h2>
-        <p>Axon Charts is a high-performance, canvas-based financial charting library built from the ground up for AI agents and developers. It provides:</p>
+        <p>Axon Charts is a canvas-based financial charting library built from the ground up for AI agents and developers. It provides:</p>
         <ul>
           <li><strong>LLM-First Design:</strong> Every feature is accessible via simple, predictable APIs that AI agents can discover and use</li>
           <li><strong>Lightning Fast:</strong> Handles 5000+ candles at 60fps with optimized draw calls</li>
@@ -1096,7 +1096,7 @@ chart.setOptions({
   width: 'auto',    // reads container.clientWidth
   height: 'auto',   // reads container.clientHeight
   background: '#1a1a1a',
-  textColor: '#aaaaaa',
+  textColor: '#ffffff',
   fontSize: 12,
   fontFamily: 'system-ui'
 }</code></pre>
@@ -1152,8 +1152,8 @@ chart.setOptions({ grid: { vertLines: { color: '#333' } } });  // recolor</code>
         <h2>Up / Down Colors</h2>
         <p>Controls the fill color of bullish and bearish candles. Also affects the current price line color.</p>
         <pre><code>series: {
-  upColor: '#22c55e',   // green candle body
-  downColor: '#ef4444'  // red candle body
+  upColor: '#10B981',   // green candle body
+  downColor: '#E11D48'  // red candle body
 }</code></pre>
         <pre><code>chart.setOptions({ series: { upColor: '#00ff00', downColor: '#ff0000' } });</code></pre>
       </section>
@@ -1208,7 +1208,7 @@ chart.setOptions({ grid: { vertLines: { color: '#333' } } });  // recolor</code>
   currentPrice: {
     show: true,              // master toggle for line + label
     showLine: true,          // show/hide only the dashed line
-    showCountdown: true,     // candle-close countdown timer
+    showCountdown: false,    // candle-close countdown timer (default: false)
     countdownColor: 'rgba(255, 255, 255, 0.8)',
     upColor: null,           // bull line color — falls back to series.upColor
     downColor: null,         // bear line color — falls back to series.downColor
@@ -1426,8 +1426,8 @@ menu: {
         <p>The volume histogram displays below the main chart with an independent Y-axis, draggable separator, and zoom/pan support.</p>
         <pre><code>volume: {
   show: false,               // toggle visibility
-  upColor: '#22c55e',        // bullish volume color
-  downColor: '#ef4444',      // bearish volume color
+  upColor: '#10B981',        // bullish volume color
+  downColor: '#E11D48',      // bearish volume color
   heightPercent: 0.2,        // 20% of total chart height (0.05-0.5)
   precision: null,           // decimal places (null = auto-detect)
   minMove: null              // min increment (derives precision)
@@ -1465,7 +1465,7 @@ menu: {
   quoteAsset: 'USDT',        // quote asset name
   timeframe: '1m',           // chart timeframe
   source: '',                // exchange / source name
-  fontSize: 20               // header font size in px (default: 20)
+  fontSize: 15               // header font size in px (default: 15)
 }</code></pre>
         <p><strong>Format:</strong> <code>BTC/USDT | 1m | Binance</code></p>
         <p>The header text is rendered at the configured <code>fontSize</code> (default <strong>20px</strong>). The tooltip below it is offset by <code>fontSize + 4</code> pixels so they don't overlap.</p>
@@ -1791,9 +1791,10 @@ chart.updateLastBarFast(currentCandle);
     width?: number | 'auto';      // default: 'auto'
     height?: number | 'auto';     // default: 'auto'
     background?: string;          // default: '#1a1a1a'
-    textColor?: string;           // default: '#aaaaaa'
+    textColor?: string;           // default: '#ffffff'
     fontSize?: number;            // default: 12
     fontFamily?: string;          // default: 'system-ui'
+    borderVisible?: boolean;      // default: false
     padding?: {
       top?: number;               // default: 40
       right?: number;             // default: 60
@@ -1807,8 +1808,13 @@ chart.updateLastBarFast(currentCandle);
     horzLines?: { show?, color?, width? };
   };
   series?: {
-    upColor?: string;             // default: '#22c55e'
-    downColor?: string;           // default: '#ef4444'
+    type?: 'candlestick' | 'line' | 'area' | 'bar' | 'heiken-ashi' | 'hollow';  // default: 'candlestick'
+    upColor?: string;             // default: '#10B981'
+    downColor?: string;           // default: '#E11D48'
+    lineColor?: string;           // default: '#1E90FF' (line/area only)
+    showMarkers?: boolean;        // default: false (dot at every close)
+    showLatestPriceMarker?: boolean;  // default: true (highlighted latest dot)
+    showLatestPriceAnimation?: boolean; // default: true (pulse on price change)
   };
   priceScale?: {
     mode?: 'linear' | 'logarithmic' | 'percentage';  // default: 'linear'
@@ -1817,7 +1823,7 @@ chart.updateLastBarFast(currentCandle);
     currentPrice?: {
       show?: boolean;                    // default: true
       showLine?: boolean;                // default: true
-      showCountdown?: boolean;          // default: true
+      showCountdown?: boolean;          // default: false
       countdownColor?: string;          // default: 'rgba(255, 255, 255, 0.8)'
       upColor?: string;                 // default: null (follows series.upColor)
       downColor?: string;               // default: null (follows series.downColor)
@@ -1868,7 +1874,7 @@ chart.updateLastBarFast(currentCandle);
     quoteAsset?: string;          // default: 'USDT'
     timeframe?: string;           // default: '1m'
     source?: string;              // default: ''
-    fontSize?: number;            // default: 20
+    fontSize?: number;            // default: 15
   };
   watermark?: {
     show?: boolean;               // default: false
@@ -1880,8 +1886,8 @@ chart.updateLastBarFast(currentCandle);
   };
   volume?: {
     show?: boolean;               // default: false
-    upColor?: string;             // default: '#22c55e'
-    downColor?: string;           // default: '#ef4444'
+    upColor?: string;             // default: '#10B981'
+    downColor?: string;           // default: '#E11D48'
     heightPercent?: number;       // default: 0.2
     precision?: number | null;    // default: null (auto-detect)
     minMove?: number | null;      // default: null
@@ -1953,12 +1959,12 @@ chart.updateLastBarFast(currentCandle);
           <tr>
             <td>Minified bundle</td>
             <td>&lt;25 KB gzipped</td>
-            <td><strong>22.6 KB gzipped</strong> ✓</td>
+            <td><strong>24.9 KB gzipped</strong> ✓</td>
           </tr>
           <tr>
             <td>First render (500 bars)</td>
             <td>&lt;16ms</td>
-            <td><strong>~8ms</strong> ✓</td>
+            <td><strong>3.4ms</strong> ✓</td>
           </tr>
           <tr>
             <td>Live tick update</td>
@@ -1973,7 +1979,7 @@ chart.updateLastBarFast(currentCandle);
           <tr>
             <td>Memory (5000 bars)</td>
             <td>&lt;12 MB</td>
-            <td><strong>~4 MB</strong> ✓</td>
+            <td><strong>minimal</strong> ✓</td>
           </tr>
         </table>
 

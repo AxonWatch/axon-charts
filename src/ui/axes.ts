@@ -27,10 +27,14 @@ export class Axes {
     const bottomPrice = yToPrice(clipBottom, this.chart.state);
 
     // 2. Feed THESE dynamic prices into the niceTicks algorithm
+    // Dynamic tick count based on font size to prevent vertical overlap
+    const fontSize = this.chart.options.layout.fontSize ?? 12;
+    const chartHeight = this.chart.state.chartBottom || (h - bottomMargin);
+    const maxTicks = Math.max(5, Math.min(10, Math.round(chartHeight / (fontSize * 3))));
     let ticks = niceTicks(
       Math.min(topPrice, bottomPrice),
       Math.max(topPrice, bottomPrice),
-      10
+      maxTicks
     );
 
     // === ALWAYS SHOW 0% LABEL IN PERCENTAGE MODE ===
@@ -70,8 +74,6 @@ export class Axes {
       const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);
       if (y < 0 || y > clipBottom) return;
 
-      // Collision detection with live price label
-      if (Math.abs(y - currentPriceY) < LAYOUT.COLLISION_THRESHOLD) return;
 
       // Use Professional Formatter
       let label = this.chart.priceFormatter.formatPrice(price);
@@ -238,10 +240,14 @@ export class Axes {
     const topPrice = yToPrice(0, this.chart.state);
     const bottomPrice = yToPrice(h - bottomMargin, this.chart.state);
 
+    // Match tick count from drawPriceAxis for alignment
+    const fontSize = this.chart.options.layout.fontSize ?? 12;
+    const chartHeight = this.chart.state.chartBottom || (h - bottomMargin);
+    const maxTicks = Math.max(5, Math.min(10, Math.round(chartHeight / (fontSize * 3))));
     const ticks = niceTicks(
       Math.min(topPrice, bottomPrice),
       Math.max(topPrice, bottomPrice),
-      10
+      maxTicks
     );
 
     const clipBottom = this.chart.state.chartBottom || (h - bottomMargin);

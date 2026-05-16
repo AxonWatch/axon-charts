@@ -62,8 +62,8 @@ export class HollowRenderer implements SeriesRenderer {
     // ── Dimension 2: Color (green vs red) ──
     // Based on close vs previous close — tells trend direction.
     let col: string;
-    const upColor = chart.options.series.upColor ?? '#22c55e';
-    const downColor = chart.options.series.downColor ?? '#ef4444';
+    const upColor = chart.options.series.upColor ?? '#10B981';
+    const downColor = chart.options.series.downColor ?? '#E11D48';
 
     if (index > 0) {
       const prevBar = data[index - 1];
@@ -107,7 +107,11 @@ export class HollowRenderer implements SeriesRenderer {
       ctx.lineTo(bl + bw, yC);
       ctx.stroke();
     } else if (isHollow) {
-      ctx.strokeRect(bl, bodyY, bw, bodyH);
+      if (bw > 2 && bodyH > 2) {
+        ctx.strokeRect(bl + 0.5, bodyY + 0.5, bw - 1, bodyH - 1);
+      } else {
+        ctx.strokeRect(bl, bodyY, bw, bodyH);
+      }
     } else {
       ctx.fillStyle = col;
       ctx.fillRect(bl, bodyY, bw, bodyH);

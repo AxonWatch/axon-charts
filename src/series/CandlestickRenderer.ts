@@ -24,7 +24,7 @@ export class CandlestickRenderer implements SeriesRenderer {
     const yH = priceToY(bar.high, chart.state), yL = priceToY(bar.low, chart.state);
     const yO = priceToY(bar.open, chart.state), yC = priceToY(bar.close, chart.state);
     const isUp = bar.close >= bar.open;
-    const col = isUp ? (chart.options.series.upColor ?? '#22c55e') : (chart.options.series.downColor ?? '#ef4444');
+    const col = isUp ? (chart.options.series.upColor ?? '#10B981') : (chart.options.series.downColor ?? '#E11D48');
     ctx.fillStyle = col; ctx.strokeStyle = col;
     const wx = Math.floor(centerX) + 0.5;
     ctx.beginPath(); ctx.moveTo(wx, yH); ctx.lineTo(wx, yL); ctx.stroke();
