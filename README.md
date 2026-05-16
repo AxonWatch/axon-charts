@@ -7,7 +7,7 @@
 </p>
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-1.1.1-green.svg)](package.json)
 [![Bundle Size](https://img.shields.io/badge/bundle%20size-24.9%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
