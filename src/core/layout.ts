@@ -15,7 +15,6 @@ export const LAYOUT = {
   TIME_LABEL_Y: 23, // Vertical offset for time labels
   
   // === Interaction ===
-  COLLISION_THRESHOLD: 25,
   
   // === Behavior & Scaling ===
   ZOOM_FACTOR_IN: 1.15,
@@ -40,10 +39,9 @@ export const LAYOUT = {
   DEFAULT_TIME_INTERVAL: 60000,
   DEFAULT_MAX_BARS: 5000,
   DEFAULT_PRICE_RANGE: { min: 0, max: 100 },
-  CURRENT_PRICE_LABEL_ALPHA: 0.2,
+  CURRENT_PRICE_LABEL_ALPHA: 1.0,
   TOOLTIP_MARGIN_X: 10,
   TOOLTIP_MARGIN_Y: 15,
-  TOOLTIP_LABEL_SPACING: 15,
   OFFSCREEN_PRICE_FALLBACK: -1000
 } as const;
 

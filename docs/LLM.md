@@ -318,4 +318,4 @@ EXPORT:
 - Event callbacks fire on every relevant interaction — keep handlers lightweight
 - `toDataURL()` is the most expensive operation (canvas → base64) — debounce to every 500ms
 - `getBars()` returns a new array each call — internal array never exposed
-- `updateLastBarFast()` is ~10-20x faster than `updateLastBar()` for high-frequency streams
+- `updateLastBarFast()` uses a lighter render path than `updateLastBar()` for high-frequency streams

@@ -637,7 +637,7 @@
   <!-- Navigation -->
   <nav>
     <div class="logo">
-      <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">
+      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">
       <span style="vertical-align: middle;">Axon Charts</span>
     </div>
     <button class="mobile-menu-button" onclick="toggleMobileMenu()" aria-label="Toggle menu">
@@ -648,7 +648,7 @@
       <li><a href="#examples">Examples</a></li>
       <li><a href="#api">API</a></li>
       <li><a href="#demo">Live Demo</a></li>
-      <li><a href="html/docs.html">Docs</a></li>
+      <li><a href="docs.html">Docs</a></li>
       <li><a href="https://github.com/AxonWatch/axon-charts" class="mobile-cta">
         <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width: 18px; height: 18px; fill: currentColor; vertical-align: middle; margin-right: 4px;" aria-label="GitHub">
           <title>GitHub</title>
@@ -671,7 +671,7 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="hero-logo">
-      <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts Logo">
+      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo">
 
     </div>
     <h1>Axon Charts</h1>
@@ -687,7 +687,7 @@
 
     <div class="stats">
       <div class="stat">
-        <div class="stat-value">21.8</div>
+        <div class="stat-value">24.9</div>
         <div class="stat-label">KB Gzipped</div>
       </div>
       <div class="stat">
@@ -761,7 +761,7 @@
     </div>
 
     <div style="text-align: center;">
-      <a href="html/examples.html" class="cta-button" target="_blank">
+      <a href="examples.html" class="cta-button" target="_blank">
         Browse All Chart Examples <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i>
       </a>
     </div>
@@ -822,11 +822,11 @@
           <h2><i data-lucide="flask-conical" style="vertical-align: middle; margin-right: 8px;"></i>Test Suite</h2>
           <p>Build your AI co-pilot config here</p>
         </div>
-        <a href="html/demo.html" class="cta-button" target="_blank">Open in New Tab <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i></a>
+        <a href="demo.html" class="cta-button" target="_blank">Open in New Tab <i data-lucide="chevron-right" style="vertical-align: middle; width: 16px; height: 16px;"></i></a>
       </div>
 
       <!-- Embedded iframe with the test page -->
-      <iframe src="html/demo.html"
+      <iframe src="demo.html"
               style="width: 100%; height: 600px; border: none;"
               title="Axon Charts Interactive Demo">
       </iframe>
@@ -1119,7 +1119,7 @@
   </style>
 
 
-<script src="/dist/chart.js"></script>
+<script src="https://unpkg.com/axon-charts/dist/chart.js"></script>
 <script>
 // ---- Live chart examples ----
 (function() {
@@ -1144,7 +1144,7 @@
   // Candlestick + Volume
   if (document.getElementById('chart-live-candle')) {
     var cc = AxonCharts.createChart('#chart-live-candle', {
-      layout: { background: '#1a1a1a', textColor: '#999', fontSize: 11 },
+      layout: { background: '#1a1a1a', textColor: '#ffffff', fontSize: 11 },
       grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
       volume: { show: true, heightPercent: 0.2, upColor: '#4ade80', downColor: '#f87171' },
       timeScale: { barSpacing: 8, rightOffset: 40 },

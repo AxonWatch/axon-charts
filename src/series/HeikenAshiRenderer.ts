@@ -30,7 +30,7 @@ export class HeikenAshiRenderer implements SeriesRenderer {
       const yH = priceToY(ha.h, chart.state), yL = priceToY(ha.l, chart.state);
       const yO = priceToY(ha.o, chart.state), yC = priceToY(ha.c, chart.state);
       const isUp = ha.c >= ha.o;
-      const col = isUp ? (chart.options.series.upColor ?? '#22c55e') : (chart.options.series.downColor ?? '#ef4444');
+      const col = isUp ? (chart.options.series.upColor ?? '#10B981') : (chart.options.series.downColor ?? '#E11D48');
       ctx.fillStyle = col; ctx.strokeStyle = col;
       const wx = Math.floor(cx) + 0.5;
       ctx.beginPath(); ctx.moveTo(wx, yH); ctx.lineTo(wx, yL); ctx.stroke();
