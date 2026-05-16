@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2026-05-16
+
+### Added
+- `layout.borderVisible` option (default: false) — controls axis border lines and sub-pane vertical borders
+- Sub-pane vertical axis border matching main chart axis border style
+- Independent RAF animation loop for latest price marker pulse (works without countdown timer)
+- Bottom gap (`bottomGap`) for sub-pane content areas preventing edge-to-edge rendering
+
+### Changed
+- Pulse animation eased from linear to ease-out cubic — front-loaded shrinkage, smoother feel
+- Pulse duration: 500ms → 800ms with early RAF stop at eased < 0.005
+- Market header default font size: 20px → 15px
+- Market header, OHLC tooltip, and sub-pane tooltip fonts: bold → regular weight
+- `showCountdown` default: `true` → `false`
+- `layout.textColor` default: `#aaaaaa` → `#ffffff`
+- `series.upColor` default: `#22c55e` → `#10B981`
+- `series.downColor` default: `#ef4444` → `#E11D48`
+- All docs defaults updated to match source code
+
+### Fixed
+- Hollow candle body outline anti-aliasing mismatch with wicks — added half-pixel offset for crisp rendering
+- Axis border lines crisp rendering — added half-pixel offset (matches wick technique)
+- Sub-pane Y-axis tick Y positions now use `areaTop` instead of hardcoded `subPaneTop + 14` — fixes drift when `topGap ≠ 14`
+- ScalePane `renderAxisLabel()` coordinate system now consistent with `render()` gap calculation
+
 ## [1.1.0] - 2026-05-14
 
 ### Added
