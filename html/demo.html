@@ -713,6 +713,7 @@
       { id: 'layout.textColor', label: 'Text Color', category: 'layout', status: 'functional', default: '#aaaaaa', type: 'color' , api: 'window.chart.setOptions({ layout: { textColor: value } })' },
       { id: 'layout.fontSize', label: 'Font Size (px)', category: 'layout', status: 'functional', default: 12, type: 'number', min: 8, max: 24 , api: 'window.chart.setOptions({ layout: { fontSize: value } })' },
       { id: 'layout.fontFamily', label: 'Font Family', category: 'layout', status: 'functional', default: 'system-ui', type: 'select', options: ['system-ui', 'Arial', 'monospace'] , api: 'window.chart.setOptions({ layout: { fontFamily: value } })' },
+      { id: 'layout.borderVisible', label: 'Border Visible', category: 'layout', status: 'functional', default: false, type: 'checkbox', note: 'Show axis border lines and sub-pane vertical borders', api: "window.chart.setOptions({ layout: { borderVisible: value } })" },
       { id: 'layout.padding.top', label: 'Padding Top', category: 'layout', status: 'functional', default: 40, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { top: value } } })' },
       { id: 'layout.padding.right', label: 'Padding Right', category: 'layout', status: 'functional', default: 60, type: 'number', min: 0, max: 200 , api: 'window.chart.setOptions({ layout: { padding: { right: value } } })' },
       { id: 'layout.padding.bottom', label: 'Padding Bottom', category: 'layout', status: 'functional', default: 35, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { bottom: value } } })' },
@@ -814,7 +815,7 @@
 
     // === CATEGORIES ===
     const CATEGORIES = {
-      layout: { title: '1. Layout', desc: 'Chart dimensions and appearance (10 options)', docs: 'docs/SETTINGS.md#layout' },
+      layout: { title: '1. Layout', desc: 'Chart dimensions and appearance (11 options)', docs: 'docs/SETTINGS.md#layout' },
       grid: { title: '2. Grid', desc: 'Background grid lines (7 options)', docs: 'docs/SETTINGS.md#grid' },
       series: { title: '3. Series', desc: 'Visual style, colors and markers (7 options)', docs: 'docs/SETTINGS.md#series' },
       priceScale: { title: '4. Price Scale', desc: 'Y-axis behavior and formatting (10 options)', docs: 'docs/SETTINGS.md#price-scale' },
@@ -835,18 +836,18 @@
 
     // === INIT CHART ===
     window.chart = AxonCharts.createChart('#chart-box', {
-      layout: { background: '#1a1a1a', textColor: '#aaaaaa', fontSize: 12, fontFamily: 'system-ui' },
+      layout: { background: '#1a1a1a', textColor: '#ffffff', fontSize: 12, fontFamily: 'system-ui', borderVisible: false },
       grid: { show: true, vertLines: { show: true, color: '#2a2a2a', width: 1 }, horzLines: { show: true, color: '#2a2a2a', width: 1 } },
-      priceScale: { mode: 'linear', scaleMargins: { top: 0.1, bottom: 0.1 }, priceFormat: { type: 'price' }, currentPrice: { showCountdown: true } },
+      priceScale: { mode: 'linear', scaleMargins: { top: 0.1, bottom: 0.1 }, priceFormat: { type: 'price' }, currentPrice: { showCountdown: false } },
       timeScale: { rightOffset: 80, barSpacing: 11, timeVisible: true, secondsVisible: false, showFullDate: true, showDayOfWeek: true, dateFormat: 'MMM dd, yyyy' },
       crosshair: { mode: 'magnet', showLabels: true, showTooltip: true, vertLine: { color: '#555555', width: 1 }, horzLine: { color: '#555555', width: 1 } },
       menu: { enabled: true },
       behavior: { dragToZoom: true, scrollToZoom: true, pinchToZoom: true, panOnMouseDrag: true, dragPriceScale: true, autoScroll: true },
       data: { maxBars: 5000, autoCleanup: true },
-      market: { baseAsset: 'DEMO', quoteAsset: 'USD', timeframe: '1m', source: 'Demo', show: true },
+      market: { baseAsset: 'DEMO', quoteAsset: 'USD', timeframe: '1m', source: 'Demo', show: true, fontSize: 15 },
       watermark: { text: '', color: '#ffffff', fontSize: null, opacity: 0.07, show: false, rotate: false },
-      series: { upColor: '#22c55e', downColor: '#ef4444', lineColor: '#1E90FF', showMarkers: false, showLatestPriceMarker: true, showLatestPriceAnimation: true },
-      volume: { show: false, upColor: '#22c55e', downColor: '#ef4444', heightPercent: 0.2, precision: null, minMove: null }
+      series: { upColor: '#10B981', downColor: '#E11D48', lineColor: '#1E90FF', showMarkers: false, showLatestPriceMarker: true, showLatestPriceAnimation: true },
+      volume: { show: false, upColor: '#10B981', downColor: '#E11D48', heightPercent: 0.2, precision: null, minMove: null }
     });
 
     // Dummy data generator (includes volume for sub-pane support)

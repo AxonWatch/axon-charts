@@ -40,8 +40,8 @@ export class VolumeSubPane extends ScalePane {
     const { data, barWidth, w, axisWidth } = chart.state;
     const options = this.getOptions();
     const chartAreaWidth = w - axisWidth;
-    const volUpColor = options.upColor || '#22c55e';
-    const volDownColor = options.downColor || '#ef4444';
+    const volUpColor = options.upColor || '#10B981';
+    const volDownColor = options.downColor || '#E11D48';
 
     for (let i = firstVisibleIdx; i < endIdx; i++) {
       const bar = data[i];
@@ -86,7 +86,7 @@ export class VolumeSubPane extends ScalePane {
   getTooltipColor(bar: Bar): string {
     const isUp = bar.close >= bar.open;
     const options = this.getOptions();
-    return isUp ? (options.upColor || '#22c55e') : (options.downColor || '#ef4444');
+    return isUp ? (options.upColor || '#10B981') : (options.downColor || '#E11D48');
   }
 
   getTooltipValue(bar: Bar): number | null {

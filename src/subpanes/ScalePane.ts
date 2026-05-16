@@ -137,6 +137,18 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
+    // Vertical axis border (matching main chart's axis border style)
+    if (chart.options.layout.borderVisible !== false) {
+      const borderColor = chart.options.layout.textColor ?? '#aaa';
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(chartAreaWidth + 0.5, subPaneTop);
+      ctx.lineTo(chartAreaWidth + 0.5, subPaneTop + subPaneHeight);
+      ctx.stroke();
+    }
+
     // Re-draw vertical grid lines through sub-pane — time-anchored, full width
     // Same time-boundary logic as the main chart grid for consistent alignment.
     const vertOpts = chart.options.grid.vertLines || {};
@@ -195,13 +207,14 @@ export abstract class ScalePane implements SubPane {
 
     // Top gap for visual comfort
     const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
-    const areaHeight = subPaneHeight - 2 - topGap;
+    const bottomGap = Math.max(4, Math.round(subPaneHeight * 0.04));
+    const areaHeight = subPaneHeight - topGap - bottomGap;
     const areaTop = subPaneTop + topGap;
 
     // Draw the concrete content
     this.renderContent(ctx, chart, subPaneTop, subPaneHeight, firstVisibleIdx, endIdx, visibleMin, visibleRange, areaHeight, areaTop);
 
-    // Draw axis labels
+    // Draw axis labels (aligned with content area bounds)
     ctx.fillStyle = chart.options.layout.textColor || '#aaa';
     ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textAlign = 'right';
@@ -215,7 +228,7 @@ export abstract class ScalePane implements SubPane {
       { ratio: 0,    label: this.formatValue(visibleMin) }
     ];
     for (const tick of ticks) {
-      const tickY = subPaneTop + 14 + (areaHeight * (1 - tick.ratio));
+      const tickY = areaTop + (areaHeight * (1 - tick.ratio));
       ctx.fillText(tick.label, w - labelPadding, tickY);
     }
     ctx.textAlign = 'left';
@@ -262,7 +275,7 @@ export abstract class ScalePane implements SubPane {
     const rawValue = this.getTooltipValue(bar);
     const value = rawValue != null ? this.formatValue(rawValue) : '0';
 
-    ctx.font = 'bold ' + chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
+    ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
 
@@ -283,7 +296,8 @@ export abstract class ScalePane implements SubPane {
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
     const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
-    const areaHeight = subPaneHeight - 2 - topGap;
+    const bottomGap = Math.max(4, Math.round(subPaneHeight * 0.04));
+    const areaHeight = subPaneHeight - topGap - bottomGap;
     const areaTop = subPaneTop + topGap;
 
     const ratio = 1 - (mouseY - areaTop) / areaHeight;

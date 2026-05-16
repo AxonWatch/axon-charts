@@ -170,8 +170,8 @@ export interface ChartOptions {
   // === Volume Sub-Pane ===
   volume?: {
     show?: boolean;            // default: false
-    upColor?: string;          // default: '#22c55e'
-    downColor?: string;        // default: '#ef4444'
+    upColor?: string;          // default: '#10B981'
+    downColor?: string;        // default: '#E11D48'
     /** Percentage of total chart height (0.1-0.5). Default: 0.2 (20%) */
     heightPercent?: number;
     /** Number of decimal places for volume formatting. If null, auto-detects from data. */

@@ -13,7 +13,7 @@ const baseOptions = {
   legalComments: 'none',
   banner: {
     js: [
-      '// Axon Charts v1.0.0',
+      '// Axon Charts v1.1.0',
       '// Licensed under Apache-2.0',
       '// https://github.com/axon-charts/axon-charts'
     ].join('\n')

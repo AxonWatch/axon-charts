@@ -25,6 +25,7 @@ export class Renderer {
   private seriesRenderer!: SeriesRenderer;
   private latestClose: number | null = null;
   private lastChangeTime: number = 0;
+  private _pulseRafId: number | null = null;
 
   constructor(chart: IChart) {
     this.chart = chart;
@@ -188,14 +189,14 @@ export class Renderer {
 
       // Vertical: chart area ↔ price axis (full height)
       ctx.beginPath();
-      ctx.moveTo(axisX, 0);
-      ctx.lineTo(axisX, h - bottomMargin);
+      ctx.moveTo(axisX + 0.5, 0);
+      ctx.lineTo(axisX + 0.5, h - bottomMargin);
       ctx.stroke();
 
       // Horizontal: chart area ↔ time axis (full width)
       ctx.beginPath();
-      ctx.moveTo(0, h - bottomMargin);
-      ctx.lineTo(axisX, h - bottomMargin);
+      ctx.moveTo(0, h - bottomMargin + 0.5);
+      ctx.lineTo(axisX, h - bottomMargin + 0.5);
       ctx.stroke();
     }
 
@@ -341,8 +342,8 @@ export class Renderer {
       if (haArr && haArr.length > 0) {
         const ha = haArr[haArr.length - 1];
         const haColor = (ha.c >= ha.o)
-          ? (cp?.upColor || this.chart.options.series.upColor || '#22c55e')
-          : (cp?.downColor || this.chart.options.series.downColor || '#ef4444');
+          ? (cp?.upColor || this.chart.options.series.upColor || '#10B981')
+          : (cp?.downColor || this.chart.options.series.downColor || '#E11D48');
         this.drawHaPriceLabel(ctx, ha.c, lastBar.close, haColor);
       }
     }
@@ -543,6 +544,21 @@ export class Renderer {
     ctx.stroke();
   }
 
+  private _startPulseLoop(mainCtx: CanvasRenderingContext2D): void {
+    if (this._pulseRafId !== null) return;
+    const animate = () => {
+      const age = Date.now() - this.lastChangeTime;
+      const decay = Math.max(0, 1 - age / 800);
+      if (age >= 800 || (decay * decay * decay) < 0.005) {
+        this._pulseRafId = null;
+        return;
+      }
+      this.drawViewport(mainCtx);
+      this._pulseRafId = requestAnimationFrame(animate);
+    };
+    this._pulseRafId = requestAnimationFrame(animate);
+  }
+
   private drawLatestPriceMarker(ctx: CanvasRenderingContext2D): void {
     const { data } = this.chart.state;
     if (data.length === 0) return;
@@ -561,6 +577,7 @@ export class Renderer {
     if (this.latestClose !== null && lastBar.close !== this.latestClose) {
       this.latestClose = lastBar.close;
       this.lastChangeTime = Date.now();
+      this._startPulseLoop(ctx);
     } else if (this.latestClose === null) {
       this.latestClose = lastBar.close;
     }
@@ -569,13 +586,14 @@ export class Renderer {
     const y = priceToY(lastBar.close, this.chart.state);
     const lineColor = seriesOpts.lineColor || '#1E90FF';
 
-    // Pulse decay over 500ms after each price change
+    // Pulse decay over 500ms after each price change (ease-out quadratic)
     const age = Date.now() - this.lastChangeTime;
-    const decay = Math.max(0, 1 - age / 500);
-    const dotR = 4 + decay * 5;
+    const decay = Math.max(0, 1 - age / 800);
+    const eased = decay * decay * decay;
+    const dotR = 4 + eased * 5;
 
     ctx.fillStyle = lineColor;
-    ctx.globalAlpha = 0.6 + decay * 0.4;
+    ctx.globalAlpha = 0.6 + eased * 0.4;
     ctx.beginPath();
     ctx.arc(x, y, dotR, 0, Math.PI * 2);
     ctx.fill();
@@ -666,6 +684,10 @@ export class Renderer {
   }
 
   destroy(): void {
+    if (this._pulseRafId !== null) {
+      cancelAnimationFrame(this._pulseRafId);
+      this._pulseRafId = null;
+    }
     if (this.candleBuffer) {
       this.candleBuffer.width = 0;
       this.candleBuffer.height = 0;
