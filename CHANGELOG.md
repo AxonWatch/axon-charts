@@ -2,37 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.1.0] - 2026-05-09
+## [1.1.0] - 2026-05-14
 
 ### Added
-- ScalePane abstract class — generic Y-axis sub-pane with separator, grids, tooltip, axis labels, current value line, zoom/pan
-- VolumeSubPane migrated to ScalePane (only 6 abstract methods, ~70% less code)
-- `computeValues()` hook — computation cached once per render, eliminates recalculation duplication
-- `getMinVisible()` override — enables MACD/oscillator sub-panes with negative values
-- `getActiveSubPanes()` exposed on IChart interface — eliminates 12 `(this.chart as any)` casts
-- `separatorHovered` property added to SubPane interface — prevents crashes in custom implementations
-- Percentage mode enhancements: 0% reference line, 0% label always injected into axis ticks, smart formatting with per-path sign handling
-- Reference price changed to firstVisibleBar.open (industry standard for percentage mode)
-- All ScalePane text colors now follow layout.textColor
-- Timezone, dateFormat, showDayOfWeek options for timeScale
-- Cascading defaults pattern for currentPrice (upColor/downColor/textColor fall through series/layout)
-- `timeScale()` and `setOptions()` methods on IChart interface
+- **6 series types**: line, area, bar (OHLC), heiken-ashi, hollow -- runtime-swappable via `series.type`
+- **lineColor option** -- fully independent of upColor/downColor (default: #1E90FF). Line/area series only.
+- **showMarkers / showLatestPriceMarker / showLatestPriceAnimation** options for line/area series
+- **Heiken-Ashi**: single-compute architecture, separate compact HA price label with overlap detection, O(1) updateLast
+- **Drawing API**: `addDrawing()`, `removeDrawing()`, `clearDrawings()`, `getDrawings()` -- persistent annotations on overlay canvas
+- **Plugin system preparations**: `onDataUpdate` callback, `ScalePane.setData()` for external data injection, `renderDrawings()` in drawViewport
+- **onBarClick** and **onVisibleRangeChange** callbacks on IChart interface
+- New timeScale options: `showDayOfWeek`, `dateFormat`, `timezone` (IANA)
+- New layout option: `borderVisible` (axis border lines)
+- New menu option: `items` (ordered item ID array for right-click menu)
+- New market option: `fontSize`
+- New watermark option: `rotate` (-45 degree diagonal)
+- New context block: `exposeData`, `discoverable`, `id` for AI agent integration
+- New volume options: `precision`, `minMove`
+- New currentPrice sub-options: `show`, `showLine`, `upColor`, `downColor`, `lineStyle`, `textColor`
+- Cascading defaults for currentPrice colors (currentPrice -> series -> hardcoded fallback)
+- Percentage mode: 0% reference line and label injection
 
 ### Changed
-- Bundle: ~72KB minified / ~19.4KB gzipped -> ~80KB minified / ~21.8KB gzipped (interface safety, ScalePane additions)
-- tsc --noEmit passes with zero errors (was 28 errors)
-- All axis label X positions unified to LAYOUT.LABEL_OFFSET (ScalePane latest price, crosshair, renderAxisLabel)
-- Separator drag now works at the exact pixel where separator highlight activates (boundary match)
-- Separator highlight only triggers when mouse is over the canvas (not settings panel)
-- Grid drawing uses chartBottom instead of h-bottomMargin (stops grid extending into sub-pane area)
-- Log mode asymmetric clamp fixed (both priceMin/priceMax use 0.01)
-- Buffer reuse logic compares actual pixel dimensions (not barWidth) — prevents stale rendering after window resize
+- Bundle: ~80KB minified / ~21.8KB gzipped -> ~80KB minified / ~24.9KB gzipped (series types + audit hardening)
+- Full codebase audit completed: 22 bugs fixed, 5 intentional behaviors documented
+- All `(this.chart as any)` casts eliminated -- 12 occurrences replaced with IChart interface methods
+- ScalePane text colors now follow layout.textColor (no more hardcoded #666/#888)
+- All axis label X positions unified to LAYOUT.LABEL_OFFSET (15px from edge)
+- hexToRgba handles named colors, short hex (#fff), and rgba() strings
+- Buffer reuse logic compares actual pixel dimensions (not barWidth)
+- Log scale asymmetric clamp fixed (both priceMin/priceMax use 0.01)
+- Grid drawing uses chartBottom instead of h-bottomMargin
+- Separator highlight only triggers when mouse is over canvas (not settings panel)
+- Documentation restructured: public docs in docs/, internal planning in .guide/, hosted pages in html/
+- esbuild.config.js maintained for bundling (UMD + ESM)
 
 ### Fixed
-- hexToRgba now handles named colors, short hex (#fff), and falls back gracefully
-- setVisibleRange offsetX formula corrected to match indexToX (was fromIdx-1, now calculated from barWidth)
-- Tooltip uses PriceFormatter.formatPrice() instead of hardcoded toFixed(2)
-- Auto-scroll detection magic number 8 replaced with named constant
+- Countdown timer crash after chart.destroy() -- RAF callback now checks _destroyed flag
+- render() and resize() now guard against use-after-destroy
+- loadState() now triggers a render call to paint the restored viewport
+- setSubPane execute() command works for sub-panes without top-level options schema key
+- B5-B7: Price label Y, HA label Y, and shifted HA label minY all clamped to topMargin
+- B8: Negative spareBars on ultra-wide screens fixed with Math.max(0, ...)
+- B9: Multi-sub-pane separator drag now iterates all sub-panes (not just first)
+- B10: Stale lastTouchDistance on out-of-bounds pinch -- moved assignment outside bounds guard
+- HA updateLast() using wrong predecessor index (was reading current bar's old HA instead of previous bar)
+- HA first-bar formula corrected: open = (rawOpen + rawClose) / 2, high/low use max/min of HA values
+- HA wicks invisible on live candles -- updateLast() now returns true (triggers full renderCandles)
+- demo.html restored from git after OUTPUT_TRUNCATED corruption, series entries re-applied
+
+### Technical
+- Zero external dependencies
+- Apache-2.0 licensed
+- tsc --noEmit: 0 errors
+- Bundle: ~24.9KB gzipped (under 25KB target)
+- Added CSS for crosshair overlay z-index (zIndex: 10) for proper stacking
 
 ## [1.0.0] - 2026-05-04
 
@@ -40,7 +64,7 @@ All notable changes to this project will be documented in this file.
 - Core candlestick rendering engine with dual-canvas architecture
 - Smart resize behavior (preserves center or anchors to latest based on autoScroll)
 - Crosshair with magnetic snapping, OHLC tooltip, and axis labels
-- Real-time updates with sub-millisecond tick rendering (updateLastBarFast)
+- Real-time updates with updateLastBarFast()
 - Streaming support (docs/STREAMING.md)
 - Event callbacks (onCrosshairMove, onBarClick, onVisibleRangeChange)
 - Query methods (getData, getBar, getBarAtTime, getBars, getBarsInRange)
