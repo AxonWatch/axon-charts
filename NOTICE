@@ -1,0 +1,30 @@
+NOTICE
+
+Axon Charts
+Copyright 2026, Axon.Watch. All rights reserved.
+
+Thank you for using Axon Charts! This library is developed and maintained by Axon.Watch.
+
+The name "Axon" derives from the ancient Greek word "ἄξων" (axis), reflecting the coordinate axes and mathematical framework upon which these financial charting tools are built.
+
+--------------------------------------------------------------------------------
+
+1. License & Terms of Use
+This software is licensed under the Apache License, Version 2.0 (the "License"). You may not use this file except in compliance with the License. You may obtain a copy of the License at:
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+2. Trademark & Attribution Request
+The names "Axon.Watch" and "Axon Charts", as well as the official logos associated with these products, are proprietary trademarks of Axon.Watch. 
+
+* Attribution: This library features a visual branding/logo ("Axon.Watch") embedded directly within the charts. While the Apache 2.0 License permits source code modification, we kindly request that community, non-commercial, and open-source projects retain this attribution to help support, promote, and grow the ecosystem.
+* Trademark Boundaries: The Apache 2.0 License does not grant any rights to use our trademarks, product names, or brand identity for your own marketing purposes or to imply an official endorsement by Axon.Watch. Any fork or redistribution must respect these trademark boundaries and cannot be marketed under the "Axon" brand name.
+
+3. Support and Sponsorship
+Axon Charts is built to empower the future of AI-driven trading. If these open-source tools bring value to your workflow, financial applications, or AI integrations, please consider supporting us:
+
+* Become a GitHub Sponsor: Fund our open-source development directly via our GitHub Sponsors page to help us maintain and improve the core engine.
+* Explore the Ecosystem: For advanced multi-chart dashboards, real-time aggregated data feeds, crypto heatmaps, and hosted AI trading agents, visit our platform at https://axon.watch
+
+--------------------------------------------------------------------------------
+Axon Charts is a trademark of Axon.Watch.

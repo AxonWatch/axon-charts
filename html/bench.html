@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Axon Charts - Performance Benchmarks</title>
-<script src="../dist/chart.js"></script>
+<script src="https://unpkg.com/axon-charts/dist/chart.js"></script>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #0d0d0d; color: #ccc; font-family: system-ui, -apple-system, sans-serif; padding: 32px; }
@@ -22,14 +22,14 @@
 </style>
 </head>
 <body>
-<h1><span>Axon</span> Charts &#8212; Benchmarks</h1>
-<p class="sub">Real browser measurements. Includes both synthetic tight-loop and realistic async streaming tests.</p>
+<h1><span>Axon</span> Charts &mdash; Benchmarks</h1>
+<p class="sub">Rigorous browser measurements. All tests use <code>performance.now()</code>. Stream test simulates real 100Hz ticks.</p>
 
 <div class="grid" id="stats"></div>
 
 <div id="chart-wrap">
   <div class="hdr">
-    <span>Benchmark Chart (5000 bars, candlestick + volume)</span>
+    <span>Benchmark Chart (10000 bars, candlestick + volume)</span>
     <span class="status" id="stream-status">idle</span>
   </div>
   <div id="chart"></div>
@@ -52,29 +52,31 @@ function genData(bars, base, vol) {
   return d;
 }
 
-function run() {
-  var data = genData(5000);
-  var data500 = genData(500); // for series comparison
+var streamSamples = [];
 
-  // 1. First Render
+function run() {
+  var data = genData(10000);
+
+  // 1. First Render (10000 bars, candlestick + volume)
   var t0 = performance.now();
   var chart = AxonCharts.createChart('#chart', {
     layout: { background: '#1a1a1a', textColor: '#ffffff', fontSize: 11 },
     grid: { vertLines: { color: '#2a2a2a' }, horzLines: { color: '#2a2a2a' } },
     volume: { show: true, heightPercent: 0.2 },
-    timeScale: { barSpacing: 7 }
+    timeScale: { barSpacing: 5 }
   });
   var t1 = performance.now();
   chart.setData(data);
   var t2 = performance.now();
-  l('1. First render (5000 bars, candlestick + volume)');
-  l('   createChart: ' + (t1 - t0).toFixed(2) + 'ms  setData: ' + (t2 - t1).toFixed(2) + 'ms  total: ' + (t2 - t0).toFixed(2) + 'ms');
+  var firstRenderTotal = (t2 - t0).toFixed(2);
+  l('1. First render (10000 bars, candlestick + volume)');
+  l('   createChart: ' + (t1 - t0).toFixed(2) + 'ms  setData: ' + (t2 - t1).toFixed(2) + 'ms  total: ' + firstRenderTotal + 'ms');
   l('');
 
-  // 2. Tight-loop updateLastBarFast (raw compute)
+  // 2. Tight-loop updateLastBarFast (1000 iterations)
   var tick = JSON.parse(JSON.stringify(data[data.length - 1]));
   var samples = [];
-  for (var i = 0; i < 100; i++) {
+  for (var i = 0; i < 1000; i++) {
     tick.close += (Math.random() - 0.5) * 0.2;
     tick.high = Math.max(tick.high, tick.close);
     tick.low = Math.min(tick.low, tick.close);
@@ -84,13 +86,16 @@ function run() {
   }
   samples.sort(function(a,b){return a-b;});
   var avg = samples.reduce(function(s,v){return s+v;},0) / samples.length;
-  l('2. Tight-loop updateLastBarFast (100 ticks, raw compute):');
-  l('   avg=' + avg.toFixed(3) + 'ms  median=' + samples[Math.floor(samples.length/2)].toFixed(3) + 'ms  range=' + samples[0].toFixed(3) + '-' + samples[samples.length-1].toFixed(3) + 'ms');
+  var median = samples[Math.floor(samples.length/2)];
+  var p99 = samples[Math.floor(samples.length * 0.99)];
+  var tightAvg = avg.toFixed(3);
+  l('2. Tight-loop updateLastBarFast (1000 ticks):');
+  l('   avg=' + tightAvg + 'ms  median=' + median.toFixed(3) + 'ms  p99=' + p99.toFixed(3) + 'ms');
   l('');
 
-  // 3. Full updateLastBar
+  // 3. Full updateLastBar (200 ticks)
   samples = [];
-  for (i = 0; i < 50; i++) {
+  for (i = 0; i < 200; i++) {
     tick.close += (Math.random() - 0.5) * 0.4;
     tick.high = Math.max(tick.high, tick.close);
     tick.low = Math.min(tick.low, tick.close);
@@ -100,22 +105,22 @@ function run() {
   }
   samples.sort(function(a,b){return a-b;});
   avg = samples.reduce(function(s,v){return s+v;},0) / samples.length;
-  l('3. updateLastBar (50 ticks, full render + grid + axes):');
-  l('   avg=' + avg.toFixed(3) + 'ms  median=' + samples[Math.floor(samples.length/2)].toFixed(3) + 'ms');
+  median = samples[Math.floor(samples.length/2)];
+  p99 = samples[Math.floor(samples.length * 0.99)];
+  l('3. updateLastBar (200 ticks, full render):');
+  l('   avg=' + avg.toFixed(3) + 'ms  median=' + median.toFixed(3) + 'ms  p99=' + p99.toFixed(3) + 'ms');
   l('');
 
-  // 4. Async streaming test (realistic)
-  l('4. Async streaming test (100 ticks at 20ms intervals = 50Hz):');
-  l('   (real-time behavior with browser rendering between ticks)');
+  // 4. Async streaming (500 ticks at 10ms = 100Hz)
+  l('4. Async streaming test (500 ticks at 10ms intervals = 100Hz):');
   l('');
   document.getElementById('stream-status').textContent = 'streaming...';
 
   var streamTicks = [];
   var currentPrice = data[data.length - 1].close;
   var lastBar = JSON.parse(JSON.stringify(data[data.length - 1]));
-  var streamIndex = 0;
 
-  for (var si = 0; si < 100; si++) {
+  for (var si = 0; si < 500; si++) {
     var change = (Math.random() - 0.5) * 0.3;
     currentPrice += change;
     lastBar.close = +currentPrice.toFixed(2);
@@ -125,30 +130,33 @@ function run() {
     streamTicks.push(JSON.parse(JSON.stringify(lastBar)));
   }
 
-  var streamSamples = [];
+  streamSamples = [];
+  var streamIndex = 0;
   var streamTimer = setInterval(function() {
     if (streamIndex >= streamTicks.length) {
       clearInterval(streamTimer);
       streamSamples.sort(function(a,b){return a-b;});
       var sAvg = streamSamples.reduce(function(s,v){return s+v;},0) / streamSamples.length;
-      l('   async avg=' + sAvg.toFixed(3) + 'ms  median=' + streamSamples[Math.floor(streamSamples.length/2)].toFixed(3) + 'ms');
-      l('   min=' + streamSamples[0].toFixed(3) + 'ms  max=' + streamSamples[streamSamples.length-1].toFixed(3) + 'ms');
+      var sMedian = streamSamples[Math.floor(streamSamples.length/2)];
+      var sP99 = streamSamples[Math.floor(streamSamples.length * 0.99)];
+      l('   async avg=' + sAvg.toFixed(4) + 'ms  median=' + sMedian.toFixed(4) + 'ms  p99=' + sP99.toFixed(4) + 'ms');
+      l('   min=' + streamSamples[0].toFixed(4) + 'ms  max=' + streamSamples[streamSamples.length-1].toFixed(4) + 'ms');
       l('');
       document.getElementById('stream-status').textContent = 'done';
-      afterStream(chart);
+      afterStream(chart, firstRenderTotal, tightAvg);
       return;
     }
     var st0 = performance.now();
     chart.updateLastBarFast(streamTicks[streamIndex]);
     streamSamples.push(performance.now() - st0);
     streamIndex++;
-  }, 20);
+  }, 10);
 }
 
-function afterStream(chart) {
-  var samples, i, avg;
+function afterStream(chart, firstRenderTime, tightAvg) {
+  var samples, i, avg, median, p99;
 
-  // 5. Crosshair draw
+  // 5. Crosshair draw (50 samples)
   samples = [];
   for (i = 0; i < 50; i++) {
     var ct0 = performance.now();
@@ -157,13 +165,14 @@ function afterStream(chart) {
   }
   samples.sort(function(a,b){return a-b;});
   avg = samples.reduce(function(s,v){return s+v;},0) / samples.length;
+  median = samples[Math.floor(samples.length/2)];
+  p99 = samples[Math.floor(samples.length * 0.99)];
   l('5. Crosshair draw (50 samples):');
-  l('   avg=' + avg.toFixed(3) + 'ms  median=' + samples[Math.floor(samples.length/2)].toFixed(3) + 'ms');
-  l('   min=' + samples[0].toFixed(3) + 'ms  max=' + samples[samples.length-1].toFixed(3) + 'ms');
+  l('   avg=' + avg.toFixed(3) + 'ms  median=' + median.toFixed(3) + 'ms  p99=' + p99.toFixed(3) + 'ms');
   l('');
 
-  // 6. Memory (5000 bars)
-  var data5000 = genData(5000);
+  // 6. Large dataset (10000 bars) + memory
+  var data10000 = genData(10000);
   var mem0 = performance.memory ? performance.memory.usedJSHeapSize : 0;
   var c2 = document.createElement('div');
   c2.id = 'chart2';
@@ -171,10 +180,10 @@ function afterStream(chart) {
   document.body.appendChild(c2);
   var ct1 = performance.now();
   var chart2 = AxonCharts.createChart('#chart2', { layout: { background: '#1a1a1a', textColor: '#ffffff' } });
-  chart2.setData(data5000);
+  chart2.setData(data10000);
   var ct2 = performance.now();
   var mem1 = performance.memory ? performance.memory.usedJSHeapSize : 0;
-  l('6. Large dataset (5000 bars):');
+  l('6. Large dataset (10000 bars):');
   l('   render: ' + (ct2 - ct1).toFixed(2) + 'ms');
   if (mem1 > 0) {
     l('   memory: ~' + ((mem1 - mem0) / 1024 / 1024).toFixed(1) + 'MB heap delta');
@@ -185,10 +194,10 @@ function afterStream(chart) {
   document.body.removeChild(c2);
   l('');
 
-  // 7. Series types (500 bars each)
+  // 7. Series types (1000 bars each, 5 types)
   var types = ['line', 'area', 'bar', 'heiken-ashi', 'hollow'];
-  var data500 = genData(500);
-  l('7. Series type render comparison (500 bars each):');
+  var data1000 = genData(1000);
+  l('7. Series type render comparison (1000 bars each, 5 types):');
   for (var ti = 0; ti < types.length; ti++) {
     var t = types[ti];
     var c3 = document.createElement('div');
@@ -200,7 +209,7 @@ function afterStream(chart) {
       series: { type: t },
       timeScale: { barSpacing: 3 }
     });
-    ch3.setData(data500);
+    ch3.setData(data1000);
     l('   ' + (t + ':').padEnd(14) + (performance.now() - st0).toFixed(2) + 'ms');
     ch3.destroy();
     document.body.removeChild(c3);
@@ -208,11 +217,13 @@ function afterStream(chart) {
 
   render();
 
+  // Stats cards with real results
+  var asyncAvg = streamSamples.length > 0 ? (streamSamples.reduce(function(s,v){return s+v;},0) / streamSamples.length).toFixed(3) : '?';
   document.getElementById('stats').innerHTML =
-    '<div class="card"><h3>First Render (5000 bars)</h3><div class="val" id="r1">~' + (performance.now() - 0).toFixed(1) + 'ms</div></div>' +
-    '<div class="card"><h3>Live Tick (tight loop)</h3><div class="val">~0.002ms</div></div>' +
-    '<div class="card"><h3>Live Tick (async 50Hz)</h3><div class="val" id="async-val">done</div></div>' +
-    '<div class="card"><h3>Bundle Size</h3><div class="val">24.9KB</div></div>';
+    '<div class="card"><h3>First Render (10000 bars)</h3><div class="val">' + firstRenderTime + 'ms</div></div>' +
+    '<div class="card"><h3>Live Tick (tight loop)</h3><div class="val">~' + tightAvg + 'ms</div></div>' +
+    '<div class="card"><h3>Live Tick (async 100Hz)</h3><div class="val">~' + asyncAvg + 'ms</div></div>' +
+    '<div class="card"><h3>Bundle Size</h3><div class="val">25.4KB</div></div>';
 }
 
 setTimeout(run, 200);

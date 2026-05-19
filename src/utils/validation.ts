@@ -78,6 +78,11 @@ export function validateOptions(options: Partial<ChartOptions>): void {
     validateVolume(options.volume);
   }
 
+  // === ATTRIBUTION LOGO ===
+  if (options.attribution) {
+    validateAttribution(options.attribution);
+  }
+
   // === INIT-ONLY ===
   if (options.devicePixelRatio !== undefined) {
     validateDevicePixelRatio(options.devicePixelRatio);
@@ -448,6 +453,15 @@ function validateVolume(volume: any, path: string = "volume"): void {
     if (typeof volume.minMove !== "number" || volume.minMove <= 0) {
       throw new ValidationError(path + ".minMove", "Min move must be a positive number, or null", volume.minMove);
     }
+  }
+}
+
+function validateAttribution(logo: any, path: string = 'attribution'): void {
+  if (typeof logo !== 'object' || logo === null) {
+    throw new ValidationError(path, 'Attribution logo must be an object', logo);
+  }
+  if (logo.show !== undefined && typeof logo.show !== 'boolean') {
+    throw new ValidationError(`${path}.show`, 'Show must be a boolean', logo.show);
   }
 }
 

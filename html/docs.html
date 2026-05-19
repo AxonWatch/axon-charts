@@ -788,7 +788,7 @@
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h1>Axon Charts</h1>
-      <div class="version">v1.1.1</div>
+      <div class="version">v1.2.0</div>
     </div>
 
     <div class="nav-section">
@@ -817,6 +817,7 @@
         <li><a href="#context" class="nav-link">Context (LLM)</a></li>
         <li><a href="#watermark" class="nav-link">Watermark</a></li>
         <li><a href="#volume" class="nav-link">Volume</a></li>
+        <li><a href="#attribution" class="nav-link">Attribution</a></li>
       </ul>
     </div>
 
@@ -868,7 +869,7 @@
         <ul>
           <li><strong>LLM-First Design:</strong> Every feature is accessible via simple, predictable APIs that AI agents can discover and use</li>
           <li><strong>Lightning Fast:</strong> Handles 5000+ candles at 60fps with optimized draw calls</li>
-          <li><strong>85 Configuration Options:</strong> Customize every aspect of appearance and behavior</li>
+          <li><strong>94 Configuration Options:</strong> Customize every aspect of appearance and behavior</li>
           <li><strong>TypeScript Support:</strong> Full type definitions for excellent developer experience</li>
           <li><strong>Production Ready:</strong> Volume sub-panes, streaming support, market headers, and more</li>
         </ul>
@@ -896,7 +897,7 @@
             <td><code>getContext()</code> returns structured JSON for LLM analysis</td>
           </tr>
           <tr>
-            <td><i data-lucide="settings" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>85 Options</td>
+            <td><i data-lucide="settings" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 6px;"></i>94 Options</td>
             <td>Layout, grid, scales, colors, behavior, and more</td>
           </tr>
         </table>
@@ -924,12 +925,13 @@
 
         <h2>CDN</h2>
         <pre><code>&lt;script src="https://cdn.jsdelivr.net/npm/axon-charts/dist/chart.js"&gt;&lt;/script&gt;</code></pre>
+        <pre><code>&lt;script src="https://unpkg.com/axon-charts/dist/chart.js"&gt;&lt;/script&gt;</code></pre>
 
         <h2>Bundled Size</h2>
         <ul>
-          <li><strong>Unminified source:</strong> ~85 KB</li>
+          <li><strong>Unminified source:</strong> ~97 KB</li>
           <li><strong>Minified + IIFE:</strong> ~80 KB</li>
-          <li><strong>Gzipped:</strong> ~22.6 KB</li>
+          <li><strong>Gzipped:</strong> ~25.4 KB</li>
         </ul>
       </section>
 
@@ -987,7 +989,7 @@ console.log(ctx.priceRange);</code></pre>
       <section id="settings-overview" class="doc-section">
         <div class="breadcrumb">Documentation / Configuration</div>
         <h1>Settings Overview</h1>
-        <p class="subtitle">85 configuration options across 13 categories</p>
+        <p class="subtitle">94 configuration options across 14 categories</p>
         <a href="demo.html" target="_blank" class="try-it-button">
           <i data-lucide="flask-conical"></i> Try It Live
         </a>
@@ -1061,6 +1063,11 @@ chart.setOptions({
             <td><a href="#volume">Volume</a></td>
             <td>6</td>
             <td>Volume histogram sub-pane</td>
+          </tr>
+          <tr>
+            <td><a href="#attribution">Attribution</a></td>
+            <td>1</td>
+            <td>Axon.Watch logo at chart bottom-left</td>
           </tr>
           <tr>
             <td><a href="#market">Market</a></td>
@@ -1414,6 +1421,26 @@ menu: {
       </section>
 
       <!-- Volume -->
+      <section id="attribution" class="doc-section">
+        <div class="breadcrumb">Documentation / Configuration</div>
+        <h1>Attribution</h1>
+        <p class="subtitle">Axon.Watch branding (1 option)</p>
+        <p>The attribution logo displays a stylized <strong>A</strong> in a black circle at the bottom-left of the chart area. On hover, it expands to reveal <strong>xon.Watch</strong> and links to <a href="https://axon.watch" target="_blank">axon.watch</a>.</p>
+        <pre><code>attribution: {
+  show: true,                    // Show/hide the attribution logo
+
+}</code></pre>
+        <h2>Configuration</h2>
+        <table>
+          <thead>
+            <tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>show</code></td><td><code>boolean</code></td><td><code>true</code></td><td>Show/hide the attribution logo</td></tr>
+          </tbody>
+        </table>
+      </section>
+
       <section id="volume" class="doc-section">
         <div class="breadcrumb">Documentation / Configuration</div>
         <h1>Volume</h1>
@@ -1802,6 +1829,9 @@ chart.updateLastBarFast(currentCandle);
       left?: number;              // default: 10
     };
   };
+  attribution?: {
+    show?: boolean;               // default: true (Axon.Watch attribution at bottom-left)
+  };
   grid?: {
     show?: boolean;               // default: true
     vertLines?: { show?, color?, width? };
@@ -1959,7 +1989,7 @@ chart.updateLastBarFast(currentCandle);
           <tr>
             <td>Minified bundle</td>
             <td>&lt;25 KB gzipped</td>
-            <td><strong>24.9 KB gzipped</strong> ✓</td>
+            <td><strong>25.4 KB gzipped</strong> ✓</td>
           </tr>
           <tr>
             <td>First render (500 bars)</td>
@@ -2022,9 +2052,9 @@ chart.updateLastBarFast(currentCandle);
 
         <h2>Bundle Size</h2>
         <ul>
-          <li><strong>Unminified source:</strong> ~85 KB</li>
+          <li><strong>Unminified source:</strong> ~97 KB</li>
           <li><strong>Minified + IIFE:</strong> ~80 KB</li>
-          <li><strong>Gzipped:</strong> ~22.6 KB</li>
+          <li><strong>Gzipped:</strong> ~25.4 KB</li>
           <li><strong>Zero external dependencies</strong></li>
         </ul>
             </section>

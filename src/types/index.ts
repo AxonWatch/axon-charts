@@ -180,6 +180,12 @@ export interface ChartOptions {
     minMove?: number | null;
   };
 
+  // === Attribution Logo ===
+  attribution?: {
+    /** Show the Axon.Watch attribution logo at bottom-left. Default: true */
+    show?: boolean;
+  };
+
   // === Init-Only ===
   /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
   devicePixelRatio?: number;

@@ -12,6 +12,7 @@ import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
 import { validateOptions } from '../utils/validation.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
+import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
 const DEFAULT_OPTIONS = {
@@ -103,6 +104,9 @@ const DEFAULT_OPTIONS = {
     show: false,
     rotate: false
   },
+  attribution: {
+    show: true
+  },
   context: {
     exposeData: false
   },
@@ -187,6 +191,9 @@ export class Chart {
   private timeScaleAPI: TimeScaleAPI;
   private _crosshairAPI: CrosshairAPI;
 
+  // Attribution logo overlay
+  private attribution!: Attribution;
+
   // Real-time Countdown management
   private countdownRafId: number | null = null;
   private _destroyed: boolean = false;
@@ -254,6 +261,7 @@ export class Chart {
     this.crosshair = new Crosshair(this);
     this._crosshairAPI = new CrosshairAPI(this, this.crosshair);
     this.eventManager = new EventManager(this);
+    this.attribution = new Attribution(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
     this.timeScaleAPI = new TimeScaleAPI(this);
 
@@ -778,7 +786,7 @@ export class Chart {
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { id: this.axonId, version: '1.1.1', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
+      state: { id: this.axonId, version: '1.2.0', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
         market: {
           baseAsset: this.options.market?.baseAsset || null,
           quoteAsset: this.options.market?.quoteAsset || null,
@@ -950,6 +958,11 @@ export class Chart {
       needsRender = true;
     }
 
+    // === ATTRIBUTION LOGO ===
+    if (normalizedPartial.attribution) {
+      this.attribution.update();
+    }
+
     // === APPLY CHANGES ===
     if (needsResize) {
       this.resize();
@@ -1081,6 +1094,7 @@ export class Chart {
       this.resizeObserver = null;
     }
     this.eventManager.destroy();
+    this.attribution.removeElement();
     this.bgCanvas.remove();
     this.mainCanvas.remove();
     this.crosshair.destroy();
