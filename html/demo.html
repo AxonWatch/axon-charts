@@ -645,7 +645,7 @@
     <div class="logo">
       <img src="/assets/images/axon_charts_logo.png" alt="Axon Charts" style="vertical-align: middle; margin-right: 6px; height: 20px; width: auto;">
       <span style="vertical-align: middle;">Axon Charts</span>
-      <span style="background: var(--bg-secondary); color: #4ade80; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-left: 8px; vertical-align: middle;">v1.1.1</span>
+      <span style="background: var(--bg-secondary); color: #4ade80; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; margin-left: 8px; vertical-align: middle;">v1.2.0</span>
     </div>
     <div class="connection-controls">
       <button id="ws-demo-btn" class="primary"><img src="/assets/images/axon_charts_logo.png" alt="" style="vertical-align: middle; width: 16px; height: 16px; margin-right: 4px;"> Demo</button>
@@ -702,7 +702,7 @@
   </div>
 
 
-  <script src="/dist/chart.js"></script>
+  <script src="https://unpkg.com/axon-charts/dist/chart.js"></script>
   <script>
 
     const SETTINGS = [
@@ -718,6 +718,8 @@
       { id: 'layout.padding.right', label: 'Padding Right', category: 'layout', status: 'functional', default: 60, type: 'number', min: 0, max: 200 , api: 'window.chart.setOptions({ layout: { padding: { right: value } } })' },
       { id: 'layout.padding.bottom', label: 'Padding Bottom', category: 'layout', status: 'functional', default: 35, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { bottom: value } } })' },
       { id: 'layout.padding.left', label: 'Padding Left', category: 'layout', status: 'functional', default: 10, type: 'number', min: 0, max: 100 , api: 'window.chart.setOptions({ layout: { padding: { left: value } } })' },
+      // ==================== ATTRIBUTION ====================
+      { id: 'attribution.show', label: 'Show Attribution', category: 'attribution', status: 'functional', default: true, type: 'checkbox', note: 'Axon.Watch attribution logo at bottom-left', api: "window.chart.setOptions({ attribution: { show: value } })" },
       // ==================== GRID ====================
       { id: 'grid.show', label: 'Show Grid', category: 'grid', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ grid: { show: value } })' },
       { id: 'grid.vertLines.show', label: 'Show V. Lines', category: 'grid', status: 'functional', default: true, type: 'checkbox' , api: 'window.chart.setOptions({ grid: { vertLines: { show: value } } })' },
@@ -828,6 +830,7 @@
       context: { title: '11. LLM Context', desc: 'AI agent exposure (3 options)', docs: 'docs/SETTINGS.md#llm-integration' },
       watermark: { title: '12. Watermark', desc: 'Semi-transparent overlay (6 options)', docs: 'docs/SETTINGS.md#watermark' },
       volume: { title: '13. Volume', desc: 'Volume histogram sub-pane (6 options)', docs: 'docs/SETTINGS.md#volume' },
+      attribution: { title: '14. Attribution', desc: 'Axon.Watch branding (1 option)', docs: 'docs/SETTINGS.md#attribution' },
     };
 
     // === WEBSOCKET STATE ===

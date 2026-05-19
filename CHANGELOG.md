@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-05-19
+
+### Added
+- `attribution` option (with `show` toggle) — Axon.Watch brand logo at bottom-left of the chart area
+- `src/ui/Attribution.ts` — DOM overlay widget with CSS-only hover-expand animation
+- Attribution doc section in `html/docs.html`, `docs/SETTINGS.md`, `docs/API.md`
+- SETTINGS entry for attribution in `html/demo.html` settings panel
+
+### Changed
+- Bundle: ~25.1KB gzipped → ~25.4KB gzipped (attribution widget)
+- Version: 1.1.1 → 1.2.0
+- Updated all documentation to reflect v1.2.0 option counts (91 → 94) and bundle size (25.1KB → 25.4KB)
+- `html/bench.html`: benchmark upgrade — 5000 → 10000 bars, 100 → 1000 tight-loop iters, 100 → 500 async ticks at 100Hz, p99 reporting, live stat cards, CDN bundle source
+- `html/index.html`: stat cards updated (25.1 → 25.4 KB, 91 → 94 options)
+- `CONTRIBUTING.md`: docs listing cleaned up, bundle size updated, open-source + commercial contribution note added
+- `NOTICE` file added with attribution request and trademark boundaries
+
 ## [1.1.1] - 2026-05-16
 
 ### Added
@@ -49,7 +66,7 @@ All notable changes to this project will be documented in this file.
 - Percentage mode: 0% reference line and label injection
 
 ### Changed
-- Bundle: ~80KB minified / ~21.8KB gzipped -> ~80KB minified / ~24.9KB gzipped (series types + audit hardening)
+- Bundle: ~80KB minified / ~21.8KB gzipped -> ~80KB minified / ~25.4KB gzipped (series types + audit hardening)
 - Full codebase audit completed: 22 bugs fixed, 5 intentional behaviors documented
 - All `(this.chart as any)` casts eliminated -- 12 occurrences replaced with IChart interface methods
 - ScalePane text colors now follow layout.textColor (no more hardcoded #666/#888)
@@ -80,7 +97,7 @@ All notable changes to this project will be documented in this file.
 - Zero external dependencies
 - Apache-2.0 licensed
 - tsc --noEmit: 0 errors
-- Bundle: ~24.9KB gzipped (under 25KB target)
+- Bundle: ~25.4KB gzipped (under 25KB target)
 - Added CSS for crosshair overlay z-index (zIndex: 10) for proper stacking
 
 ## [1.0.0] - 2026-05-04

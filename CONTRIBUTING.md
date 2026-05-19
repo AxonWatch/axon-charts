@@ -18,19 +18,16 @@ Be respectful, constructive, and professional. This is an open-source project an
 ```
 src/              -- Source code (index.ts, core, ui, series, subpanes, utils, api)
 docs/             -- Public documentation
-  INDEX.md        -- Docs navigation
-  SETTINGS.md     -- Options reference (91 options)
-  api/README.md   -- API surface reference
+  SETTINGS.md     -- Options reference (94 options)
+  API.md          -- API surface reference
   LLM.md          -- LLM integration guide
-  EXAMPLES.md     -- Agent integration patterns
   STREAMING.md    -- Streaming patterns
 html/             -- GitHub Pages hosted files (demos, examples, docs viewer)
-.guide/           -- Internal planning docs (not part of the npm package)
 ```
 
 ## Pull Request Process
 
-1. Work on the `dev` branch
+1. Work on the `develop` branch
 2. Ensure `npm run build` succeeds with no errors
 3. Verify `html/demo.html` shows no console errors
 4. Update docs if your change affects the public API or options
@@ -39,7 +36,7 @@ html/             -- GitHub Pages hosted files (demos, examples, docs viewer)
 
 - TypeScript, ES2020 target, ES module format
 - No external runtime dependencies
-- Keep bundle size minimal (currently ~24.9KB gzipped)
+- Keep bundle size minimal (currently ~25.4KB gzipped)
 - All canvas rendering uses sub-pixel precision (no `Math.round` in coordinate calculations)
 - New options must have validation in `src/utils/validation.ts`
 - New public API additions must be declared in the `IChart` interface in `src/types/index.ts`
@@ -53,7 +50,7 @@ html/             -- GitHub Pages hosted files (demos, examples, docs viewer)
 
 ## Documentation
 
-All public-facing documentation lives in `docs/`. Internal planning and research goes in `.guide/`.
+All public-facing documentation lives in `docs/`. 
 When adding a new feature, update the relevant docs file:
 - New option -> `docs/SETTINGS.md`
 - New public method -> `docs/api/README.md`
@@ -61,4 +58,5 @@ When adding a new feature, update the relevant docs file:
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under Apache-2.0.
+By contributing, you agree that your contributions are licensed under Apache-2.0
+and may be used in both the open-source and commercial versions of this project.

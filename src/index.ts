@@ -4,6 +4,7 @@ export { DataManager } from './core/data.js';
 export { Renderer } from './core/renderer.js';
 export { Crosshair } from './ui/crosshair.js';
 export { Axes } from './ui/axes.js';
+export { Attribution } from './ui/Attribution.js';
 export { EventManager } from './interaction/events.js';
 export { PriceScaleAPI } from './api/price-scale.js';
 export { TimeScaleAPI } from './api/time-scale.js';
@@ -21,7 +22,7 @@ export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
  * Agents check window.__AXON_CHARTS__ to find all chart instances on a page.
  */
 if (typeof window !== 'undefined') {
-  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: '1.1.1', charts: {} };
+  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: '1.2.0', charts: {} };
 }
 
 /**

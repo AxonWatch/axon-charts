@@ -2,22 +2,20 @@
 
 **A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration.**
 
-<p align="center">
+<p align="left">
   <img src="html/assets/images/axon_charts.png" alt="Axon Charts" width="600">
 </p>
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.1.1-green.svg)](package.json)
-[![Bundle Size](https://img.shields.io/badge/bundle%20size-24.9%20KB-brightgreen.svg)](dist/chart.js)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](package.json) [![Bundle Size](https://img.shields.io/badge/bundle%20size-25.4%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 
 Axon Charts is a minimal-dependency candlestick charting library for modern web applications and AI agents. Built with a focus on:
 
-- **Performance** -- ~3ms first render, ~0.002ms tick updates, 24.9KB gzipped
+- **Performance** -- ~3ms first render, ~0.002ms tick updates, 25.4KB gzipped
 - **AI-First** -- Native LLM integration with structured context export
-- **Lightweight** -- Only 24.9KB gzipped (zero external dependencies)
-- **Customizable** -- 91 configuration options across 14 categories
+- **Lightweight** -- Only 25.4KB gzipped (zero external dependencies)
+- **Customizable** -- 94 configuration options across 14 categories
 - **Type-Safe** -- Full TypeScript support with zero tsc errors
 
 ## Features
@@ -54,11 +52,11 @@ Axon Charts is a minimal-dependency candlestick charting library for modern web 
 
 ### Developer Experience
 - 3 component APIs (priceScale, timeScale, crosshair)
-- Comprehensive configuration system (91 options across 14 categories)
+- Comprehensive configuration system (94 options across 14 categories)
 - Runtime option updates with validation
 - Zero external dependencies
 
-<p align="center">
+<p align="left">
   <a href="html/examples.html">
     <img src="html/assets/images/chart-example.png" alt="Axon Charts example" width="800" style="border-radius: 8px; border: 1px solid #333;">
   </a>
@@ -114,7 +112,7 @@ chart.setData(data);
 ## Try It Live
 
 - **Live Examples:** [html/examples.html](html/examples.html) -- 11 chart configurations running live
-- **Interactive Demo:** [html/demo.html](html/demo.html) -- explore all 91 settings in real-time
+- **Interactive Demo:** [html/demo.html](html/demo.html) -- explore all 94 settings in real-time
 
 ## Documentation
 
@@ -123,10 +121,9 @@ Full documentation in the [docs/](docs/INDEX.md) folder:
 | Document | Covers |
 |----------|--------|
 | [Settings Reference](docs/SETTINGS.md) | Every configuration option with types, defaults, and status |
-| [API Reference](docs/api/README.md) | Complete public API surface |
+| [API Reference](docs/API.md) | Complete public API surface |
 | [LLM Integration](docs/LLM.md) | How LLMs read, write, and react to the chart |
 | [Streaming Guide](docs/STREAMING.md) | High-frequency tick data patterns |
-| [Agent Examples](docs/EXAMPLES.md) | Integration patterns for various agent frameworks |
 
 ## API Reference
 
@@ -226,10 +223,8 @@ interface Bar {
 | Crosshair draw | ~0.02ms |
 | Large dataset render (5000 bars) | ~1.4ms |
 | Series type render (500 bars) | ~0.3ms |
-| Bundle (gzipped) | 24.9KB |
+| Bundle (gzipped) | 25.4KB |
 | Memory (5000 bars) | <0.1MB |
-| Bundle (gzipped) | 24.9KB |
-| Memory (5000 bars) | \<0.1MB |
 
 ## Browser Support
 
