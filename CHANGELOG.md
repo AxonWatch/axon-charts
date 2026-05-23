@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2026-05-19
+
+### Added
+- Callback wiring — `onVisibleRangeChange`, `onCrosshairMove`, `onBarClick`, `onScrollLockChange`, `onDataUpdate` now work when passed via `ChartOptions` (previously only worked via property assignment on the chart instance)
+- `prependData(bars)` — inserts historical bars at the beginning without shifting the viewport. Use with `onVisibleRangeChange` to implement infinite scroll-to-past-history
+
+### Fixed
+- Report that `onVisibleRangeChange` never fired when passed via options constructor parameter — all 5 callbacks now assigned from the options object
+
+### Changed
+- Bundle: ~25.4KB gzipped (unchanged — callback wiring + prependData are negligible code)
+- Version: 1.2.0 → 1.2.1
+
+
 ## [1.2.0] - 2026-05-19
 
 ### Added

@@ -22,7 +22,7 @@ export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
  * Agents check window.__AXON_CHARTS__ to find all chart instances on a page.
  */
 if (typeof window !== 'undefined') {
-  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: '1.2.0', charts: {} };
+  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: '1.2.1', charts: {} };
 }
 
 /**

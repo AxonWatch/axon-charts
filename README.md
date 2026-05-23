@@ -237,6 +237,10 @@ interface Bar {
 
 Apache-2.0 -- See [LICENSE](LICENSE) file for details.
 
+**Note:** The library features a small attribution badge that helps grow our community.
+  If you're curious about our branding approach or how to respectfully use Axon Charts,
+  please check out the [NOTICE](NOTICE) file.
+
 ## Links
 
 - **Live Examples:** [html/examples.html](html/examples.html)

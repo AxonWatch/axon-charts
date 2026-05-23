@@ -788,7 +788,7 @@
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
       <h1>Axon Charts</h1>
-      <div class="version">v1.2.0</div>
+      <div class="version">v1.2.1</div>
     </div>
 
     <div class="nav-section">
@@ -1633,6 +1633,10 @@ window.__AXON_CHARTS__.charts['Bitcoin-1m'].setOptions({
             <td>Append a completed bar</td>
           </tr>
           <tr>
+            <td><code>prependData(bars)</code></td>
+            <td>Insert historical bars at front (no viewport shift)</td>
+          </tr>
+          <tr>
             <td><code>getData()</code></td>
             <td>Get full data array</td>
           </tr>
@@ -1927,6 +1931,13 @@ chart.updateLastBarFast(currentCandle);
     discoverable?: boolean;        // default: true (visible to AI agents)
     id?: string;                   // default: auto-generated opaque token (ax-xxxxxx)
   };
+  // === Callbacks ===
+  onVisibleRangeChange?: VisibleRangeChangeCallback;
+  onCrosshairMove?: CrosshairMoveCallback;
+  onBarClick?: BarClickCallback;
+  onScrollLockChange?: ScrollLockChangeCallback;
+  onDataUpdate?: ((bars: Bar[]) => void) | null;
+
   devicePixelRatio?: number;      // default: window.devicePixelRatio (init only)
 }</code></pre>
 
