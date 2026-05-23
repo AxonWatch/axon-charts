@@ -1,4 +1,4 @@
-# API Reference — Axon Charts v1.2.0
+# API Reference — Axon Charts v1.2.1
 
 This document provides the complete API surface for the Axon Charts library. The library exposes an `AxonCharts` global (when loaded via script tag) or named exports (when used as an ES module).
 
@@ -135,7 +135,7 @@ Returns a structured JSON object with current viewport state, visible bars, pric
   },
   state: {
     id: 'ax-a1b2c3',
-    version: '1.2.0',
+    version: '1.2.1',
     totalBars: 150,
     isAutoScrolling: true,
     market: { baseAsset: 'BTC', quoteAsset: 'USDT', timeframe: '1m', source: 'Binance' }
@@ -244,6 +244,19 @@ interface Drawing {
 
 #### Events / Callbacks
 
+All callbacks can be set either via `createChart()` options or as properties on the chart instance:
+
+```typescript
+// Via constructor options:
+const chart = createChart('#container', {
+  onVisibleRangeChange: (range) => { /* ... */ },
+  onCrosshairMove: (param) => { /* ... */ },
+});
+
+// Via property assignment:
+chart.onVisibleRangeChange = (range) => { /* ... */ };
+```
+
 ```typescript
 chart.onScrollLockChange?: (locked: boolean) => void
 ```
@@ -288,6 +301,11 @@ chart.onDataUpdate?: ((bars: Bar[]) => void) | null
 Callback fired on every data mutation: `appendBar()`, `updateLastBar()`, and `updateLastBarFast()`. Receives the bar(s) that were updated. Designed for plugin/indicator re-evaluation.
 
 #### Configuration
+
+```typescript
+chart.prependData(bars: Bar[]): void
+```
+Prepends historical bars to the beginning of the chart **without shifting the viewport**. Use with `onVisibleRangeChange` to implement infinite scroll-to-past-history: when the user scrolls to bar 0, fetch more bars and call `prependData(newBars)` — the visible bars stay at the same screen positions.
 
 ```typescript
 chart.setOptions(options: Partial<ChartOptions>): void
@@ -840,7 +858,7 @@ Axon Charts automatically registers in `window.__AXON_CHARTS__` for AI agent dis
 ```javascript
 // Global registry structure
 window.__AXON_CHARTS__ = {
-  version: '1.2.0',
+  version: '1.2.1',
   charts: {
     'ax-a1b2c3': chartInstance,   // Keyed by axonId
     'btc-usdt': chartInstance       // User-provided context.id

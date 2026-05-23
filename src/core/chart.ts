@@ -823,7 +823,7 @@ export class Chart {
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { id: this.axonId, version: '1.2.0', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
+      state: { id: this.axonId, version: '1.2.1', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
         market: {
           baseAsset: this.options.market?.baseAsset || null,
           quoteAsset: this.options.market?.quoteAsset || null,
