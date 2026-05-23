@@ -228,6 +228,13 @@ export class Chart {
     validateOptions(options);
     this.options = this.normalizeOptions(options);
 
+    // Wire up callbacks from options
+    this.onVisibleRangeChange = options.onVisibleRangeChange;
+    this.onCrosshairMove = options.onCrosshairMove;
+    this.onBarClick = options.onBarClick;
+    this.onScrollLockChange = options.onScrollLockChange;
+    this.onDataUpdate = options.onDataUpdate ?? null;
+
     // 3. Initialize state
     this.state = {
       w: 0,
@@ -697,6 +704,36 @@ export class Chart {
     this.ensureRightGapAndRoll();
     this.render();
     if (this.onDataUpdate) this.onDataUpdate([bar]);
+  }
+
+  /**
+   * Prepend historical bars to the beginning of the chart.
+   * Keeps the current viewport position — does not jump to the latest bar.
+   * Use this in combination with onVisibleRangeChange to load more history
+   * when the user scrolls to the first bar.
+   */
+  public prependData(bars: Bar[]): void {
+    if (!Array.isArray(bars)) throw new Error('AxonCharts: Data must be an array');
+    if (bars.length === 0) return;
+
+    for (const bar of bars) {
+      this.validateBar(bar);
+    }
+
+    // Invalidate measurement cache — new data changes the price range
+    this.priceFormatter.resetMeasurement();
+
+    // Insert at beginning
+    this.dataManager.prependData(bars);
+
+    // Shift offsetX left by the width of the new bars to keep the viewport
+    // showing the same bars at the same screen positions
+    this.state.offsetX -= bars.length * this.state.barWidth;
+
+    this.renderer.createBuffer();
+    this.render();
+
+    if (this.onDataUpdate) this.onDataUpdate(bars);
   }
 
   public updateLastBar(bar: Bar): void {

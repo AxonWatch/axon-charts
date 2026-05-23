@@ -86,6 +86,13 @@ export class DataManager {
   }
 
   /**
+   * Prepend bars to the beginning (for historical data loading)
+   */
+  prependData(bars: Bar[]): void {
+    this._data = [...bars, ...this._data];
+  }
+
+  /**
    * Get a bar by index
    */
   getBar(index: number): Bar | undefined {
