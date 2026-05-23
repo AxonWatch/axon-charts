@@ -186,6 +186,18 @@ export interface ChartOptions {
     show?: boolean;
   };
 
+  // === Callbacks ===
+  /** Fires when visible range changes (scroll, zoom, resize). */
+  onVisibleRangeChange?: VisibleRangeChangeCallback;
+  /** Fires when crosshair position changes. */
+  onCrosshairMove?: CrosshairMoveCallback;
+  /** Fires when a bar is clicked. */
+  onBarClick?: BarClickCallback;
+  /** Fires when scroll lock state changes. */
+  onScrollLockChange?: ScrollLockChangeCallback;
+  /** Fires when data is appended or updated. */
+  onDataUpdate?: ((bars: Bar[]) => void) | null;
+
   // === Init-Only ===
   /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
   devicePixelRatio?: number;
@@ -335,6 +347,7 @@ export interface IChart {
   setOptions(partial: Partial<ChartOptions>): void;
   getActiveSubPanes(): import('../subpanes/SubPane.js').SubPane[];
   render(): void;
+  prependData(bars: Bar[]): void;
   isAutoScrolling(): boolean;
   scrollToLatest(): void;
   triggerVisibleRangeChange(): void;
