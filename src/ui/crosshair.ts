@@ -135,21 +135,26 @@ export class Crosshair {
         crosshairX = indexToX(barIndex, this.chart.state);
       }
 
-      // Clamp to valid range
-      barIndex = Math.max(0, Math.min(barIndex, data.length - 1));
+      // Don't clamp — allow virtual time for empty areas past/before data
     } else {
       // Default to latest candle
       barIndex = data.length - 1;
       crosshairX = indexToX(barIndex, this.chart.state);
     }
 
-    // 2. Use actual bar timestamp from data (no virtual time calculation)
-    //    Virtual time would create misleading timestamps during data gaps (weekends)
+    // 2. Use bar timestamp when available, or compute virtual time from the
+    //    data interval for cursor positions outside the data range.
     const bar = data[barIndex];
     if (bar) {
       displayTime = bar.time;
+    } else if (data.length >= 2) {
+      // Virtual time from known bar interval — works for past and future areas
+      const interval = data[1].time - data[0].time;
+      displayTime = data[0].time + barIndex * interval;
+    } else if (data.length === 1) {
+      displayTime = data[0].time;
     } else {
-      displayTime = Date.now(); // Fallback (shouldn't happen with proper clamping)
+      displayTime = Date.now();
     }
 
     // Trigger onCrosshairMove callback
@@ -168,7 +173,7 @@ export class Crosshair {
     if (this.visible && isOverChart && this.chart.options.crosshair.mode !== 'none') {
       // Draw Axis Labels (Only if enabled in options)
       if (this.chart.options.crosshair.showLabels) {
-        this.drawPriceLabel(this.getPriceAt(this.y), barIndex);
+        this.drawPriceLabel(this.getPriceAt(this.y), Math.max(0, Math.min(barIndex, data.length - 1)));
         this.drawTimeLabel(displayTime, crosshairX);
       }
 
