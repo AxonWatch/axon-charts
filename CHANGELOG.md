@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2026-05-24
+
+### Fixed
+- Crosshair now shows projected timestamps in empty chart areas (before first bar, after last bar) using virtual time calculation
+- Removed fallback to `Date.now()` when hovering outside data range
+
+### Changed
+- Crosshair time extrapolation uses data interval for accurate virtual time projection
+
 ## [1.2.1] - 2026-05-19
 
 ### Added
