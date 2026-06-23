@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2026-06-23
+
+### Fixed
+- Candles now scale proportionally when chart is resized, preventing them from appearing cut at chart edges
+- barWidth respects minBarSpacing/maxBarSpacing limits during resize
+
 ## [1.2.2] - 2026-05-24
 
 ### Fixed
