@@ -1,4 +1,8 @@
 import * as esbuild from 'esbuild';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const { version } = require('./package.json');
 
 const isWatch = process.argv.includes('--watch');
 
@@ -13,7 +17,7 @@ const baseOptions = {
   legalComments: 'none',
   banner: {
     js: [
-      '// Axon Charts v1.2.1',
+      `// Axon Charts v${version}`,
       '// Licensed under Apache-2.0',
       '// https://github.com/axon-charts/axon-charts'
     ].join('\n')
