@@ -387,8 +387,20 @@ export class Chart {
         return;
       }
 
+      const oldWidth = this.state.w;
       this.state.w = newWidth;
       this.state.h = newHeight;
+
+      // Scale barWidth to match the new width, preserving the visible range.
+      // Without this, candles render at the old pixel width after resize,
+      // causing them to appear "cut" at the chart edges.
+      if (oldWidth > 0 && this.state.barWidth > 0) {
+        const ratio = newWidth / oldWidth;
+        const minSpacing = this.options.timeScale.minBarSpacing ?? 4;
+        const maxSpacing = this.options.timeScale.maxBarSpacing ?? 1000;
+        this.state.barWidth = Math.max(minSpacing, Math.min(maxSpacing, this.state.barWidth * ratio));
+        this.options.timeScale.barSpacing = this.state.barWidth;
+      }
 
       // Smart resize: Adjust offset based on autoScroll state
       const isAutoScrolling = this.isAutoScrolling();
