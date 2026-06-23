@@ -75,8 +75,10 @@ export class Renderer {
     // REUSE LOGIC: Only resize if width/height changed significantly
     if (this.candleBuffer) {
       const currentBufferWidth = this.candleBuffer.width / devicePixelRatio;
+      const currentBufferHeight = this.candleBuffer.height / devicePixelRatio;
       if (Math.abs(currentBufferWidth - bufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD &&
-          Math.abs(this.lastBufferPixelWidth - currentBufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD) {
+          Math.abs(this.lastBufferPixelWidth - currentBufferWidth) < LAYOUT.BUFFER_RECREATION_THRESHOLD &&
+          Math.abs(currentBufferHeight - h) < LAYOUT.BUFFER_RECREATION_THRESHOLD) {
         return;
       }
     }
