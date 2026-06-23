@@ -1,4 +1,5 @@
 import { Chart } from './core/chart.js';
+import { LIB_VERSION } from './version.js';
 export { Chart } from './core/chart.js';
 export { DataManager } from './core/data.js';
 export { Renderer } from './core/renderer.js';
@@ -22,7 +23,7 @@ export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
  * Agents check window.__AXON_CHARTS__ to find all chart instances on a page.
  */
 if (typeof window !== 'undefined') {
-  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: '1.2.1', charts: {} };
+  (window as any).__AXON_CHARTS__ = (window as any).__AXON_CHARTS__ || { version: LIB_VERSION, charts: {} };
 }
 
 /**

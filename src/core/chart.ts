@@ -3,6 +3,7 @@ import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
 import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback } from '../types/index.js';
+import { LIB_VERSION } from '../version.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
@@ -835,7 +836,7 @@ export class Chart {
         priceRange: { min: priceMin, max: priceMax },
         scales: { pricePerPixel, timePerBar, barWidth }
       },
-      state: { id: this.axonId, version: '1.2.1', totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
+      state: { id: this.axonId, version: LIB_VERSION, totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
         market: {
           baseAsset: this.options.market?.baseAsset || null,
           quoteAsset: this.options.market?.quoteAsset || null,
