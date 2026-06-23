@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2026-06-23
+
+### Fixed
+- Buffer height recreation — candles no longer disappear when chart height changes without width change
+- Buffer reuse logic now checks both width and height before skipping recreation
+
+### Changed
+- Version strings now read dynamically from package.json (single source of truth)
+- Updated all documentation and HTML version references to v1.2.4
+
 ## [1.2.3] - 2026-06-23
 
 ### Fixed
