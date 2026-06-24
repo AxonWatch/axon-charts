@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.6] - 2026-06-24
+
+### Fixed
+- Preserve-center resize now correctly maintains scroll position when barWidth is scaled — center index is pre-computed before scaling to avoid mixing old/new coordinate systems
+- Time axis crosshair label no longer clips at left/right chart edges — clamped to stay within visible chart area
+- Sub-pane separator hover no longer triggers when cursor is to the right of the chart area — added upper bound check on mouseX
+
 ## [1.2.5] - 2026-06-24
 
 ### Fixed
