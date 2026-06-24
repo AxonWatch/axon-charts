@@ -395,7 +395,7 @@ export class Chart {
       // Scale barWidth to match the new width, preserving the visible range.
       // Without this, candles render at the old pixel width after resize,
       // causing them to appear "cut" at the chart edges.
-      if (oldWidth > 0 && this.state.barWidth > 0) {
+      if (oldWidth >= 50 && newWidth >= 50 && this.state.barWidth > 0) {
         const ratio = newWidth / oldWidth;
         const minSpacing = this.options.timeScale.minBarSpacing ?? 4;
         const maxSpacing = this.options.timeScale.maxBarSpacing ?? 1000;
