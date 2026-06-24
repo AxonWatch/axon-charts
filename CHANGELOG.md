@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2026-06-24
+
+### Fixed
+- barWidth scaling now guards against degenerate resize sizes (< 50px) — prevents zoom corruption when containers are detached or transitioning
+- Round-trip resize through degenerate sizes (e.g., 300→1→300) no longer permanently clamps barWidth to maxBarSpacing
+
 ## [1.2.4] - 2026-06-23
 
 ### Fixed
