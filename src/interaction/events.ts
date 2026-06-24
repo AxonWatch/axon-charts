@@ -503,8 +503,6 @@ export class EventManager {
     const isOverPrice = mouseX > chartAreaWidth && mouseY <= chartBottomEdge;
     const isOverTime = mouseY > h - bottomMargin;
     const isOverSubPane = mouseY > chartBottomEdge && mouseY <= h - bottomMargin;
-    const SEPARATOR_HIT_THRESHOLD = 6;
-    const isNearSeparator = Math.abs(mouseY - chartBottomEdge) < SEPARATOR_HIT_THRESHOLD;
 
     // Check if over any sub-pane axis, and update separator hover state
     let isOverSubPaneAxis = false;
@@ -548,7 +546,7 @@ export class EventManager {
       this.chart.mainCanvas.style.cursor = this.chart.options.behavior.dragPriceScale ? 'ns-resize' : 'default';
     } else if (isOverSubPaneAxis) {
       this.chart.mainCanvas.style.cursor = 'ns-resize';
-    } else if (isNearSeparator) {
+    } else if (separatorHovered) {
       this.chart.mainCanvas.style.cursor = 'ns-resize';
     } else if (isOverTime) {
       // Only show resize cursor if dragToZoom is enabled
