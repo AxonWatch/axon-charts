@@ -526,7 +526,7 @@ export class EventManager {
       // Check if mouse is near the separator line (6px hit zone above the pane)
       const SEP_HIT = 6;
       // Only highlight when mouse is horizontally over the chart canvas (not settings panel on the left)
-      if (Math.abs(mouseY - currentTop) < SEP_HIT && mouseX >= 0 && mouseY >= 0) {
+      if (Math.abs(mouseY - currentTop) < SEP_HIT && mouseX >= 0 && mouseX <= this.chart.state.w && mouseY >= 0) {
         pane.separatorHovered = true;
         separatorHovered = true;
       }
