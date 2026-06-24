@@ -392,6 +392,20 @@ export class Chart {
       this.state.w = newWidth;
       this.state.h = newHeight;
 
+      // Pre-compute center bar index BEFORE scaling barWidth.
+      // At this point state.barWidth and state.offsetX are both unchanged (old values),
+      // so xToIndex gives the correct center bar for the current view.
+      // After barWidth is scaled (below), the coordinate system shifts and
+      // computing the center index from mixed old/new state produces a wrong result.
+      const chartAreaWidth = this.state.w - this.state.axisWidth;
+      let preservedCenterIdx = -1;
+      if (!this.dataManager.isEmpty && chartAreaWidth > 0 && this.state.barWidth > 0) {
+        const raw = xToIndex(chartAreaWidth / 2, this.state);
+        if (!isNaN(raw) && isFinite(raw)) {
+          preservedCenterIdx = Math.max(0, Math.min(Math.round(raw), this.dataManager.length - 1));
+        }
+      }
+
       // Scale barWidth to match the new width, preserving the visible range.
       // Without this, candles render at the old pixel width after resize,
       // causing them to appear "cut" at the chart edges.
@@ -418,38 +432,28 @@ export class Chart {
           );
         } else if (!this.dataManager.isEmpty) {
           // Option 2: Preserve visible center (user is viewing historical data)
-          // Only proceed if we have valid dimensions
-          if (this.state.w > this.state.axisWidth && this.state.barWidth > 0) {
-            // Use current offset (after user interactions) to find the actual center
-            const chartAreaWidth = this.state.w - this.state.axisWidth;
-            const centerPixelX = chartAreaWidth / 2;
-            let centerIndex = xToIndex(centerPixelX, this.state);
+          // Use the pre-computed center index (computed before barWidth scaling
+          // so the coordinate system was still consistent).
+          if (preservedCenterIdx >= 0) {
+            const newChartAreaWidth = this.state.w - this.state.axisWidth;
+            const targetCenterPixelX = newChartAreaWidth / 2;
+            const targetIndexX = preservedCenterIdx * this.state.barWidth;
 
-            // Validate centerIndex is within data bounds and is a valid number
-            if (!isNaN(centerIndex) && isFinite(centerIndex)) {
-              centerIndex = Math.max(0, Math.min(centerIndex, this.dataManager.length - 1));
+            // targetCenterPixelX = targetIndexX + newOffsetX + (barWidth / 2)
+            // newOffsetX = targetCenterPixelX - targetIndexX - (barWidth / 2)
+            const newOffsetX = targetCenterPixelX - targetIndexX - (this.state.barWidth / 2);
 
-              // Recalculate offset to keep the same center index at new dimensions
-              const newChartAreaWidth = this.state.w - this.state.axisWidth;
-              const targetCenterPixelX = newChartAreaWidth / 2;
-              const targetIndexX = centerIndex * this.state.barWidth;
-
-              // targetCenterPixelX = targetIndexX + newOffsetX + (barWidth / 2)
-              // newOffsetX = targetCenterPixelX - targetIndexX - (barWidth / 2)
-              const newOffsetX = targetCenterPixelX - targetIndexX - (this.state.barWidth / 2);
-
-              // Validate newOffsetX before clamping
-              if (!isNaN(newOffsetX) && isFinite(newOffsetX)) {
-                // Clamp the new offset to prevent off-screen rendering
-                this.state.offsetX = clampOffsetX(
-                  newOffsetX,
-                  this.state.barWidth,
-                  this.dataManager.length,
-                  this.state.w,
-                  this.state.rightGap,
-                  this.state.axisWidth
-                );
-              }
+            // Validate newOffsetX before clamping
+            if (!isNaN(newOffsetX) && isFinite(newOffsetX)) {
+              // Clamp the new offset to prevent off-screen rendering
+              this.state.offsetX = clampOffsetX(
+                newOffsetX,
+                this.state.barWidth,
+                this.dataManager.length,
+                this.state.w,
+                this.state.rightGap,
+                this.state.axisWidth
+              );
             }
           }
           // If dimensions are invalid or calculations fail, keep existing offset
