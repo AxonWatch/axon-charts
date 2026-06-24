@@ -411,21 +411,32 @@ export class Crosshair {
     const textY = h - bottomMargin / 2;
     const boxY = textY - boxHeight / 2;
 
+    // Clamp box to stay within visible chart area (prevent edge clipping)
+    const { w, axisWidth } = this.chart.state;
+    const minBoxX = 2;
+    const maxBoxX = (w - axisWidth) - boxWidth - 2;
+    let boxX = x - boxWidth / 2;
+    if (minBoxX <= maxBoxX) {
+      boxX = Math.max(minBoxX, Math.min(boxX, maxBoxX));
+    } else {
+      boxX = (w - axisWidth - boxWidth) / 2;
+    }
+    const textX = boxX + boxWidth / 2;
+
     // Background (Match layout background)
     this.overlayCtx.fillStyle = this.chart.options.layout.background ?? '#1e1e1e';
-    this.overlayCtx.fillRect(x - boxWidth / 2, boxY, boxWidth, boxHeight);
+    this.overlayCtx.fillRect(boxX, boxY, boxWidth, boxHeight);
 
     // Border
     this.overlayCtx.strokeStyle = this.chart.options.layout.textColor ?? '#888';
     this.overlayCtx.lineWidth = 1;
-    this.overlayCtx.strokeRect(x - boxWidth / 2, boxY, boxWidth, boxHeight);
-
+    this.overlayCtx.strokeRect(boxX, boxY, boxWidth, boxHeight);
 
     // Text
     this.overlayCtx.fillStyle = this.chart.options.layout.textColor ?? '#888';
     this.overlayCtx.textAlign = 'center';
     this.overlayCtx.textBaseline = 'middle';
-    this.overlayCtx.fillText(timeStr, x, textY);
+    this.overlayCtx.fillText(timeStr, textX, textY);
   }
 
   /**
