@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.8] - 2026-06-24
+
+### Fixed
+- Separator ns-resize cursor no longer appears near chart/time-axis boundary when no sub-panes are active — cursor now only shows near real separators
+
 ## [1.2.7] - 2026-06-24
 
 ### Fixed
