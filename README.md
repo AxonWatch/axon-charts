@@ -6,7 +6,7 @@
   <img src="html/assets/images/axon_charts.png" alt="Axon Charts" width="600">
 </p>
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.6-green.svg)](package.json) [![Bundle Size](https://img.shields.io/badge/bundle%20size-25.4%20KB-brightgreen.svg)](dist/chart.js)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.2.7-green.svg)](package.json) [![Bundle Size](https://img.shields.io/badge/bundle%20size-25.4%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 

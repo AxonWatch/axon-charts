@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2026-06-24
+
+### Fixed
+- Preserve-center resize now correctly captures the OLD viewport's center pixel before width update — the candle the user was viewing stays centered after resize instead of drifting
+
 ## [1.2.6] - 2026-06-24
 
 ### Fixed
