@@ -389,18 +389,21 @@ export class Chart {
       }
 
       const oldWidth = this.state.w;
+      // Capture OLD center pixel BEFORE state.w is updated.
+      // This is the pixel the user was actually looking at — must use the old
+      // width, not the new one, to find the correct center bar.
+      const oldCenterX = (oldWidth - this.state.axisWidth) / 2;
       this.state.w = newWidth;
       this.state.h = newHeight;
 
       // Pre-compute center bar index BEFORE scaling barWidth.
-      // At this point state.barWidth and state.offsetX are both unchanged (old values),
-      // so xToIndex gives the correct center bar for the current view.
-      // After barWidth is scaled (below), the coordinate system shifts and
-      // computing the center index from mixed old/new state produces a wrong result.
-      const chartAreaWidth = this.state.w - this.state.axisWidth;
+      // Uses oldCenterX (from old width) with old barWidth and old offsetX —
+      // a fully consistent old coordinate system. After barWidth is scaled,
+      // using the new width's center would mix coordinate systems and pick
+      // the wrong bar.
       let preservedCenterIdx = -1;
-      if (!this.dataManager.isEmpty && chartAreaWidth > 0 && this.state.barWidth > 0) {
-        const raw = xToIndex(chartAreaWidth / 2, this.state);
+      if (!this.dataManager.isEmpty && oldCenterX > 0 && this.state.barWidth > 0) {
+        const raw = xToIndex(oldCenterX, this.state);
         if (!isNaN(raw) && isFinite(raw)) {
           preservedCenterIdx = Math.max(0, Math.min(Math.round(raw), this.dataManager.length - 1));
         }
