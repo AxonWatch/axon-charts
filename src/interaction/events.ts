@@ -60,6 +60,40 @@ export class EventManager {
     mainCanvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
     mainCanvas.addEventListener('mouseleave', this.handleMouseLeave);
     document.addEventListener('fullscreenchange', this.handleFullscreenChange);
+    // Keyboard events (for drawing delete + escape)
+    window.addEventListener('keydown', this.handleKeyDown);
+  }
+
+  /**
+   * Handle keyboard events for drawing interaction:
+   *   Delete / Backspace — remove the selected drawing
+   *   Escape — cancel drag, deselect, or exit drawing mode (future)
+   */
+  private handleKeyDown = (e: KeyboardEvent): void => {
+    // Don't interfere with text inputs
+    const target = e.target as HTMLElement;
+    if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+      return;
+    }
+
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      const selectedId = this.chart.getSelectedDrawingId();
+      if (selectedId != null) {
+        e.preventDefault();
+        this.chart.removeDrawing(selectedId);
+        this.chart.selectDrawing(null);
+      }
+    } else if (e.key === 'Escape') {
+      // Cancel any in-progress drag first
+      if (this.drawingInteraction.isDragging()) {
+        this.drawingInteraction.cancel();
+        this.chart.render();
+      }
+      // Then clear selection
+      if (this.chart.getSelectedDrawingId() != null) {
+        this.chart.selectDrawing(null);
+      }
+    }
   }
 
   /**
@@ -814,5 +848,6 @@ export class EventManager {
     mainCanvas.removeEventListener('touchend', this.handleTouchEnd);
     mainCanvas.removeEventListener('dblclick', this.handleDblClick);
     document.removeEventListener('fullscreenchange', this.handleFullscreenChange);
+    window.removeEventListener('keydown', this.handleKeyDown);
   }
 }
