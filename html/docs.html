@@ -1937,6 +1937,7 @@ chart.updateLastBarFast(currentCandle);
   onBarClick?: BarClickCallback;
   onScrollLockChange?: ScrollLockChangeCallback;
   onDataUpdate?: ((bars: Bar[]) => void) | null;
+  onCandleClose?: (closedBar: Bar) => void;   // fires once per candle close
 
   devicePixelRatio?: number;      // default: window.devicePixelRatio (init only)
 }</code></pre>

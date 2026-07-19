@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+- `onCandleClose` callback — fires once per actual candle close (when an incoming bar's timestamp differs from the last bar's, causing a new bar to be appended via `updateLastBar()` or `updateLastBarFast()`). Receives the finalized closed bar with its final O/H/L/C/volume values. Does not fire from `setData()`, `appendBar()`, or `prependData()` (bulk loads are not live closes).
+- New `CandleCloseCallback` type exported from the package.
+- Wired from constructor options (`onCandleClose`) and assignable as a property on the chart instance.
+
 ## [1.2.8] - 2026-06-24
 
 ### Fixed

@@ -2,7 +2,7 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback } from '../types/index.js';
+import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback, CandleCloseCallback } from '../types/index.js';
 import { LIB_VERSION } from '../version.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
@@ -206,6 +206,7 @@ export class Chart {
   public onBarClick?: BarClickCallback;
   public onVisibleRangeChange?: VisibleRangeChangeCallback;
   public onDataUpdate?: ((bars: Bar[]) => void) | null = null;
+  public onCandleClose?: CandleCloseCallback;
   private _drawings: Drawing[] = [];
 
   // Event handlers stored for proper removal
@@ -235,6 +236,7 @@ export class Chart {
     this.onBarClick = options.onBarClick;
     this.onScrollLockChange = options.onScrollLockChange;
     this.onDataUpdate = options.onDataUpdate ?? null;
+    this.onCandleClose = options.onCandleClose;
 
     // 3. Initialize state
     this.state = {
@@ -758,12 +760,18 @@ export class Chart {
 
   public updateLastBar(bar: Bar): void {
     const previousLength = this.dataManager.length;
+    // Capture the bar that is about to close BEFORE the data mutation.
+    // When updateLastBar appends a new bar (time advanced), this is the finalized
+    // version of the previous candle — its O/H/L/C/volume are final.
+    const closingBar = previousLength > 0 ? this.dataManager.data[previousLength - 1] : null;
     this.validateBar(bar);
     this.dataManager.updateLastBar(bar);
 
     // If a new bar was appended internally (time advanced), trigger auto-scroll
     if (this.dataManager.length > previousLength) {
       this.ensureRightGapAndRoll();
+      // A candle just closed — notify listeners with the finalized bar.
+      if (this.onCandleClose && closingBar) this.onCandleClose(closingBar);
     }
 
     this.render();
@@ -782,12 +790,17 @@ export class Chart {
    */
   public updateLastBarFast(bar: Bar): void {
     const previousLength = this.dataManager.length;
+    // Capture the bar that is about to close BEFORE the data mutation.
+    // See updateLastBar() for rationale.
+    const closingBar = previousLength > 0 ? this.dataManager.data[previousLength - 1] : null;
     this.validateBar(bar);
     this.dataManager.updateLastBar(bar);
 
     // If new candle appended, use full render to handle buffer boundary + auto-scroll
     if (this.dataManager.length > previousLength) {
       this.ensureRightGapAndRoll();
+      // A candle just closed — notify listeners with the finalized bar.
+      if (this.onCandleClose && closingBar) this.onCandleClose(closingBar);
       this.renderer.createBuffer();
       this.render();
       return;
