@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -319,6 +319,15 @@ CONTROL:
       data: { extend: 'right', lineStyle: 'dashed' }
     })
     → 2-point line with optional extend (left/right/both) + end label
+
+  Box example:
+    chart.addDrawing({
+      id: 'box-1', type: 'box',
+      time: ..., price: 42800, time2: ..., price2: 42100,
+      color: '#ef4444', text: 'Supply',
+      data: { fill: 'rgba(239,68,68,0.12)', lineStyle: 'dashed' }
+    })
+    → 2-point rectangle (opposite corners) with fill + optional label
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move

@@ -6,6 +6,7 @@ import { HLineRenderer } from './HLineRenderer.js';
 import { VLineRenderer } from './VLineRenderer.js';
 import { PositionRenderer } from './PositionRenderer.js';
 import { TrendlineRenderer } from './TrendlineRenderer.js';
+import { BoxRenderer } from './BoxRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -29,6 +30,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['vline',      new VLineRenderer()],
   ['position',   new PositionRenderer()],
   ['trendline',  new TrendlineRenderer()],
+  ['box',        new BoxRenderer()],
 ]);
 
 /**
