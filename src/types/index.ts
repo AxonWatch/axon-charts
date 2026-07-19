@@ -286,20 +286,84 @@ export interface ChartState {
 }
 
 /**
- * A persistent drawing on the chart (arrow, label, line, etc.)
- * Rendered on the overlay canvas. Used by plugins and drawing tools.
+ * Type-specific payload for a drawing. Fields are optional and interpreted
+ * by the drawing's renderer. Unknown fields are allowed so user-registered
+ * drawing types can carry their own data without extending this interface.
+ */
+export interface DrawingData {
+  // === Position ===
+  /** Position side. Required by the 'position' drawing type. */
+  side?: 'long' | 'short';
+  /** Position size/quantity. Required by the 'position' drawing type. */
+  qty?: number;
+  /** Stop-loss price level (optional, position only). Draws a dashed red line. */
+  sl?: number;
+  /** Take-profit price level (optional, position only). Draws a dashed green line. */
+  tp?: number;
+  /** Position lifecycle status. 'open' is the default; renderers may style closed/pending differently. */
+  status?: 'open' | 'closed' | 'pending';
+
+  // === Two-point drawings (trendline, box, fib — future) ===
+  /** Stroke width in pixels (default 1). */
+  lineWidth?: number;
+  /** Stroke style (default 'solid'). */
+  lineStyle?: 'solid' | 'dashed' | 'dotted';
+  /** Extend the line beyond its anchors. Used by trendline. */
+  extend?: 'none' | 'left' | 'right' | 'both';
+  /** Fill color for closed shapes (box). Semi-transparent recommended. */
+  fill?: string;
+
+  // === Custom (user-registered drawing types) ===
+  [key: string]: unknown;
+}
+
+/**
+ * A persistent drawing on the chart (arrow, label, line, position, etc.)
+ * Rendered on the main canvas overlay every frame. Used by drawing tools,
+ * plugins, and external apps (e.g. to mark trading positions).
+ *
+ * Anchoring:
+ *   - `time` is preferred over `barIndex` because it survives maxBars
+ *     auto-cleanup (oldest bars are spliced out, shifting barIndex but
+ *     leaving time stable). Set `time` for any drawing that should
+ *     persist across data cleanup.
+ *   - `barIndex` alone is fine for short-lived drawings or when the
+ *     chart's data won't be pruned.
+ *
+ * Single-point drawings (arrow, label, hline, vline, position) use
+ * {barIndex|time, price}. Two-point drawings (trendline, box — future)
+ * additionally use {barIndex2|time2, price2}.
+ *
+ * Type-specific fields (side, qty, sl, tp, lineWidth, fill, etc.) live
+ * in the optional `data` bag. See DrawingData.
  */
 export interface Drawing {
   id: string;
-  /** Arrow direction, text label, or reference line */
-  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
-  /** Bar index this drawing attaches to */
-  barIndex: number;
-  /** Price level (for arrows, labels, horizontal lines) */
-  price: number;
+  /**
+   * Drawing type identifier. Built-in values: 'arrow_up', 'arrow_down',
+   * 'label', 'hline', 'vline', 'position'. Custom types can be registered
+   * via Chart.registerDrawingType().
+   */
+  type: string;
   color: string;
   text?: string;
-  /** For hline: the price level. For vline: the barIndex position. */
+
+  // === Primary anchor ===
+  /** Bar index this drawing attaches to. Optional — prefer `time` for stability. */
+  barIndex?: number;
+  /** Anchor timestamp (preferred over barIndex — survives maxBars cleanup). */
+  time?: number;
+  /** Price level at the primary anchor. Optional for vline (barIndex-only). */
+  price?: number;
+
+  // === Secondary anchor (two-point drawings: trendline, box — future) ===
+  barIndex2?: number;
+  time2?: number;
+  price2?: number;
+
+  // === Type-specific payload ===
+  /** Optional data bag interpreted by the drawing's renderer. */
+  data?: DrawingData;
 }
 
 /**
@@ -373,4 +437,6 @@ export interface IChart {
   removeDrawing(id: string): void;
   clearDrawings(): void;
   getDrawings(): Drawing[];
+  /** Register a custom drawing type (e.g. 'fib') with its renderer. */
+  registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }

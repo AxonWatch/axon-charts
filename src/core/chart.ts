@@ -11,7 +11,9 @@ import { PriceFormatter } from '../utils/formatter.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
-import { validateOptions } from '../utils/validation.js';
+import { validateOptions, validateDrawing } from '../utils/validation.js';
+import { registerDrawingType as registerDrawingTypeImpl } from '../drawings/registry.js';
+import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
@@ -1130,6 +1132,7 @@ export class Chart {
 
   // ── Drawing API ──────────────────────────────────────────
   addDrawing(drawing: Drawing): void {
+    validateDrawing(drawing);
     this._drawings.push(drawing);
     this.render();
   }
@@ -1143,6 +1146,14 @@ export class Chart {
   }
   getDrawings(): Drawing[] {
     return this._drawings;
+  }
+  /**
+   * Register a custom drawing type. After registration, drawings with
+   * this `type` value passed to addDrawing() will be rendered by the
+   * provided renderer. Overwriting a built-in type is allowed.
+   */
+  registerDrawingType(type: string, renderer: DrawingRenderer): void {
+    registerDrawingTypeImpl(type, renderer);
   }
 
   public destroy(): void {
