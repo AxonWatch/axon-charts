@@ -2,6 +2,61 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-07-20
+
+### Added — Interactive Drawing System
+- **Hit-testing + drag**: all 14 drawing types now respond to mouse interaction. Click on a drawing to select it (blue handle circles appear); drag a handle to resize/move; drag the body of a two-point drawing to move the whole drawing while preserving its shape.
+- **Drawing-creation mode** (`chart.beginDrawing(type)` / `chart.cancelDrawing()` / `chart.isDrawing()`): enter a create mode for a drawing type, click on the chart to place the first anchor, move the mouse to see a dashed rubber-band preview, click again to commit. Single-point drawings (hline, vline, arrow, label, text, position, order) commit on the first click; two-point drawings (trendline, box, fib_retracement, measure, highlighter, position_closed) need two clicks.
+- **Keyboard handling**: Delete/Backspace removes the selected drawing; Escape cancels an in-progress drag, deselects, or exits create mode.
+- **New public API on `Chart`**:
+  - `beginDrawing(type)` / `cancelDrawing()` / `isDrawing()` — create mode
+  - `selectDrawing(id | null)` / `getSelectedDrawingId()` — selection state
+  - `updateDrawing(id, updates)` — patch a drawing in place (used by the drag layer)
+  - `getHoveredHandle()` — current hovered handle (drawingId + handleId), for renderer highlight drawing
+  - `getDrawingPreview()` — in-progress drawing's preview anchors (p1 + p2Preview), for rubber-band rendering
+- **Extended `DrawingRenderer` interface** with two optional methods:
+  - `hitTest(x, y, chart, drawing)` — is the cursor over this drawing?
+  - `getHandles(chart, drawing)` — what draggable handles does it expose?
+  - New `DrawingHandle` interface: `{ id, x, y, cursor }` (id convention: `'p1'`, `'p2'`, `'body'`)
+- **New `screenToAnchor(chart, x, y)` helper** — the inverse of `resolveAnchor`. Converts a screen point to chart coordinates (time + price + barIndex). Snaps X to the nearest bar center, maps Y to price via `yToPrice`. Returns null when the cursor is outside the data range.
+- **New `DrawingInteraction` dispatcher** (`src/interaction/drawings.ts`) — central module that EventManager delegates to on mousedown/mousemove/mouseup. Routes events to drawings, manages drag state, updates drawing anchors in place, sets the canvas cursor based on the handle under the cursor.
+- **New `DrawingController`** (`src/interaction/drawing-controller.ts`) — owns the click-to-create state machine, with per-type default colors and sensible defaults (position/order/position_closed get `side:'long', qty:1`).
+- **Handle + selection rendering** in `Renderer.renderDrawings()`: selected drawing's handles drawn as small open circles; hovered handle drawn as a filled circle (uses `#4a9eff`, matching the sub-pane separator hover color).
+- **Rubber-band preview** during create mode: dashed line from p1 to the cursor, with filled circles at both anchors.
+
+### Per-Drawing-Type Interaction
+| Drawing | Handles | Drag behavior |
+|---------|---------|---------------|
+| `hline` | 1 body (ns-resize) | Drag to change price |
+| `vline` | 1 body (ew-resize) | Drag to change time |
+| `arrow_up`/`arrow_down` | 1 body (move) | Drag to move anchor |
+| `label` | 1 body (move) | Drag to move anchor |
+| `text` | 1 body (move) | Drag to move anchor |
+| `position` | 1 body (move) | Drag to move entry |
+| `order` | 1 body (ns-resize) | Drag to change price |
+| `trendline` | 2 endpoints (p1, p2) | Drag endpoints to resize; drag body to move whole line |
+| `box` | 2 corners (p1, p2) | Drag corners to resize; drag body to move whole box |
+| `measure` | 2 endpoints (p1, p2) | Drag endpoints; label updates live |
+| `fib_retracement` | 2 endpoints (p1, p2) | Drag swing endpoints |
+| `highlighter` | 2 edges (p1, p2, ew-resize) | Drag edges to resize time window; drag body to move |
+| `position_closed` | 2 endpoints (entry, exit) | Drag either endpoint; realized PnL recomputes |
+
+### Refactor
+- `VLineRenderer`, `ArrowRenderer`, `LabelRenderer` updated to use `resolveAnchor()` for consistency with the other renderers (makes them time-anchor-aware, surviving `maxBars` cleanup). Pixel output identical for callers passing `barIndex`.
+- `pointToSegmentDistance()` helper added to `TrendlineRenderer`, `MeasureRenderer`, `PositionClosedRenderer` for line hit-testing (perpendicular distance from cursor to line segment).
+
+### Changed
+- Bundle: 30401 → 33365 bytes gzipped (+2964 bytes, +9.7%) for the full interaction layer: interface extension, `screenToAnchor`, `DrawingInteraction` dispatcher, `DrawingController`, per-type `hitTest`/`getHandles` for all 14 renderers, handle/selection rendering, rubber-band preview, Delete/Escape keyboard handling.
+- `IChart` interface: added `updateDrawing`, `getSelectedDrawingId`, `selectDrawing`, `getHoveredHandle`, `beginDrawing`, `cancelDrawing`, `isDrawing`, `getDrawingPreview`.
+- `EventManager` now routes mousedown/mousemove to `DrawingInteraction` first (drawings take priority over chart pan/zoom), then to `DrawingController` (create mode), then falls through to the existing chart pan/zoom logic. All three return early when they consume the event.
+- New keyboard listener on `window` for Delete/Escape (ignored when the target is an input/textarea/contentEditable).
+
+### Backward Compatibility
+- `addDrawing`/`removeDrawing`/`clearDrawings`/`getDrawings` unchanged.
+- Existing programmatic drawings still render and are now also draggable.
+- `DrawingRenderer.hitTest` and `DrawingRenderer.getHandles` are optional — custom renderers without them remain display-only.
+- The 3 refactored legacy renderers (`VLine`, `Arrow`, `Label`) produce pixel-identical output for callers passing `barIndex`.
+
 ## [1.3.0] - 2026-07-19
 
 ### Added
