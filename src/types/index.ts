@@ -451,6 +451,8 @@ export interface IChart {
   getSelectedDrawingId(): string | null;
   /** Select a drawing (draws a selection outline) or null to clear. */
   selectDrawing(id: string | null): void;
+  /** Get the currently hovered handle (drawingId + handleId), or null. Used by renderers to draw hover highlights. */
+  getHoveredHandle(): { drawingId: string; handleId: string } | null;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }

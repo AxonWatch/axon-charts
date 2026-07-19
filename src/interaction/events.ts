@@ -1,6 +1,7 @@
 import { LAYOUT } from '../core/layout.js';
 import { deriveVisibleStartIdx, clampOffsetX, xToIndex, indexToX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { IChart } from '../types/index.js';
+import { DrawingInteraction } from './drawings.js';
 
 /**
  * Handles mouse and touch interactions for the chart
@@ -19,9 +20,12 @@ export class EventManager {
   private dragMode: 'chart' | 'price' | 'time' | 'subPane' | 'separator' = 'chart';
   private activePane?: import('../subpanes/SubPane.js').SubPane;
   private rafId: number | null = null;
+  /** Drawing interaction dispatcher (hit-testing + drag routing). */
+  private drawingInteraction: DrawingInteraction;
 
   constructor(chart: IChart) {
     this.chart = chart;
+    this.drawingInteraction = new DrawingInteraction(chart);
     this.setupEventListeners();
   }
 
@@ -420,6 +424,18 @@ export class EventManager {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
+    // Drawing interaction has priority over chart pan/zoom.
+    // If a drawing handle or body is under the cursor, start a
+    // drawing drag and skip the chart pan logic entirely.
+    if (this.drawingInteraction.onMouseDown(mouseX, mouseY)) {
+      this.isDragging = true;
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
+      // dragMode stays 'chart' so mouseup doesn't trigger auto-scroll check
+      this.dragMode = 'chart';
+      return;
+    }
+
     this.isDragging = true;
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
@@ -479,6 +495,9 @@ export class EventManager {
   }
 
   private handleMouseUp = (): void => {
+    // Always release any in-progress drawing drag
+    this.drawingInteraction.onMouseUp();
+
     this.isDragging = false;
 
     // After drag ends, update auto-scroll state based on where the user
@@ -499,6 +518,16 @@ export class EventManager {
     const rect = this.chart.mainCanvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
+
+    // Drawing drag in progress: route to dispatcher, skip chart pan.
+    // Also handles hover cursor styling when not dragging.
+    if (this.drawingInteraction.onMouseMove(mouseX, mouseY)) {
+      // Drawing is being dragged — update lastMouse for delta calc,
+      // but don't run the chart pan logic below.
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
+      return;
+    }
 
     const isOverPrice = mouseX > chartAreaWidth && mouseY <= chartBottomEdge;
     const isOverTime = mouseY > h - bottomMargin;
@@ -762,7 +791,16 @@ export class EventManager {
     this.chart.triggerVisibleRangeChange();
   }
 
+  /**
+   * Get the drawing interaction dispatcher. Used by the renderer
+   * to draw hover/selection highlights on the active handle.
+   */
+  public getDrawingInteraction(): DrawingInteraction {
+    return this.drawingInteraction;
+  }
+
   public destroy(): void {
+    this.drawingInteraction.cancel();
     this.removeContextMenu();
     const mainCanvas = this.chart.mainCanvas;
     mainCanvas.removeEventListener('wheel', this.handleWheel);
