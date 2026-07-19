@@ -575,7 +575,8 @@ export class Renderer {
 
   private renderDrawings(ctx: CanvasRenderingContext2D): void {
     const drawings = this.chart.getDrawings();
-    if (drawings.length === 0) return;
+    const isCreating = this.chart.isDrawing();
+    if (drawings.length === 0 && !isCreating) return;
     if (this.chart.state.data.length === 0) return;
 
     ctx.save();
@@ -614,7 +615,75 @@ export class Renderer {
       }
     }
 
+    // Rubber-band preview during drawing-creation mode
+    if (isCreating) {
+      const preview = this.chart.getDrawingPreview();
+      if (preview) {
+        const previewColor = '#4a9eff';
+        ctx.strokeStyle = previewColor;
+        ctx.fillStyle = previewColor;
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.globalAlpha = 0.7;
+
+        // Draw a simple line from p1 to p2Preview (or just a dot at p1
+        // if p2Preview isn't set yet)
+        const x1 = this.chart.state.data[0] ? this.previewTimeToX(preview.time) : 0;
+        const y1 = this.previewPriceToY(preview.price);
+        if (preview.time2 != null && preview.price2 != null) {
+          const x2 = this.previewTimeToX(preview.time2);
+          const y2 = this.previewPriceToY(preview.price2);
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          // Small circle at p2
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.arc(x2, y2, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Small circle at p1
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.globalAlpha = 1;
+      }
+    }
+
     ctx.restore();
+  }
+
+  /** Convert a timestamp to screen X for the drawing preview. */
+  private previewTimeToX(time: number): number {
+    const { data } = this.chart.state;
+    if (data.length === 0) return 0;
+    // Binary search for the bar (same as resolveAnchor uses)
+    let left = 0, right = data.length - 1;
+    while (left <= right) {
+      const mid = Math.floor((left + right) / 2);
+      if (data[mid].time === time) {
+        return indexToX(mid, this.chart.state);
+      } else if (data[mid].time < time) {
+        left = mid + 1;
+      } else {
+        right = mid - 1;
+      }
+    }
+    // Not found — extrapolate from the nearest bar
+    if (data.length > 1) {
+      const interval = data[1].time - data[0].time;
+      const idx = (time - data[0].time) / interval;
+      return indexToX(idx, this.chart.state);
+    }
+    return indexToX(0, this.chart.state);
+  }
+
+  /** Convert a price to screen Y for the drawing preview. */
+  private previewPriceToY(price: number): number {
+    return priceToY(price, this.chart.state);
   }
 
   destroy(): void {

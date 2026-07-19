@@ -84,7 +84,11 @@ export class EventManager {
         this.chart.selectDrawing(null);
       }
     } else if (e.key === 'Escape') {
-      // Cancel any in-progress drag first
+      // Cancel drawing-creation mode first (if active)
+      if (this.chart.isDrawing()) {
+        this.chart.cancelDrawing();
+      }
+      // Cancel any in-progress drag
       if (this.drawingInteraction.isDragging()) {
         this.drawingInteraction.cancel();
         this.chart.render();
@@ -470,6 +474,18 @@ export class EventManager {
       return;
     }
 
+    // Drawing-creation mode has priority over chart pan/zoom too.
+    // If the user is mid-drawing (clicked beginDrawing), route the
+    // click to the drawing controller instead of panning the chart.
+    if (this.chart.isDrawing()) {
+      (this.chart as any).drawingController.onMouseDown(mouseX, mouseY);
+      this.isDragging = true;
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
+      this.dragMode = 'chart';
+      return;
+    }
+
     this.isDragging = true;
     this.lastMouseX = mouseX;
     this.lastMouseY = mouseY;
@@ -558,6 +574,14 @@ export class EventManager {
     if (this.drawingInteraction.onMouseMove(mouseX, mouseY)) {
       // Drawing is being dragged — update lastMouse for delta calc,
       // but don't run the chart pan logic below.
+      this.lastMouseX = mouseX;
+      this.lastMouseY = mouseY;
+      return;
+    }
+
+    // Drawing-creation mode: update the preview anchor.
+    if (this.chart.isDrawing()) {
+      (this.chart as any).drawingController.onMouseMove(mouseX, mouseY);
       this.lastMouseX = mouseX;
       this.lastMouseY = mouseY;
       return;

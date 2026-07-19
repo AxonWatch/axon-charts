@@ -14,6 +14,7 @@ import { CrosshairAPI } from '../api/crosshair.js';
 import { validateOptions, validateDrawing } from '../utils/validation.js';
 import { registerDrawingType as registerDrawingTypeImpl } from '../drawings/registry.js';
 import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
+import { DrawingController } from '../interaction/drawing-controller.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
@@ -211,6 +212,8 @@ export class Chart {
   public onCandleClose?: CandleCloseCallback;
   private _drawings: Drawing[] = [];
   private _selectedDrawingId: string | null = null;
+  /** Drawing-creation mode controller (click-to-create new drawings). */
+  private drawingController: DrawingController;
 
   // Event handlers stored for proper removal
   private readonly handleResizeBound: () => void;
@@ -273,6 +276,7 @@ export class Chart {
     this.initCanvases();
     this.crosshair = new Crosshair(this);
     this._crosshairAPI = new CrosshairAPI(this, this.crosshair);
+    this.drawingController = new DrawingController(this);
     this.eventManager = new EventManager(this);
     this.attribution = new Attribution(this);
     this.priceScaleAPI = new PriceScaleAPI(this);
@@ -1168,6 +1172,22 @@ export class Chart {
   }
   getHoveredHandle(): { drawingId: string; handleId: string } | null {
     return this.eventManager.getDrawingInteraction().getHoveredHandle();
+  }
+  /** Enter drawing-creation mode for the given type. */
+  beginDrawing(type: string): void {
+    this.drawingController.begin(type);
+  }
+  /** Cancel drawing-creation mode. */
+  cancelDrawing(): void {
+    this.drawingController.cancel();
+  }
+  /** True when drawing-creation mode is active. */
+  isDrawing(): boolean {
+    return this.drawingController.isDrawing();
+  }
+  /** Get the in-progress drawing's preview anchor(s), or null. */
+  getDrawingPreview(): { time: number; price: number; time2?: number; price2?: number } | null {
+    return this.drawingController.getPreview();
   }
   /**
    * Register a custom drawing type. After registration, drawings with
