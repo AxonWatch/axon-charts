@@ -7,6 +7,7 @@ import { VLineRenderer } from './VLineRenderer.js';
 import { PositionRenderer } from './PositionRenderer.js';
 import { TrendlineRenderer } from './TrendlineRenderer.js';
 import { BoxRenderer } from './BoxRenderer.js';
+import { FibRetracementRenderer } from './FibRetracementRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -31,6 +32,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['position',   new PositionRenderer()],
   ['trendline',  new TrendlineRenderer()],
   ['box',        new BoxRenderer()],
+  ['fib_retracement', new FibRetracementRenderer()],
 ]);
 
 /**

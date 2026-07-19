@@ -7,4 +7,5 @@ export { VLineRenderer } from './VLineRenderer.js';
 export { PositionRenderer } from './PositionRenderer.js';
 export { TrendlineRenderer } from './TrendlineRenderer.js';
 export { BoxRenderer } from './BoxRenderer.js';
+export { FibRetracementRenderer } from './FibRetracementRenderer.js';
 export { resolveAnchor, AnchorPoint, AnchorSpec } from './anchor.js';

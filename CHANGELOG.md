@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - `position` drawing type — renders a trading position with live unrealized PnL, optional stop-loss and take-profit lines, and a right-axis label showing side, qty, entry price, and signed PnL. PnL is recomputed every frame (including the high-frequency `updateLastBarFast` path) using `lastBar.close` as the current price. Anchored via `time` (preferred, survives `maxBars` cleanup) or `barIndex`.
 - `trendline` drawing type — 2-point straight line between two anchors on the chart. Supports optional `extend` (`'none'`/`'left'`/`'right'`/`'both'`), `lineStyle` (`'solid'`/`'dashed'`/`'dotted'`), `lineWidth`, and an end-point text label. Both anchors resolved via `resolveAnchor` (prefers `time`/`time2` for stability). Works in all scale modes.
 - `box` drawing type — 2-point rectangle (opposite corners) for trading ranges, supply/demand zones, and highlight regions. Supports optional `fill` (defaults to 15%-alpha of `color`), `lineStyle`, `lineWidth`, and a top-left corner label. Works in all scale modes.
+- `fib_retracement` drawing type — Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors. Direction-agnostic (works for uptrend and downtrend swings). Each level is a horizontal line between the anchor X positions with a right-axis `level% price` label. Tier-colored by default (shallow=green, mid=amber, deep=red); optional `data.fill` override and `text` header label.
 - Extensible drawing system:
   - `DrawingRenderer` interface — plugin contract for rendering a drawing type (mirrors the `SeriesRenderer` pattern used for series types).
   - `chart.registerDrawingType(type, renderer)` — register custom drawing types without forking the library. Overwriting built-ins is allowed.
@@ -19,8 +20,9 @@ All notable changes to this project will be documented in this file.
   - `PositionRenderer` — built-in renderer for the `position` drawing type. Exported from the package.
   - `TrendlineRenderer` — built-in renderer for the `trendline` drawing type. Exported from the package.
   - `BoxRenderer` — built-in renderer for the `box` drawing type. Exported from the package.
+  - `FibRetracementRenderer` — built-in renderer for the `fib_retracement` drawing type. Exported from the package.
   - `validateDrawing()` — validates drawings on `addDrawing()`. Lenient on legacy types (no regression for existing callers); strict on `position` (requires `data.side`, `data.qty`, `price`, and an anchor).
-  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`.
+  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`, `FibRetracementRenderer`.
 
 ### Changed
 - `Drawing` interface restructured for extensibility:
@@ -30,7 +32,7 @@ All notable changes to this project will be documented in this file.
 - `Renderer.renderDrawings()` slimmed from 80-line switch statement to 12-line registry lookup. Unknown drawing types are silently skipped.
 - `IChart.dataManager` interface: added `getBarAtTime(timestamp)` (already existed on concrete `DataManager` class; now part of the contract for drawing anchor resolution).
 - Color/style helpers (`hexToRgba`, `NAMED_COLORS`) extracted from `Renderer` to `src/utils/style.ts` for reuse by drawing renderers. New helpers: `chartBottomEdge()`, `clampYToChartArea()`.
-- Bundle: 26709 → 28464 bytes gzipped (+1755 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, and BoxRenderer).
+- Bundle: 26709 → 28816 bytes gzipped (+2107 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, and FibRetracementRenderer).
 
 ### Backward Compatibility
 - All 5 legacy drawing types (`arrow_up`, `arrow_down`, `label`, `hline`, `vline`) render pixel-identically (verbatim port to per-type renderer classes).
