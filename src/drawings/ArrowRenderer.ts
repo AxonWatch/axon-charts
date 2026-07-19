@@ -1,7 +1,8 @@
 import type { Drawing } from '../types/index.js';
 import type { IChart } from '../types/index.js';
 import { indexToX, priceToY } from '../utils/projection.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import { resolveAnchor } from './anchor.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Renders arrow_up and arrow_down drawings.
@@ -10,17 +11,17 @@ import type { DrawingRenderer } from './DrawingRenderer.js';
  * Renderer.renderDrawings(). A single class handles both directions
  * (configured via the 'direction' constructor argument) to keep the
  * registry small and share the fill triangle logic.
+ *
+ * Interactive: one body handle (drag to move the anchor).
  */
 export class ArrowRenderer implements DrawingRenderer {
   constructor(private readonly direction: 'up' | 'down') {}
 
   render(ctx: CanvasRenderingContext2D, chart: IChart, d: Drawing): void {
-    const { data } = chart.state;
-    if (d.barIndex == null || d.barIndex < 0 || d.barIndex >= data.length) return;
-    if (d.price == null) return;
-
-    const x = indexToX(d.barIndex, chart.state);
-    const y = priceToY(d.price, chart.state);
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price ?? 0 });
+    if (!anchor || d.price == null) return;
+    const x = anchor.x;
+    const y = anchor.y;
 
     ctx.fillStyle = d.color;
     ctx.beginPath();
@@ -35,5 +36,18 @@ export class ArrowRenderer implements DrawingRenderer {
     }
     ctx.closePath();
     ctx.fill();
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price ?? 0 });
+    if (!anchor) return false;
+    // 10px box around the anchor (the arrow is ~10px tall)
+    return Math.abs(x - anchor.x) <= 6 && Math.abs(y - anchor.y) <= 10;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price ?? 0 });
+    if (!anchor) return [];
+    return [{ id: 'body', x: anchor.x, y: anchor.y, cursor: 'move' }];
   }
 }

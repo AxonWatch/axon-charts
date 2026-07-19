@@ -4,7 +4,7 @@ import { resolveAnchor } from './anchor.js';
 import { chartBottomEdge, clampYToChartArea } from '../utils/style.js';
 import { hexToRgba } from '../utils/style.js';
 import { LAYOUT } from '../core/layout.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Sets the canvas line dash pattern from a DrawingData.lineStyle value.
@@ -130,4 +130,44 @@ export class TrendlineRenderer implements DrawingRenderer {
       ctx.textBaseline = 'alphabetic';
     }
   }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null || d.price2 == null) return false;
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return false;
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return false;
+    return pointToSegmentDistance(x, y, a1.x, a1.y, a2.x, a2.y) <= 6;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null || d.price2 == null) return [];
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return [];
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return [];
+    return [
+      { id: 'p1', x: a1.x, y: a1.y, cursor: 'move' },
+      { id: 'p2', x: a2.x, y: a2.y, cursor: 'move' },
+    ];
+  }
+}
+
+/**
+ * Perpendicular distance from point (px, py) to line segment (x1,y1)-(x2,y2).
+ * Used by hitTest for line-based drawings (trendline, measure connector).
+ */
+function pointToSegmentDistance(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) {
+    // Degenerate segment — just a point
+    return Math.hypot(px - x1, py - y1);
+  }
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));  // clamp to segment
+  const closestX = x1 + t * dx;
+  const closestY = y1 + t * dy;
+  return Math.hypot(px - closestX, py - closestY);
 }

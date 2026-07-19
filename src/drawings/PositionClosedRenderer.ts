@@ -4,7 +4,7 @@ import { priceToY } from '../utils/projection.js';
 import { resolveAnchor } from './anchor.js';
 import { hexToRgba, clampYToChartArea } from '../utils/style.js';
 import { LAYOUT } from '../core/layout.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Renders a closed trading position — a trade that has been opened
@@ -152,4 +152,35 @@ export class PositionClosedRenderer implements DrawingRenderer {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null || d.price2 == null) return false;
+    const entry = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!entry) return false;
+    const exit = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!exit) return false;
+    return pointToSegmentDistance(x, y, entry.x, entry.y, exit.x, exit.y) <= 6;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null || d.price2 == null) return [];
+    const entry = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!entry) return [];
+    const exit = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!exit) return [];
+    return [
+      { id: 'p1', x: entry.x, y: entry.y, cursor: 'move' },
+      { id: 'p2', x: exit.x, y: exit.y, cursor: 'move' },
+    ];
+  }
+}
+
+function pointToSegmentDistance(px: number, py: number, x1: number, y1: number, x2: number, y2: number): number {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.hypot(px - x1, py - y1);
+  let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
 }

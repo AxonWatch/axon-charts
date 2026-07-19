@@ -581,9 +581,37 @@ export class Renderer {
     ctx.save();
     ctx.setLineDash([]);
 
+    const selectedId = this.chart.getSelectedDrawingId();
+    const hoveredHandle = this.chart.getHoveredHandle();
+
     for (const d of drawings) {
       const renderer = getDrawingRenderer(d.type);
-      if (renderer) renderer.render(ctx, this.chart, d);
+      if (!renderer) continue;
+      renderer.render(ctx, this.chart, d);
+
+      // Selection outline: draw all handles for the selected drawing
+      if (d.id === selectedId && renderer.getHandles) {
+        const handles = renderer.getHandles(this.chart, d);
+        ctx.strokeStyle = '#4a9eff';
+        ctx.fillStyle = '#4a9eff';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([]);
+        for (const handle of handles) {
+          const isHovered = hoveredHandle != null &&
+            hoveredHandle.drawingId === d.id &&
+            hoveredHandle.handleId === handle.id;
+          const radius = isHovered ? 6 : 4;
+          ctx.beginPath();
+          ctx.arc(handle.x, handle.y, radius, 0, Math.PI * 2);
+          if (isHovered) {
+            ctx.fill();
+          } else {
+            ctx.globalAlpha = 0.7;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+      }
     }
 
     ctx.restore();
