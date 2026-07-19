@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -310,6 +310,15 @@ CONTROL:
     })
     → renders entry marker, dashed entry line, optional SL/TP lines,
       and a live PnL label on the right axis (updates every tick)
+
+  Trendline example:
+    chart.addDrawing({
+      id: 'tl-1', type: 'trendline',
+      time: ..., price: 42150, time2: ..., price2: 42500,
+      color: '#3b82f6', text: 'Support',
+      data: { extend: 'right', lineStyle: 'dashed' }
+    })
+    → 2-point line with optional extend (left/right/both) + end label
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move

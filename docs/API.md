@@ -246,7 +246,7 @@ interface Drawing {
   time?: number;         // Anchor timestamp (preferred — survives maxBars auto-cleanup)
   price?: number;        // Price level at the primary anchor
 
-  // === Secondary anchor (two-point drawings: trendline, box — future) ===
+  // === Secondary anchor (two-point drawings: trendline, box, fib, measure) ===
   barIndex2?: number;
   time2?: number;
   price2?: number;
@@ -286,6 +286,7 @@ interface DrawingData {
 | `hline` | `{price}` | Horizontal dashed line spanning chart width |
 | `vline` | `{barIndex|time}` | Vertical dashed line spanning chart height |
 | `position` | `{barIndex|time, price, data}` | Trading position with live PnL, optional SL/TP |
+| `trendline` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point line with optional extend/lineStyle/lineWidth + end label |
 
 ##### `position` drawing type
 
@@ -341,6 +342,38 @@ chart.removeDrawing('pos-1');
 **Anchoring note:** prefer `time` over `barIndex` for positions. When `maxBars` auto-cleanup splices the oldest bars out, `barIndex` shifts but `time` stays stable — the renderer re-resolves the bar via binary search on `time`.
 
 **Scale modes:** works in linear, logarithmic, and percentage modes (PnL is always computed in real price space; the label is formatted via `priceFormatter.formatPrice` which honors the chart's price format).
+
+##### `trendline` drawing type
+
+Renders a straight line between two anchor points on the chart. The most-used drawing in technical analysis — support/resistance, trend channels, breakout lines.
+
+**Required fields:**
+- `price`, `price2` — prices at the two anchor points
+- Two anchors: `{time|barIndex, price}` and `{time2|barIndex2, price2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.extend` — `'none'` (default) / `'left'` / `'right'` / `'both'` — extend the line beyond the anchors to the chart boundary
+- `data.lineStyle` — `'solid'` (default) / `'dashed'` / `'dotted'`
+- `data.lineWidth` — stroke width in pixels (default 1)
+- `text` — optional end-point label (small boxed text near the second anchor / extended end)
+
+**Example — support trendline extending right:**
+
+```typescript
+chart.addDrawing({
+  id: 'tl-1',
+  type: 'trendline',
+  time: 1704067200000,
+  price: 42150,
+  time2: 1704153600000,
+  price2: 42500,
+  color: '#3b82f6',
+  text: 'Support',
+  data: { extend: 'right', lineStyle: 'dashed', lineWidth: 1 }
+});
+```
+
+**Scale modes:** works in linear, logarithmic, and percentage modes (both anchors' Y coordinates go through `priceToY`, the single source of truth).
 
 **Registering a custom drawing type:**
 
@@ -808,7 +841,7 @@ interface Drawing {
   time?: number;         // Anchor timestamp (survives maxBars cleanup)
   price?: number;        // Price level
 
-  // Secondary anchor (two-point drawings: trendline, box — future)
+  // Secondary anchor (two-point drawings: trendline, box, fib, measure)
   barIndex2?: number;
   time2?: number;
   price2?: number;
@@ -947,6 +980,15 @@ chart.addDrawing({
   data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
 });
 
+// Trendline extending right with a label
+chart.addDrawing({
+  id: 'tl-1', type: 'trendline',
+  time: 1704067200000, price: 42150,
+  time2: 1704153600000, price2: 42500,
+  color: '#3b82f6', text: 'Support',
+  data: { extend: 'right', lineStyle: 'dashed' }
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1071,6 +1113,8 @@ All exported from the package entry point:
 | `LabelRenderer` | class | Built-in label drawing renderer |
 | `HLineRenderer` | class | Built-in hline drawing renderer |
 | `VLineRenderer` | class | Built-in vline drawing renderer |
+| `PositionRenderer` | class | Built-in position drawing renderer |
+| `TrendlineRenderer` | class | Built-in trendline drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
