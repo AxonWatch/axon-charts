@@ -162,6 +162,7 @@ chart.addDrawing(drawing): void
 chart.removeDrawing(id): void
 chart.clearDrawings(): void
 chart.getDrawings(): Drawing[]
+chart.registerDrawingType(type, renderer): void
 
 // Events
 chart.onCrosshairMove = fn

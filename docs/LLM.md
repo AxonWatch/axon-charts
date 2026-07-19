@@ -299,7 +299,8 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, custom)
+  chart.registerDrawingType(type, renderer) → add custom drawing type
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move
