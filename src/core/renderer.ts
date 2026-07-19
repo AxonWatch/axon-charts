@@ -11,6 +11,7 @@ import { BarRenderer } from '../series/BarRenderer.js';
 import { HeikenAshiRenderer } from '../series/HeikenAshiRenderer.js';
 import { HollowRenderer } from '../series/HollowRenderer.js';
 import { hexToRgba } from '../utils/style.js';
+import { getDrawingRenderer } from '../drawings/registry.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -575,79 +576,16 @@ export class Renderer {
   private renderDrawings(ctx: CanvasRenderingContext2D): void {
     const drawings = this.chart.getDrawings();
     if (drawings.length === 0) return;
-    const { w, devicePixelRatio } = this.chart.state;
-    const data = this.chart.state.data;
-    if (data.length === 0) return;
+    if (this.chart.state.data.length === 0) return;
 
     ctx.save();
     ctx.setLineDash([]);
 
     for (const d of drawings) {
-      const bar = data[d.barIndex];
-      if (!bar) continue;
-      const x = indexToX(d.barIndex, this.chart.state);
-      const y = priceToY(d.price, this.chart.state);
-
-      switch (d.type) {
-        case 'arrow_up':
-          ctx.fillStyle = d.color;
-          ctx.beginPath();
-          ctx.moveTo(x, y + 8);
-          ctx.lineTo(x - 5, y);
-          ctx.lineTo(x + 5, y);
-          ctx.closePath();
-          ctx.fill();
-          break;
-        case 'arrow_down':
-          ctx.fillStyle = d.color;
-          ctx.beginPath();
-          ctx.moveTo(x, y - 8);
-          ctx.lineTo(x - 5, y);
-          ctx.lineTo(x + 5, y);
-          ctx.closePath();
-          ctx.fill();
-          break;
-        case 'label': {
-          ctx.font = '11px system-ui';
-          const text = d.text || '';
-          const tw = ctx.measureText(text).width;
-          ctx.fillStyle = hexToRgba(d.color, 0.15, this.chart.options.layout.textColor);
-          ctx.fillRect(x - tw / 2 - 4, y - 8, tw + 8, 16);
-          ctx.strokeStyle = d.color;
-          ctx.lineWidth = 1;
-          ctx.strokeRect(x - tw / 2 - 4, y - 8, tw + 8, 16);
-          ctx.fillStyle = d.color;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(text, x, y);
-          break;
-        }
-        case 'hline': {
-          const cb = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
-          ctx.strokeStyle = d.color;
-          ctx.lineWidth = 1;
-          ctx.setLineDash([4, 4]);
-          ctx.beginPath();
-          ctx.moveTo(0, y);
-          ctx.lineTo(w - this.chart.state.axisWidth, y);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          break;
-        }
-        case 'vline': {
-          const cb = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
-          ctx.strokeStyle = d.color;
-          ctx.lineWidth = 1;
-          ctx.setLineDash([4, 4]);
-          ctx.beginPath();
-          ctx.moveTo(x, 0);
-          ctx.lineTo(x, cb);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          break;
-        }
-      }
+      const renderer = getDrawingRenderer(d.type);
+      if (renderer) renderer.render(ctx, this.chart, d);
     }
+
     ctx.restore();
   }
 

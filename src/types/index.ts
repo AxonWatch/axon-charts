@@ -339,6 +339,8 @@ export interface IChart {
     readonly length: number;
     readonly isEmpty: boolean;
     getPriceRange(start: number, count: number, scaleMargins?: { top?: number; bottom?: number }): { min: number; max: number };
+    /** Binary search for a bar by timestamp. Used by drawing anchor resolution. */
+    getBarAtTime(timestamp: number): Bar | undefined;
   };
   renderer: {
     createBuffer(): void;
