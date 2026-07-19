@@ -3,7 +3,7 @@ import type { IChart } from '../types/index.js';
 import { resolveAnchor } from './anchor.js';
 import { chartBottomEdge } from '../utils/style.js';
 import { hexToRgba } from '../utils/style.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Renders a vertical highlight band across the full chart height,
@@ -96,5 +96,31 @@ export class HighlighterRenderer implements DrawingRenderer {
       ctx.fillText(text, boxX + 4, boxY + 2);
       ctx.textBaseline = 'alphabetic';
     }
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: 0 });
+    if (!a1) return false;
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: 0 });
+    if (!a2) return false;
+    const left = Math.min(a1.x, a2.x);
+    const right = Math.max(a1.x, a2.x);
+    const top = chart.state.topMargin;
+    const bottom = chartBottomEdge(chart);
+    return x >= left && x <= right && y >= top && y <= bottom;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: 0 });
+    if (!a1) return [];
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: 0 });
+    if (!a2) return [];
+    const left = Math.min(a1.x, a2.x);
+    const right = Math.max(a1.x, a2.x);
+    const midY = (chart.state.topMargin + chartBottomEdge(chart)) / 2;
+    return [
+      { id: 'p1', x: left, y: midY, cursor: 'ew-resize' },
+      { id: 'p2', x: right, y: midY, cursor: 'ew-resize' },
+    ];
   }
 }

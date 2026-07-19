@@ -3,7 +3,7 @@ import type { IChart } from '../types/index.js';
 import { resolveAnchor } from './anchor.js';
 import { hexToRgba } from '../utils/style.js';
 import { priceToY } from '../utils/projection.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Default Fibonacci retracement levels (as ratios of the swing range).
@@ -152,5 +152,32 @@ export class FibRetracementRenderer implements DrawingRenderer {
     // clamps to 0.01 internally, but the resulting Y may be off-chart.
     // We let priceToY handle it and rely on the caller's label clamping.
     return priceToY(price, chart.state);
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null || d.price2 == null) return false;
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return false;
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return false;
+    const left = Math.min(a1.x, a2.x);
+    const right = Math.max(a1.x, a2.x);
+    const price1 = d.price;
+    const price2 = d.price2;
+    const minY = Math.min(priceToY(price1, chart.state), priceToY(price2, chart.state));
+    const maxY = Math.max(priceToY(price1, chart.state), priceToY(price2, chart.state));
+    return x >= left && x <= right && y >= minY && y <= maxY;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null || d.price2 == null) return [];
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return [];
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return [];
+    return [
+      { id: 'p1', x: a1.x, y: a1.y, cursor: 'move' },
+      { id: 'p2', x: a2.x, y: a2.y, cursor: 'move' },
+    ];
   }
 }

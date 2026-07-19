@@ -4,7 +4,7 @@ import { priceToY } from '../utils/projection.js';
 import { resolveAnchor } from './anchor.js';
 import { hexToRgba, clampYToChartArea } from '../utils/style.js';
 import { LAYOUT } from '../core/layout.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Order type codes → human-readable label prefixes.
@@ -118,5 +118,17 @@ export class OrderRenderer implements DrawingRenderer {
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null) return false;
+    const lineY = priceToY(d.price, chart.state);
+    return Math.abs(y - lineY) <= 6 && x >= 0 && x <= chart.state.w - chart.state.axisWidth;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null) return [];
+    const y = priceToY(d.price, chart.state);
+    return [{ id: 'body', x: (chart.state.w - chart.state.axisWidth) / 2, y, cursor: 'ns-resize' }];
   }
 }

@@ -4,7 +4,7 @@ import { priceToY } from '../utils/projection.js';
 import { LAYOUT } from '../core/layout.js';
 import { hexToRgba, clampYToChartArea } from '../utils/style.js';
 import { resolveAnchor } from './anchor.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Renders a trading position on the chart.
@@ -140,5 +140,20 @@ export class PositionRenderer implements DrawingRenderer {
     // Reset text alignment (matches Renderer's pattern)
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null) return false;
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!anchor) return false;
+    // Hit the entry marker (small circle) or the entry line
+    return Math.abs(x - anchor.x) <= 6 && Math.abs(y - anchor.y) <= 6;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null) return [];
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!anchor) return [];
+    return [{ id: 'body', x: anchor.x, y: anchor.y, cursor: 'move' }];
   }
 }

@@ -2,7 +2,7 @@ import type { Drawing } from '../types/index.js';
 import type { IChart } from '../types/index.js';
 import { resolveAnchor } from './anchor.js';
 import { hexToRgba, clampYToChartArea } from '../utils/style.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Renders a multi-line freeform text annotation on the chart.
@@ -94,5 +94,19 @@ export class TextRenderer implements DrawingRenderer {
 
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null) return false;
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!anchor) return false;
+    return Math.abs(x - anchor.x) <= 12 && Math.abs(y - anchor.y) <= 12;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null) return [];
+    const anchor = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!anchor) return [];
+    return [{ id: 'body', x: anchor.x, y: anchor.y, cursor: 'move' }];
   }
 }

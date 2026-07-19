@@ -2,7 +2,7 @@ import type { Drawing } from '../types/index.js';
 import type { IChart } from '../types/index.js';
 import { resolveAnchor } from './anchor.js';
 import { hexToRgba } from '../utils/style.js';
-import type { DrawingRenderer } from './DrawingRenderer.js';
+import type { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 
 /**
  * Sets the canvas line dash pattern from a DrawingData.lineStyle value.
@@ -97,5 +97,32 @@ export class BoxRenderer implements DrawingRenderer {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
     }
+  }
+
+  hitTest(x: number, y: number, chart: IChart, d: Drawing): boolean {
+    if (d.price == null || d.price2 == null) return false;
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return false;
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return false;
+    const left = Math.min(a1.x, a2.x);
+    const right = Math.max(a1.x, a2.x);
+    const top = Math.min(a1.y, a2.y);
+    const bottom = Math.max(a1.y, a2.y);
+    return x >= left && x <= right && y >= top && y <= bottom;
+  }
+
+  getHandles(chart: IChart, d: Drawing): DrawingHandle[] {
+    if (d.price == null || d.price2 == null) return [];
+    const a1 = resolveAnchor(chart, { barIndex: d.barIndex, time: d.time, price: d.price });
+    if (!a1) return [];
+    const a2 = resolveAnchor(chart, { barIndex: d.barIndex2, time: d.time2, price: d.price2 });
+    if (!a2) return [];
+    // Two corner handles (the two anchor points). Dragging a corner
+    // resizes the box from that corner.
+    return [
+      { id: 'p1', x: a1.x, y: a1.y, cursor: 'nwse-resize' },
+      { id: 'p2', x: a2.x, y: a2.y, cursor: 'nesw-resize' },
+    ];
   }
 }
