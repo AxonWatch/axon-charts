@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, text, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -353,6 +353,14 @@ CONTROL:
       color: '#3b82f6', data: { lineStyle: 'dashed' }
     })
     → connector line + 2-line label: "+700.0 (+1.66%)" / "10 bars"
+
+  Text example:
+    chart.addDrawing({
+      id: 'note-1', type: 'text',
+      time: ..., price: 42800, color: '#f59e0b',
+      data: { lines: ['Earnings release', 'Q3 2026'] }
+    })
+    → multi-line annotation box (richer than 'label')
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move

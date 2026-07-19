@@ -10,4 +10,5 @@ export { BoxRenderer } from './BoxRenderer.js';
 export { FibRetracementRenderer } from './FibRetracementRenderer.js';
 export { MeasureRenderer } from './MeasureRenderer.js';
 export { OrderRenderer } from './OrderRenderer.js';
+export { TextRenderer } from './TextRenderer.js';
 export { resolveAnchor, AnchorPoint, AnchorSpec } from './anchor.js';

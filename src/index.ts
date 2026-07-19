@@ -30,6 +30,7 @@ export { BoxRenderer } from './drawings/BoxRenderer.js';
 export { FibRetracementRenderer } from './drawings/FibRetracementRenderer.js';
 export { MeasureRenderer } from './drawings/MeasureRenderer.js';
 export { OrderRenderer } from './drawings/OrderRenderer.js';
+export { TextRenderer } from './drawings/TextRenderer.js';
 
 /**
  * Global chart registry for AI agent discovery.

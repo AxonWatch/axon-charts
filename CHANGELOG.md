@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 - `fib_retracement` drawing type — Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors. Direction-agnostic (works for uptrend and downtrend swings). Each level is a horizontal line between the anchor X positions with a right-axis `level% price` label. Tier-colored by default (shallow=green, mid=amber, deep=red); optional `data.fill` override and `text` header label.
 - `measure` drawing type — 2-point measurement annotation showing price delta, percentage change, and bar count between two anchors. Draws a connector line, endpoint markers, and a two-line label near the second anchor (clamped to the chart area). Color-coded green/red by sign of the price delta.
 - `order` drawing type — pending order (limit/stop/stop_limit/market) drawn as a dashed horizontal line at the order price with a right-axis label showing `"SIDE KIND qty @ price"` (e.g. `"BUY LIMIT 0.5 @ 42150.5"`). Complements the `position` drawing — where `position` visualizes a filled trade, `order` visualizes a resting order that hasn't filled yet. Color defaults to side-based (green for buy/long, red for sell/short), overridable via `drawing.color`.
+- `text` drawing type — multi-line freeform text annotation. Distinct from the simpler `label` type (single-line, fixed 16px box, centered): `text` accepts `data.lines` (array of strings), sizes the box to content, and anchors at the top-left with auto-flip when near the right edge. Optional `data.textFill` overrides the default 10%-alpha-of-color background. Falls back to the `text` field as a single-line convenience when `data.lines` is not set.
 - Extensible drawing system:
   - `DrawingRenderer` interface — plugin contract for rendering a drawing type (mirrors the `SeriesRenderer` pattern used for series types).
   - `chart.registerDrawingType(type, renderer)` — register custom drawing types without forking the library. Overwriting built-ins is allowed.
@@ -25,8 +26,9 @@ All notable changes to this project will be documented in this file.
   - `FibRetracementRenderer` — built-in renderer for the `fib_retracement` drawing type. Exported from the package.
   - `MeasureRenderer` — built-in renderer for the `measure` drawing type. Exported from the package.
   - `OrderRenderer` — built-in renderer for the `order` drawing type. Exported from the package.
+  - `TextRenderer` — built-in renderer for the `text` drawing type. Exported from the package.
   - `validateDrawing()` — validates drawings on `addDrawing()`. Lenient on legacy types (no regression for existing callers); strict on `position` (requires `data.side`, `data.qty`, `price`, and an anchor) and `order` (requires `data.side`, `data.qty`, `data.kind`, and `price`).
-  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`, `FibRetracementRenderer`, `MeasureRenderer`, `OrderRenderer`.
+  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`, `FibRetracementRenderer`, `MeasureRenderer`, `OrderRenderer`, `TextRenderer`.
 
 ### Changed
 - `Drawing` interface restructured for extensibility:
@@ -36,7 +38,7 @@ All notable changes to this project will be documented in this file.
 - `Renderer.renderDrawings()` slimmed from 80-line switch statement to 12-line registry lookup. Unknown drawing types are silently skipped.
 - `IChart.dataManager` interface: added `getBarAtTime(timestamp)` (already existed on concrete `DataManager` class; now part of the contract for drawing anchor resolution).
 - Color/style helpers (`hexToRgba`, `NAMED_COLORS`) extracted from `Renderer` to `src/utils/style.ts` for reuse by drawing renderers. New helpers: `chartBottomEdge()`, `clampYToChartArea()`.
-- Bundle: 26709 → 29605 bytes gzipped (+2896 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, FibRetracementRenderer, MeasureRenderer, and OrderRenderer).
+- Bundle: 26709 → 29855 bytes gzipped (+3146 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, FibRetracementRenderer, MeasureRenderer, OrderRenderer, and TextRenderer).
 
 ### Backward Compatibility
 - All 5 legacy drawing types (`arrow_up`, `arrow_down`, `label`, `hline`, `vline`) render pixel-identically (verbatim port to per-type renderer classes).

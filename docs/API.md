@@ -264,11 +264,15 @@ interface DrawingData {
   status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
   kind?: 'limit' | 'stop' | 'stop_limit' | 'market';   // Order type
 
-  // Two-point drawings (future)
+  // Two-point drawings (trendline, box, fib, measure)
   lineWidth?: number;
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   extend?: 'none' | 'left' | 'right' | 'both';
   fill?: string;
+
+  // Text (multi-line annotation)
+  lines?: string[];       // Each entry is one line
+  textFill?: string;      // Box background (defaults to 10%-alpha of color)
 
   // Custom (user-registered drawing types)
   [key: string]: unknown;
@@ -292,6 +296,7 @@ interface DrawingData {
 | `fib_retracement` | `{barIndex|time, price, barIndex2|time2, price2, data}` | Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors |
 | `measure` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point measurement showing price delta, % change, and bar count |
 | `order` | `{barIndex|time, price, data}` | Pending order (limit/stop/market) with side, qty, kind label |
+| `text` | `{barIndex|time, price, data}` | Multi-line freeform text annotation (richer than `label`) |
 
 ##### `position` drawing type
 
@@ -530,6 +535,57 @@ chart.addDrawing({
 ```
 
 **Scale modes:** works in linear, logarithmic, and percentage modes. PnL/delta is computed in real price space; the label is formatted via `priceFormatter.formatPrice`.
+
+##### `text` drawing type
+
+Renders a multi-line freeform text annotation. Distinct from the simpler `label` type:
+- `label` = single-line, small fixed 16px box, centered on the anchor
+- `text`  = multi-line, box sized to content, anchored at the top-left
+
+**Required fields:**
+- `price` — anchor price
+- One anchor: `time` (preferred) or `barIndex`
+- Either `data.lines` (array of strings) OR `text` (single line, convenience)
+
+**Optional `data` fields:**
+- `data.lines` — `string[]`, each entry is one line
+- `data.textFill` — CSS color for the box background (defaults to 10%-alpha of `color`)
+- `text` — single-line convenience (used only if `data.lines` is not set)
+
+**Renders:**
+1. Small dot at the anchor point (so the user can see what the text marks)
+2. Box positioned with its top-left corner at the anchor, offset 4px so the dot is visible. Box flips to the left of the anchor if it would overflow the right edge; Y is clamped to the visible chart area.
+3. Each line of `data.lines` drawn left-aligned, top-baseline, inside the box
+
+**Example — multi-line note:**
+
+```typescript
+chart.addDrawing({
+  id: 'note-1',
+  type: 'text',
+  time: 1704067200000,
+  price: 42800,
+  color: '#f59e0b',
+  data: {
+    lines: [
+      'Earnings release',
+      'Q3 2026',
+      'Expect volatility'
+    ],
+    textFill: 'rgba(245, 158, 11, 0.10)'
+  }
+});
+```
+
+**Example — single-line (using `text` convenience field):**
+
+```typescript
+chart.addDrawing({
+  id: 'note-2', type: 'text',
+  time: 1704153600000, price: 41800, color: '#3b82f6',
+  text: 'Support level'
+});
+```
 
 **Registering a custom drawing type:**
 
@@ -1012,10 +1068,12 @@ interface DrawingData {
   tp?: number;
   status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
   kind?: 'limit' | 'stop' | 'stop_limit' | 'market';   // Order
-  lineWidth?: number;          // Two-point (future)
+  lineWidth?: number;          // Two-point (trendline, box, fib, measure)
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   extend?: 'none' | 'left' | 'right' | 'both';
   fill?: string;
+  lines?: string[];            // Text (multi-line annotation)
+  textFill?: string;
   [key: string]: unknown;      // Custom types
 }
 ```
@@ -1179,6 +1237,13 @@ chart.addDrawing({
   data: { lineStyle: 'dashed' }
 });
 
+// Multi-line text annotation
+chart.addDrawing({
+  id: 'note-1', type: 'text',
+  time: 1704067200000, price: 42800, color: '#f59e0b',
+  data: { lines: ['Earnings release', 'Q3 2026', 'Expect volatility'] }
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1309,6 +1374,7 @@ All exported from the package entry point:
 | `FibRetracementRenderer` | class | Built-in fib_retracement drawing renderer |
 | `MeasureRenderer` | class | Built-in measure drawing renderer |
 | `OrderRenderer` | class | Built-in order drawing renderer |
+| `TextRenderer` | class | Built-in text drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
