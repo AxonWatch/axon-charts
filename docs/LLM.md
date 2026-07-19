@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, fib_retracement, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, fib_retracement, measure, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -337,6 +337,14 @@ CONTROL:
     })
     → 7 horizontal levels (0/23.6/38.2/50/61.8/78.6/100%) with
       right-axis price labels; tier-colored green/amber/red
+
+  Measure example:
+    chart.addDrawing({
+      id: 'meas-1', type: 'measure',
+      time: ..., price: 42150, time2: ..., price2: 42850,
+      color: '#3b82f6', data: { lineStyle: 'dashed' }
+    })
+    → connector line + 2-line label: "+700.0 (+1.66%)" / "10 bars"
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move
