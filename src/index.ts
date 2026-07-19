@@ -25,6 +25,7 @@ export { LabelRenderer } from './drawings/LabelRenderer.js';
 export { HLineRenderer } from './drawings/HLineRenderer.js';
 export { VLineRenderer } from './drawings/VLineRenderer.js';
 export { PositionRenderer } from './drawings/PositionRenderer.js';
+export { TrendlineRenderer } from './drawings/TrendlineRenderer.js';
 
 /**
  * Global chart registry for AI agent discovery.

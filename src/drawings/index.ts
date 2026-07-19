@@ -5,4 +5,5 @@ export { LabelRenderer } from './LabelRenderer.js';
 export { HLineRenderer } from './HLineRenderer.js';
 export { VLineRenderer } from './VLineRenderer.js';
 export { PositionRenderer } from './PositionRenderer.js';
+export { TrendlineRenderer } from './TrendlineRenderer.js';
 export { resolveAnchor, AnchorPoint, AnchorSpec } from './anchor.js';

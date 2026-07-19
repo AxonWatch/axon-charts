@@ -5,6 +5,7 @@ import { LabelRenderer } from './LabelRenderer.js';
 import { HLineRenderer } from './HLineRenderer.js';
 import { VLineRenderer } from './VLineRenderer.js';
 import { PositionRenderer } from './PositionRenderer.js';
+import { TrendlineRenderer } from './TrendlineRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -27,6 +28,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['hline',      new HLineRenderer()],
   ['vline',      new VLineRenderer()],
   ['position',   new PositionRenderer()],
+  ['trendline',  new TrendlineRenderer()],
 ]);
 
 /**
