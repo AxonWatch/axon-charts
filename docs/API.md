@@ -297,6 +297,7 @@ interface DrawingData {
 | `measure` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point measurement showing price delta, % change, and bar count |
 | `order` | `{barIndex|time, price, data}` | Pending order (limit/stop/market) with side, qty, kind label |
 | `text` | `{barIndex|time, price, data}` | Multi-line freeform text annotation (richer than `label`) |
+| `highlighter` | `{barIndex|time, barIndex2|time2, data}` | Vertical time band spanning full chart height (earnings window, session range) |
 
 ##### `position` drawing type
 
@@ -583,7 +584,43 @@ chart.addDrawing({
 chart.addDrawing({
   id: 'note-2', type: 'text',
   time: 1704153600000, price: 41800, color: '#3b82f6',
-  text: 'Support level'
+   text: 'Support level'
+});
+```
+
+##### `highlighter` drawing type
+
+Renders a vertical highlight band spanning the full chart height between two time anchors. Common uses: earnings windows, news event periods, session ranges (London open, NY open), marking a specific bar range for attention.
+
+Unlike `box`, `highlighter` spans the full chart height (top margin to chart bottom edge) — only the X range (time range) is user-controlled. The `price`/`price2` fields are ignored.
+
+**Required fields:**
+- Two time anchors: `{time|barIndex}` and `{time2|barIndex2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.fill` — CSS color for the band fill (semi-transparent recommended; defaults to 20%-alpha of `color`)
+- `data.lineStyle` — `'solid'` (default) / `'dashed'` / `'dotted'` (border)
+- `data.lineWidth` — border width in pixels (default 1)
+- `text` — optional label at the top-left of the band
+
+**Renders:**
+1. Filled rectangle from `leftX` to `rightX`, spanning `topMargin` to `chartBottomEdge`
+2. Border around the rectangle (using `lineStyle`/`lineWidth`)
+3. Optional boxed text label at `(left+4, top+4)`
+
+**Note on z-order:** the band draws *on top* of candles (renderDrawings runs after the buffer copy). Use a low fill alpha (0.05–0.15) to keep candles readable through the band.
+
+**Example — earnings window:**
+
+```typescript
+chart.addDrawing({
+  id: 'hl-1',
+  type: 'highlighter',
+  time:  1704067200000,         // window start
+  time2: 1704153600000,         // window end
+  color: '#f59e0b',
+  text: 'Earnings Q3',
+  data: { fill: 'rgba(245, 158, 11, 0.10)', lineStyle: 'dashed' }
 });
 ```
 
@@ -1244,6 +1281,14 @@ chart.addDrawing({
   data: { lines: ['Earnings release', 'Q3 2026', 'Expect volatility'] }
 });
 
+// Highlighter marking an earnings window
+chart.addDrawing({
+  id: 'hl-1', type: 'highlighter',
+  time: 1704067200000, time2: 1704153600000,
+  color: '#f59e0b', text: 'Earnings Q3',
+  data: { fill: 'rgba(245, 158, 11, 0.10)', lineStyle: 'dashed' }
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1375,6 +1420,7 @@ All exported from the package entry point:
 | `MeasureRenderer` | class | Built-in measure drawing renderer |
 | `OrderRenderer` | class | Built-in order drawing renderer |
 | `TextRenderer` | class | Built-in text drawing renderer |
+| `HighlighterRenderer` | class | Built-in highlighter drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |

@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, text, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, text, highlighter, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -361,6 +361,14 @@ CONTROL:
       data: { lines: ['Earnings release', 'Q3 2026'] }
     })
     → multi-line annotation box (richer than 'label')
+
+  Highlighter example:
+    chart.addDrawing({
+      id: 'hl-1', type: 'highlighter',
+      time: ..., time2: ..., color: '#f59e0b', text: 'Earnings Q3',
+      data: { fill: 'rgba(245,158,11,0.10)', lineStyle: 'dashed' }
+    })
+    → vertical band spanning full chart height between two times
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move
