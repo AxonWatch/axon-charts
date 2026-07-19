@@ -1,4 +1,4 @@
-export { DrawingRenderer } from './DrawingRenderer.js';
+export { DrawingRenderer, DrawingHandle } from './DrawingRenderer.js';
 export { registerDrawingType, getDrawingRenderer } from './registry.js';
 export { ArrowRenderer } from './ArrowRenderer.js';
 export { LabelRenderer } from './LabelRenderer.js';
@@ -13,4 +13,4 @@ export { OrderRenderer } from './OrderRenderer.js';
 export { TextRenderer } from './TextRenderer.js';
 export { HighlighterRenderer } from './HighlighterRenderer.js';
 export { PositionClosedRenderer } from './PositionClosedRenderer.js';
-export { resolveAnchor, AnchorPoint, AnchorSpec } from './anchor.js';
+export { resolveAnchor, screenToAnchor, AnchorPoint, AnchorSpec } from './anchor.js';
