@@ -10,6 +10,7 @@ import { AreaRenderer } from '../series/AreaRenderer.js';
 import { BarRenderer } from '../series/BarRenderer.js';
 import { HeikenAshiRenderer } from '../series/HeikenAshiRenderer.js';
 import { HollowRenderer } from '../series/HollowRenderer.js';
+import { hexToRgba } from '../utils/style.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -298,7 +299,7 @@ export class Renderer {
     
     // Use the same clamped Y for the label so it stays in the chart area
     const labelY = Math.max(this.chart.state.topMargin, Math.min(yClose, clipBottom));
-    ctx.fillStyle = this.hexToRgba(lineColor ?? '#888', LAYOUT.CURRENT_PRICE_LABEL_ALPHA);
+    ctx.fillStyle = hexToRgba(lineColor ?? '#888', LAYOUT.CURRENT_PRICE_LABEL_ALPHA, this.chart.options.layout.textColor);
     ctx.fillRect(w - axisWidth, labelY - labelHeight / 2, axisWidth, labelHeight);
 
     ctx.strokeStyle = lineColor ?? '#888';
@@ -389,7 +390,7 @@ export class Renderer {
     }
 
     // Draw HA price label box — same style as current price but no horizontal line
-    ctx.fillStyle = this.hexToRgba(haColor, 0.20);
+    ctx.fillStyle = hexToRgba(haColor, 0.20, this.chart.options.layout.textColor);
     ctx.fillRect(w - axisWidth, labelY - haHalfH, axisWidth, haLabelH);
     ctx.strokeStyle = haColor;
     ctx.lineWidth = 1;
@@ -425,42 +426,7 @@ export class Renderer {
   }
 
   /** Named CSS color to hex lookup */
-  private static readonly NAMED_COLORS: Record<string, string> = {
-    black: '#000000', white: '#ffffff', red: '#ff0000', green: '#008000',
-    blue: '#0000ff', yellow: '#ffff00', cyan: '#00ffff', magenta: '#ff00ff',
-    gray: '#808080', grey: '#808080', orange: '#ffa500', purple: '#800080',
-    pink: '#ffc0cb', brown: '#a52a2a', transparent: '#000000'
-  };
-
-  private hexToRgba(hex: string, alpha: number): string {
-    // Resolve named colors to hex
-    const h = Renderer.NAMED_COLORS[hex.toLowerCase()] || hex;
-    let r: number, g: number, b: number;
-
-    if (/^#[0-9a-fA-F]{3}$/.test(h)) {
-      // #RGB short form: duplicate each hex digit
-      r = parseInt(h[1] + h[1], 16);
-      g = parseInt(h[2] + h[2], 16);
-      b = parseInt(h[3] + h[3], 16);
-    } else if (/^#[0-9a-fA-F]{6}$/.test(h)) {
-      // #RRGGBB standard form
-      r = parseInt(h.slice(1, 3), 16);
-      g = parseInt(h.slice(3, 5), 16);
-      b = parseInt(h.slice(5, 7), 16);
-    } else {
-      // Fallback — use layout text color
-      const fallback = this.chart.options.layout.textColor || '#aaa';
-      const fb = Renderer.NAMED_COLORS[fallback.toLowerCase()] || fallback;
-      if (/^#[0-9a-fA-F]{6}$/.test(fb)) {
-        r = parseInt(fb.slice(1, 3), 16);
-        g = parseInt(fb.slice(3, 5), 16);
-        b = parseInt(fb.slice(5, 7), 16);
-      } else {
-        r = 170; g = 170; b = 170;
-      }
-    }
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
+  // hexToRgba + NAMED_COLORS moved to src/utils/style.ts (shared with drawing renderers)
 
   private drawWatermark(ctx: CanvasRenderingContext2D): void {
     const watermark = this.chart.options.watermark;
@@ -645,7 +611,7 @@ export class Renderer {
           ctx.font = '11px system-ui';
           const text = d.text || '';
           const tw = ctx.measureText(text).width;
-          ctx.fillStyle = this.hexToRgba(d.color, 0.15);
+          ctx.fillStyle = hexToRgba(d.color, 0.15, this.chart.options.layout.textColor);
           ctx.fillRect(x - tw / 2 - 4, y - 8, tw + 8, 16);
           ctx.strokeStyle = d.color;
           ctx.lineWidth = 1;
