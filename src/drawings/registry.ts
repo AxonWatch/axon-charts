@@ -11,6 +11,7 @@ import { FibRetracementRenderer } from './FibRetracementRenderer.js';
 import { MeasureRenderer } from './MeasureRenderer.js';
 import { OrderRenderer } from './OrderRenderer.js';
 import { TextRenderer } from './TextRenderer.js';
+import { HighlighterRenderer } from './HighlighterRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -39,6 +40,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['measure',    new MeasureRenderer()],
   ['order',      new OrderRenderer()],
   ['text',       new TextRenderer()],
+  ['highlighter', new HighlighterRenderer()],
 ]);
 
 /**
