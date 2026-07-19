@@ -302,6 +302,15 @@ CONTROL:
   chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
+  Position drawing example:
+    chart.addDrawing({
+      id: 'pos-1', type: 'position',
+      time: 1704067200000, price: 42150.5, color: '#3b82f6',
+      data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
+    })
+    → renders entry marker, dashed entry line, optional SL/TP lines,
+      and a live PnL label on the right axis (updates every tick)
+
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move
   chart.onBarClick = fn          → fires on bar click

@@ -285,6 +285,62 @@ interface DrawingData {
 | `label` | `{barIndex|time, price}` | Boxed text annotation centered on anchor |
 | `hline` | `{price}` | Horizontal dashed line spanning chart width |
 | `vline` | `{barIndex|time}` | Vertical dashed line spanning chart height |
+| `position` | `{barIndex|time, price, data}` | Trading position with live PnL, optional SL/TP |
+
+##### `position` drawing type
+
+Renders a trading position with live unrealized PnL. Designed for external trading apps that want to visualize open positions on the chart.
+
+**Required fields:**
+- `price` — entry price
+- `data.side` — `'long'` or `'short'`
+- `data.qty` — position size (positive number)
+- One anchor: `time` (preferred) or `barIndex`
+
+**Optional fields:**
+- `data.sl` — stop-loss price (draws a dashed red horizontal line)
+- `data.tp` — take-profit price (draws a dashed green horizontal line)
+- `data.status` — `'open'` (default) / `'closed'` / `'pending'`
+- `color` — entry line and label color (PnL color is auto green/red)
+
+**Renders:**
+1. Entry marker — filled circle at `(entryBarX, entryPriceY)`
+2. Entry line — dashed, from entry bar's X to the right edge, at the entry price
+3. Stop-loss line — dashed red, full chart width (only if `data.sl` set)
+4. Take-profit line — dashed green, full chart width (only if `data.tp` set)
+5. Right-axis label box — two lines:
+   - Line 1: `"SIDE qty @ entryPrice"` (e.g. `"LONG 0.5 @ 42150.5"`)
+   - Line 2: signed PnL (green for profit, red for loss)
+
+**PnL is live.** `renderDrawings()` runs on every frame, including the high-frequency `updateLastBarFast()` path, so the PnL label updates with each tick using `lastBar.close` as the current price.
+
+**Example — marking a long position:**
+
+```typescript
+chart.addDrawing({
+  id: 'pos-1',
+  type: 'position',
+  time: 1704067200000,        // entry bar timestamp (stable across maxBars cleanup)
+  price: 42150.5,             // entry price
+  color: '#3b82f6',           // entry line + label color
+  data: {
+    side: 'long',
+    qty: 0.5,
+    sl: 41800,                // optional stop-loss
+    tp: 43000                 // optional take-profit
+  }
+});
+```
+
+**Example — closing a position** (remove the drawing when filled):
+
+```typescript
+chart.removeDrawing('pos-1');
+```
+
+**Anchoring note:** prefer `time` over `barIndex` for positions. When `maxBars` auto-cleanup splices the oldest bars out, `barIndex` shifts but `time` stays stable — the renderer re-resolves the bar via binary search on `time`.
+
+**Scale modes:** works in linear, logarithmic, and percentage modes (PnL is always computed in real price space; the label is formatted via `priceFormatter.formatPrice` which honors the chart's price format).
 
 **Registering a custom drawing type:**
 
@@ -883,6 +939,17 @@ chart.addDrawing({
 chart.addDrawing({
   id: 'ann2', type: 'hline', barIndex: 0, price: 95, color: '#ef4444'
 });
+
+// Position with live PnL, SL, TP
+chart.addDrawing({
+  id: 'pos-1', type: 'position',
+  time: 1704067200000, price: 42150.5, color: '#3b82f6',
+  data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
+});
+
+// Custom drawing type
+chart.registerDrawingType('fib', new FibRenderer());
+chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
 
 // Events
 chart.onCrosshairMove(({ time, price, bar }) => {
