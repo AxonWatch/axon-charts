@@ -39,6 +39,10 @@ export class DrawingInteraction {
   /** Currently dragged drawing id + handle id, or null when not dragging. */
   private dragDrawingId: string | null = null;
   private dragHandleId: string | null = null;
+  /** Anchor position at drag start (for body-drag delta computation). */
+  private dragStartAnchor: { time: number; price: number; barIndex: number } | null = null;
+  /** Original drawing snapshot at drag start (for two-point body drag). */
+  private dragStartDrawing: Drawing | null = null;
   /** Drawing id + handle id under the cursor (for cursor styling), or null. */
   private hoverDrawingId: string | null = null;
   private hoverHandleId: string | null = null;
@@ -65,6 +69,8 @@ export class DrawingInteraction {
     if (hit) {
       this.dragDrawingId = hit.drawingId;
       this.dragHandleId = hit.handleId;
+      this.dragStartAnchor = screenToAnchor(this.chart, x, y);
+      this.dragStartDrawing = this.chart.getDrawings().find(d => d.id === hit.drawingId) ?? null;
       this.chart.selectDrawing(hit.drawingId);
       return true;
     }
@@ -74,6 +80,8 @@ export class DrawingInteraction {
     if (bodyHit) {
       this.dragDrawingId = bodyHit;
       this.dragHandleId = 'body';
+      this.dragStartAnchor = screenToAnchor(this.chart, x, y);
+      this.dragStartDrawing = this.chart.getDrawings().find(d => d.id === bodyHit) ?? null;
       this.chart.selectDrawing(bodyHit);
       return true;
     }
@@ -134,6 +142,8 @@ export class DrawingInteraction {
   onMouseUp(): void {
     this.dragDrawingId = null;
     this.dragHandleId = null;
+    this.dragStartAnchor = null;
+    this.dragStartDrawing = null;
   }
 
   /**
@@ -142,6 +152,8 @@ export class DrawingInteraction {
   cancel(): void {
     this.dragDrawingId = null;
     this.dragHandleId = null;
+    this.dragStartAnchor = null;
+    this.dragStartDrawing = null;
     this.hoverDrawingId = null;
     this.hoverHandleId = null;
   }
@@ -175,25 +187,30 @@ export class DrawingInteraction {
       updates.price2 = anchor.price;
     } else if (this.dragHandleId === 'body') {
       // Body drag: move the whole drawing by the same delta.
-      // We need the original anchor positions to compute the delta,
-      // but since we update in place, we move both anchors to the
-      // new position. For two-point drawings this collapses them —
-      // so body drag is only meaningful when the renderer provides
-      // a custom body-drag handler. For now, body drag moves p1
-      // (single-point drawings) and is a no-op for two-point drawings
-      // unless the renderer extends the behavior.
-      if (drawing.time2 == null && drawing.price2 == null) {
-        // Single-point drawing: move p1
+      // Uses the drag-start anchor + original drawing snapshot to
+      // compute the delta and apply it to both anchors (for two-point
+      // drawings) or just p1 (for single-point drawings).
+      if (this.dragStartAnchor && this.dragStartDrawing) {
+        const dTime = anchor.time - this.dragStartAnchor.time;
+        const dPrice = anchor.price - this.dragStartAnchor.price;
+        const orig = this.dragStartDrawing;
+
+        if (orig.time2 != null && orig.price2 != null) {
+          // Two-point drawing: move both anchors by the delta
+          updates.time = (orig.time ?? anchor.time) + dTime;
+          updates.price = (orig.price ?? anchor.price) + dPrice;
+          updates.time2 = orig.time2 + dTime;
+          updates.price2 = orig.price2 + dPrice;
+        } else {
+          // Single-point drawing: move p1 to the cursor
+          updates.time = anchor.time;
+          updates.price = anchor.price;
+        }
+      } else {
+        // No start state (shouldn't happen) — fall back to p1 move
         updates.time = anchor.time;
         updates.price = anchor.price;
       }
-      // For two-point drawings, body drag would need the delta
-      // applied to both anchors — but we don't track the drag
-      // start position here. Renderers that support body drag for
-      // two-point drawings should override getHandles to not expose
-      // a 'body' handle, or implement a custom drag handler.
-      // (This is documented in the plan; full body-drag for
-      // two-point drawings comes with per-type refinements.)
     }
 
     if (Object.keys(updates).length > 0) {
