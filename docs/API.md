@@ -289,6 +289,7 @@ interface DrawingData {
 | `trendline` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point line with optional extend/lineStyle/lineWidth + end label |
 | `box` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point rectangle (opposite corners) with fill + optional label |
 | `fib_retracement` | `{barIndex|time, price, barIndex2|time2, price2, data}` | Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors |
+| `measure` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point measurement showing price delta, % change, and bar count |
 
 ##### `position` drawing type
 
@@ -449,6 +450,41 @@ chart.addDrawing({
 ```
 
 **Scale modes:** works in linear, logarithmic, and percentage modes (all level Y coordinates go through `priceToY`, the single source of truth).
+
+##### `measure` drawing type
+
+The "drag to measure" tool. Draws a connector line between two anchor points with endpoint markers and a label showing the price delta, percentage change, and bar count between them.
+
+**Required fields:**
+- `price`, `price2` — prices at the two anchor points
+- Two anchors: `{time|barIndex, price}` and `{time2|barIndex2, price2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.lineStyle` — `'solid'` (default) / `'dashed'` / `'dotted'` (connector style)
+- `data.lineWidth` — connector width in pixels (default 1)
+
+**Renders:**
+1. Connector line between the two anchors (using `color`, `lineStyle`, `lineWidth`)
+2. Small filled circles at both endpoints
+3. Two-line label box near the second anchor (clamped to the chart area):
+   - Line 1: `+priceDelta  (+pct%)` or `-priceDelta  (-pct%)` (color-coded green/red)
+   - Line 2: `N bars` (bar count between anchors, in `layout.textColor`)
+
+**Example — measuring a swing:**
+
+```typescript
+chart.addDrawing({
+  id: 'meas-1',
+  type: 'measure',
+  time:  1704067200000, price: 42150,
+  time2: 1704153600000, price2: 42850,
+  color: '#3b82f6',
+  data: { lineStyle: 'dashed' }
+});
+// → "+700.0  (+1.66%)" / "10 bars"
+```
+
+**Scale modes:** works in linear, logarithmic, and percentage modes. PnL/delta is computed in real price space; the label is formatted via `priceFormatter.formatPrice`.
 
 **Registering a custom drawing type:**
 
@@ -1081,6 +1117,15 @@ chart.addDrawing({
   color: '#3b82f6', text: 'Fib Retracement'
 });
 
+// Measure a swing
+chart.addDrawing({
+  id: 'meas-1', type: 'measure',
+  time: 1704067200000, price: 42150,
+  time2: 1704153600000, price2: 42850,
+  color: '#3b82f6',
+  data: { lineStyle: 'dashed' }
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1209,6 +1254,7 @@ All exported from the package entry point:
 | `TrendlineRenderer` | class | Built-in trendline drawing renderer |
 | `BoxRenderer` | class | Built-in box drawing renderer |
 | `FibRetracementRenderer` | class | Built-in fib_retracement drawing renderer |
+| `MeasureRenderer` | class | Built-in measure drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
