@@ -567,6 +567,8 @@ export function validateDrawing(drawing: Drawing): void {
   // Type-specific validation
   if (drawing.type === 'position') {
     validatePositionDrawing(drawing);
+  } else if (drawing.type === 'order') {
+    validateOrderDrawing(drawing);
   }
   // Legacy types: no further validation (preserves backward compatibility)
   // Unknown/custom types: no further validation (renderer handles its own contract)
@@ -596,5 +598,25 @@ function validatePositionDrawing(drawing: Drawing): void {
   }
   if (data.tp != null && (typeof data.tp !== 'number' || !isFinite(data.tp))) {
     throw new ValidationError('drawing.data.tp', 'Position drawing data.tp must be a finite number', data.tp);
+  }
+}
+
+function validateOrderDrawing(drawing: Drawing): void {
+  const data = drawing.data;
+  if (!data || typeof data !== 'object') {
+    throw new ValidationError('drawing.data', 'Order drawing requires a data object with side, qty, and kind', data);
+  }
+  if (data.side !== 'long' && data.side !== 'short') {
+    throw new ValidationError('drawing.data.side', "Order drawing data.side must be 'long' or 'short'", data.side);
+  }
+  if (typeof data.qty !== 'number' || !isFinite(data.qty) || data.qty <= 0) {
+    throw new ValidationError('drawing.data.qty', 'Order drawing data.qty must be a positive finite number', data.qty);
+  }
+  const validKinds = ['limit', 'stop', 'stop_limit', 'market'];
+  if (data.kind == null || !validKinds.includes(data.kind)) {
+    throw new ValidationError('drawing.data.kind', `Order drawing data.kind must be one of: ${validKinds.join(', ')}`, data.kind);
+  }
+  if (drawing.price == null || typeof drawing.price !== 'number' || !isFinite(drawing.price)) {
+    throw new ValidationError('drawing.price', 'Order drawing requires a numeric order price', drawing.price);
   }
 }

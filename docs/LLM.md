@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, fib_retracement, measure, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -310,6 +310,14 @@ CONTROL:
     })
     → renders entry marker, dashed entry line, optional SL/TP lines,
       and a live PnL label on the right axis (updates every tick)
+
+  Order drawing example:
+    chart.addDrawing({
+      id: 'ord-1', type: 'order',
+      time: 1704067200000, price: 42150.5,
+      data: { side: 'long', qty: 0.5, kind: 'limit' }
+    })
+    → dashed line at order price + "BUY LIMIT 0.5 @ 42150.5" label
 
   Trendline example:
     chart.addDrawing({

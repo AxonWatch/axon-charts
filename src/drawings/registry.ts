@@ -9,6 +9,7 @@ import { TrendlineRenderer } from './TrendlineRenderer.js';
 import { BoxRenderer } from './BoxRenderer.js';
 import { FibRetracementRenderer } from './FibRetracementRenderer.js';
 import { MeasureRenderer } from './MeasureRenderer.js';
+import { OrderRenderer } from './OrderRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -35,6 +36,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['box',        new BoxRenderer()],
   ['fib_retracement', new FibRetracementRenderer()],
   ['measure',    new MeasureRenderer()],
+  ['order',      new OrderRenderer()],
 ]);
 
 /**

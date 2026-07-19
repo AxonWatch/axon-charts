@@ -261,7 +261,8 @@ interface DrawingData {
   qty?: number;
   sl?: number;           // Stop-loss price
   tp?: number;           // Take-profit price
-  status?: 'open' | 'closed' | 'pending';
+  status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
+  kind?: 'limit' | 'stop' | 'stop_limit' | 'market';   // Order type
 
   // Two-point drawings (future)
   lineWidth?: number;
@@ -290,6 +291,7 @@ interface DrawingData {
 | `box` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point rectangle (opposite corners) with fill + optional label |
 | `fib_retracement` | `{barIndex|time, price, barIndex2|time2, price2, data}` | Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors |
 | `measure` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point measurement showing price delta, % change, and bar count |
+| `order` | `{barIndex|time, price, data}` | Pending order (limit/stop/market) with side, qty, kind label |
 
 ##### `position` drawing type
 
@@ -345,6 +347,49 @@ chart.removeDrawing('pos-1');
 **Anchoring note:** prefer `time` over `barIndex` for positions. When `maxBars` auto-cleanup splices the oldest bars out, `barIndex` shifts but `time` stays stable — the renderer re-resolves the bar via binary search on `time`.
 
 **Scale modes:** works in linear, logarithmic, and percentage modes (PnL is always computed in real price space; the label is formatted via `priceFormatter.formatPrice` which honors the chart's price format).
+
+##### `order` drawing type
+
+Renders a pending order on the chart. Complements the `position` drawing — where `position` visualizes a filled trade with live PnL, `order` visualizes a resting order that hasn't filled yet.
+
+**Required fields:**
+- `price` — order price
+- `data.side` — `'long'` (buy order) or `'short'` (sell order)
+- `data.qty` — order size (positive number)
+- `data.kind` — `'limit'` / `'stop'` / `'stop_limit'` / `'market'`
+- One anchor: `time` (preferred) or `barIndex` — the bar/time the order was placed
+
+**Optional `data` fields:**
+- `data.status` — `'working'` (default) / `'cancelled'` / `'filled'` / `'rejected'`
+
+**Renders:**
+1. Dashed horizontal line at the order price, from the anchor X to the right edge of the chart area
+2. Right-axis label box: `"SIDE KIND qty @ price"` (e.g. `"BUY LIMIT 0.5 @ 42150.5"`, `"SELL STOP 1.0 @ 41800"`)
+
+**Color logic:** defaults to side-based (`series.upColor` for buy/long, `series.downColor` for sell/short); override with `drawing.color`.
+
+**Example — pending buy limit:**
+
+```typescript
+chart.addDrawing({
+  id: 'ord-1',
+  type: 'order',
+  time: 1704067200000,
+  price: 42150.5,
+  data: { side: 'long', qty: 0.5, kind: 'limit' }
+});
+```
+
+**When the order fills**, remove the order drawing and add a `position` drawing at the same price:
+
+```typescript
+chart.removeDrawing('ord-1');
+chart.addDrawing({
+  id: 'pos-1', type: 'position',
+  time: 1704067200000, price: 42150.5, color: '#3b82f6',
+  data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
+});
+```
 
 ##### `trendline` drawing type
 
@@ -965,7 +1010,8 @@ interface DrawingData {
   qty?: number;
   sl?: number;
   tp?: number;
-  status?: 'open' | 'closed' | 'pending';
+  status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
+  kind?: 'limit' | 'stop' | 'stop_limit' | 'market';   // Order
   lineWidth?: number;          // Two-point (future)
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   extend?: 'none' | 'left' | 'right' | 'both';
@@ -1089,6 +1135,13 @@ chart.addDrawing({
   id: 'pos-1', type: 'position',
   time: 1704067200000, price: 42150.5, color: '#3b82f6',
   data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
+});
+
+// Pending buy limit order
+chart.addDrawing({
+  id: 'ord-1', type: 'order',
+  time: 1704067200000, price: 42150.5,
+  data: { side: 'long', qty: 0.5, kind: 'limit' }
 });
 
 // Trendline extending right with a label
@@ -1255,6 +1308,7 @@ All exported from the package entry point:
 | `BoxRenderer` | class | Built-in box drawing renderer |
 | `FibRetracementRenderer` | class | Built-in fib_retracement drawing renderer |
 | `MeasureRenderer` | class | Built-in measure drawing renderer |
+| `OrderRenderer` | class | Built-in order drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
