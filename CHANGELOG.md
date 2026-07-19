@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [1.3.0] - 2026-07-19
 
 ### Added
 - `onCandleClose` callback — fires once per actual candle close (when an incoming bar's timestamp differs from the last bar's, causing a new bar to be appended via `updateLastBar()` or `updateLastBarFast()`). Receives the finalized closed bar with its final O/H/L/C/volume values. Does not fire from `setData()`, `appendBar()`, or `prependData()` (bulk loads are not live closes).
@@ -42,7 +42,7 @@ All notable changes to this project will be documented in this file.
 - `Renderer.renderDrawings()` slimmed from 80-line switch statement to 12-line registry lookup. Unknown drawing types are silently skipped.
 - `IChart.dataManager` interface: added `getBarAtTime(timestamp)` (already existed on concrete `DataManager` class; now part of the contract for drawing anchor resolution).
 - Color/style helpers (`hexToRgba`, `NAMED_COLORS`) extracted from `Renderer` to `src/utils/style.ts` for reuse by drawing renderers. New helpers: `chartBottomEdge()`, `clampYToChartArea()`.
-- Bundle: 26709 → 30401 bytes gzipped (+3692 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, FibRetracementRenderer, MeasureRenderer, OrderRenderer, TextRenderer, HighlighterRenderer, and PositionClosedRenderer).
+- Bundle: 26709 → 30401 bytes gzipped (+3692 bytes, +13.8%) for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, and 9 new drawing types.
 
 ### Backward Compatibility
 - All 5 legacy drawing types (`arrow_up`, `arrow_down`, `label`, `hline`, `vline`) render pixel-identically (verbatim port to per-type renderer classes).
