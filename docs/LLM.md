@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, trendline, box, fib_retracement, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -328,6 +328,15 @@ CONTROL:
       data: { fill: 'rgba(239,68,68,0.12)', lineStyle: 'dashed' }
     })
     → 2-point rectangle (opposite corners) with fill + optional label
+
+  Fib retracement example:
+    chart.addDrawing({
+      id: 'fib-1', type: 'fib_retracement',
+      time: ..., price: 41800, time2: ..., price2: 42900,
+      color: '#3b82f6', text: 'Fib Retracement'
+    })
+    → 7 horizontal levels (0/23.6/38.2/50/61.8/78.6/100%) with
+      right-axis price labels; tier-colored green/amber/red
 
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move

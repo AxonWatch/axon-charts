@@ -27,6 +27,7 @@ export { VLineRenderer } from './drawings/VLineRenderer.js';
 export { PositionRenderer } from './drawings/PositionRenderer.js';
 export { TrendlineRenderer } from './drawings/TrendlineRenderer.js';
 export { BoxRenderer } from './drawings/BoxRenderer.js';
+export { FibRetracementRenderer } from './drawings/FibRetracementRenderer.js';
 
 /**
  * Global chart registry for AI agent discovery.

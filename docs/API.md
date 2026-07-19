@@ -288,6 +288,7 @@ interface DrawingData {
 | `position` | `{barIndex|time, price, data}` | Trading position with live PnL, optional SL/TP |
 | `trendline` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point line with optional extend/lineStyle/lineWidth + end label |
 | `box` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point rectangle (opposite corners) with fill + optional label |
+| `fib_retracement` | `{barIndex|time, price, barIndex2|time2, price2, data}` | Fibonacci retracement levels (0/23.6/38.2/50/61.8/78.6/100%) between a swing's two anchors |
 
 ##### `position` drawing type
 
@@ -407,6 +408,47 @@ chart.addDrawing({
 ```
 
 **Scale modes:** works in linear, logarithmic, and percentage modes.
+
+##### `fib_retracement` drawing type
+
+Renders Fibonacci retracement levels between a swing's two anchor points. Anchor 1 = swing start, anchor 2 = swing end. Direction-agnostic — works for both uptrend retracements (anchor 1 low, anchor 2 high) and downtrend retracements (anchor 1 high, anchor 2 low).
+
+**Required fields:**
+- `price`, `price2` — prices at the swing start and swing end
+- Two anchors: `{time|barIndex, price}` and `{time2|barIndex2, price2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.fill` — CSS color override for all level labels (if omitted, uses tier coloring: shallow levels green, mid levels amber, deep levels red)
+- `data.lineWidth` — stroke width in pixels (default 1)
+- `text` — optional header label above the first level (e.g. `"Fib Retracement"`)
+
+**Levels drawn** (horizontal lines between the two anchor X positions, each with a right-axis label showing `level% price`):
+
+| Level | Price |
+|-------|-------|
+| 0% | `price2` (swing end) |
+| 23.6% | `price2 + (price1 - price2) * 0.236` |
+| 38.2% | `price2 + (price1 - price2) * 0.382` |
+| 50% | `price2 + (price1 - price2) * 0.5` |
+| 61.8% | `price2 + (price1 - price2) * 0.618` |
+| 78.6% | `price2 + (price1 - price2) * 0.786` |
+| 100% | `price1` (swing start) |
+
+**Example — retracement of an uptrend swing:**
+
+```typescript
+chart.addDrawing({
+  id: 'fib-1',
+  type: 'fib_retracement',
+  time:  1704067200000, price: 41800,   // swing low (start)
+  time2: 1704153600000, price: 42900,   // swing high (end)
+  color: '#3b82f6',
+  text: 'Fib Retracement',
+  data: { lineWidth: 1 }
+});
+```
+
+**Scale modes:** works in linear, logarithmic, and percentage modes (all level Y coordinates go through `priceToY`, the single source of truth).
 
 **Registering a custom drawing type:**
 
@@ -1031,6 +1073,14 @@ chart.addDrawing({
   data: { fill: 'rgba(239, 68, 68, 0.12)', lineStyle: 'dashed' }
 });
 
+// Fibonacci retracement of an uptrend swing
+chart.addDrawing({
+  id: 'fib-1', type: 'fib_retracement',
+  time: 1704067200000, price: 41800,
+  time2: 1704153600000, price2: 42900,
+  color: '#3b82f6', text: 'Fib Retracement'
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1158,6 +1208,7 @@ All exported from the package entry point:
 | `PositionRenderer` | class | Built-in position drawing renderer |
 | `TrendlineRenderer` | class | Built-in trendline drawing renderer |
 | `BoxRenderer` | class | Built-in box drawing renderer |
+| `FibRetracementRenderer` | class | Built-in fib_retracement drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
