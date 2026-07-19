@@ -1166,6 +1166,9 @@ export class Chart {
     this._selectedDrawingId = id;
     this.render();
   }
+  getHoveredHandle(): { drawingId: string; handleId: string } | null {
+    return this.eventManager.getDrawingInteraction().getHoveredHandle();
+  }
   /**
    * Register a custom drawing type. After registration, drawings with
    * this `type` value passed to addDrawing() will be rendered by the
