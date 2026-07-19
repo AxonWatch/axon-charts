@@ -8,6 +8,28 @@ All notable changes to this project will be documented in this file.
 - `onCandleClose` callback — fires once per actual candle close (when an incoming bar's timestamp differs from the last bar's, causing a new bar to be appended via `updateLastBar()` or `updateLastBarFast()`). Receives the finalized closed bar with its final O/H/L/C/volume values. Does not fire from `setData()`, `appendBar()`, or `prependData()` (bulk loads are not live closes).
 - New `CandleCloseCallback` type exported from the package.
 - Wired from constructor options (`onCandleClose`) and assignable as a property on the chart instance.
+- Extensible drawing system:
+  - `DrawingRenderer` interface — plugin contract for rendering a drawing type (mirrors the `SeriesRenderer` pattern used for series types).
+  - `chart.registerDrawingType(type, renderer)` — register custom drawing types without forking the library. Overwriting built-ins is allowed.
+  - `resolveAnchor(chart, spec)` helper exported — resolves `{barIndex|time, price}` to screen coordinates. Prefers `time` (survives `maxBars` auto-cleanup) over `barIndex`.
+  - New `DrawingData` interface — typed bag for type-specific fields (side, qty, sl, tp, lineWidth, lineStyle, extend, fill, plus `[key: string]: unknown` for custom types).
+  - `validateDrawing()` — validates drawings on `addDrawing()`. Lenient on legacy types (no regression for existing callers); strict on `position` (requires `data.side`, `data.qty`, `price`, and an anchor).
+  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`.
+
+### Changed
+- `Drawing` interface restructured for extensibility:
+  - `type` widens from `'arrow_up' | ... | 'vline'` union to `string` (open for plugin registration).
+  - `barIndex` and `price` become optional (vline never needed price; time-based anchoring makes barIndex optional).
+  - New optional fields: `time`, `time2`, `barIndex2`, `price2`, `data`.
+- `Renderer.renderDrawings()` slimmed from 80-line switch statement to 12-line registry lookup. Unknown drawing types are silently skipped.
+- `IChart.dataManager` interface: added `getBarAtTime(timestamp)` (already existed on concrete `DataManager` class; now part of the contract for drawing anchor resolution).
+- Color/style helpers (`hexToRgba`, `NAMED_COLORS`) extracted from `Renderer` to `src/utils/style.ts` for reuse by drawing renderers. New helpers: `chartBottomEdge()`, `clampYToChartArea()`.
+- Bundle: 26709 → 27488 bytes gzipped (+779 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, and shared style utils).
+
+### Backward Compatibility
+- All 5 legacy drawing types (`arrow_up`, `arrow_down`, `label`, `hline`, `vline`) render pixel-identically (verbatim port to per-type renderer classes).
+- `addDrawing`/`removeDrawing`/`clearDrawings`/`getDrawings` signatures unchanged.
+- Existing callers passing drawings to the 5 legacy types are unaffected — validation is lenient on legacy types (only checks `id`, `type`, `color`).
 
 ## [1.2.8] - 2026-06-24
 

@@ -228,19 +228,80 @@ chart.addDrawing(drawing: Drawing): void
 chart.removeDrawing(id: string): void
 chart.clearDrawings(): void
 chart.getDrawings(): Drawing[]
+chart.registerDrawingType(type: string, renderer: DrawingRenderer): void
 ```
-Manage persistent chart drawings rendered on the overlay canvas. Each drawing is an object:
+Manage persistent chart drawings rendered on the main canvas overlay. Drawings are re-rendered every frame, including on `updateLastBarFast()` ticks, so any value derived from the latest bar (e.g. live PnL) updates automatically.
+
+`registerDrawingType()` allows external code to add custom drawing types. After registration, drawings with that `type` value passed to `addDrawing()` will be rendered by the provided `DrawingRenderer` instance. Overwriting a built-in type is allowed (last-writer-wins).
 
 ```typescript
 interface Drawing {
-  id: string;          // Unique identifier
-  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
-  barIndex: number;    // Bar index this drawing attaches to
-  price: number;       // Price level
-  color: string;       // CSS color
-  text?: string;       // Optional text (for 'label' type)
+  id: string;            // Unique identifier
+  type: string;          // 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline' | 'position' | <custom>
+  color: string;         // CSS color (hex, rgb/rgba, or named)
+  text?: string;         // Optional text (used by 'label' type)
+
+  // === Primary anchor ===
+  barIndex?: number;     // Bar index anchor (optional — prefer time for stability)
+  time?: number;         // Anchor timestamp (preferred — survives maxBars auto-cleanup)
+  price?: number;        // Price level at the primary anchor
+
+  // === Secondary anchor (two-point drawings: trendline, box — future) ===
+  barIndex2?: number;
+  time2?: number;
+  price2?: number;
+
+  // === Type-specific payload ===
+  data?: DrawingData;    // Optional bag interpreted by the drawing's renderer
+}
+
+interface DrawingData {
+  // Position
+  side?: 'long' | 'short';
+  qty?: number;
+  sl?: number;           // Stop-loss price
+  tp?: number;           // Take-profit price
+  status?: 'open' | 'closed' | 'pending';
+
+  // Two-point drawings (future)
+  lineWidth?: number;
+  lineStyle?: 'solid' | 'dashed' | 'dotted';
+  extend?: 'none' | 'left' | 'right' | 'both';
+  fill?: string;
+
+  // Custom (user-registered drawing types)
+  [key: string]: unknown;
 }
 ```
+
+**Anchoring:** prefer `time` over `barIndex` for drawings that should persist across `maxBars` auto-cleanup. When oldest bars are spliced out, `barIndex` shifts but `time` stays stable — the registry's `resolveAnchor()` helper re-resolves the bar via binary search on `time`.
+
+**Built-in drawing types** (registered at module load):
+
+| Type | Anchors | Description |
+|------|---------|-------------|
+| `arrow_up` | `{barIndex|time, price}` | Up-pointing filled triangle |
+| `arrow_down` | `{barIndex|time, price}` | Down-pointing filled triangle |
+| `label` | `{barIndex|time, price}` | Boxed text annotation centered on anchor |
+| `hline` | `{price}` | Horizontal dashed line spanning chart width |
+| `vline` | `{barIndex|time}` | Vertical dashed line spanning chart height |
+
+**Registering a custom drawing type:**
+
+```typescript
+import { DrawingRenderer } from 'axon-charts';
+
+class FibRenderer implements DrawingRenderer {
+  render(ctx, chart, drawing) {
+    // Custom rendering using chart.state, chart.priceFormatter, etc.
+  }
+}
+
+chart.registerDrawingType('fib', new FibRenderer());
+chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
+```
+
+The `DrawingRenderer` interface and the `resolveAnchor()` helper are exported from the package so custom renderers can reuse the same coordinate mapping and anchor resolution as the built-ins.
 
 #### Events / Callbacks
 
@@ -682,11 +743,34 @@ interface Bar {
 ```typescript
 interface Drawing {
   id: string;            // Unique identifier
-  type: 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline';
-  barIndex: number;      // Bar index this drawing attaches to
-  price: number;         // Price level
+  type: string;          // 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline' | 'position' | <custom>
   color: string;         // CSS color
-  text?: string;         // Optional text (for 'label' type)
+  text?: string;         // Optional text (used by 'label')
+
+  // Primary anchor (one of barIndex/time required for anchored types)
+  barIndex?: number;     // Bar index anchor (prefer time for stability)
+  time?: number;         // Anchor timestamp (survives maxBars cleanup)
+  price?: number;        // Price level
+
+  // Secondary anchor (two-point drawings: trendline, box — future)
+  barIndex2?: number;
+  time2?: number;
+  price2?: number;
+
+  data?: DrawingData;    // Type-specific payload
+}
+
+interface DrawingData {
+  side?: 'long' | 'short';     // Position
+  qty?: number;
+  sl?: number;
+  tp?: number;
+  status?: 'open' | 'closed' | 'pending';
+  lineWidth?: number;          // Two-point (future)
+  lineStyle?: 'solid' | 'dashed' | 'dotted';
+  extend?: 'none' | 'left' | 'right' | 'both';
+  fill?: string;
+  [key: string]: unknown;      // Custom types
 }
 ```
 
@@ -912,12 +996,21 @@ All exported from the package entry point:
 | `SubPane` | interface | Sub-pane contract |
 | `ScalePane` | class | Abstract scale pane base |
 | `VolumeSubPane` | class | Volume histogram sub-pane |
+| `DrawingRenderer` | interface | Drawing plugin contract |
+| `registerDrawingType` | function | Register custom drawing type |
+| `getDrawingRenderer` | function | Look up renderer by type |
+| `resolveAnchor` | function | Resolve {time\|barIndex, price} → screen coords |
+| `ArrowRenderer` | class | Built-in arrow drawing renderer |
+| `LabelRenderer` | class | Built-in label drawing renderer |
+| `HLineRenderer` | class | Built-in hline drawing renderer |
+| `VLineRenderer` | class | Built-in vline drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
 | `ChartCommand` | type | LLM command union |
 | `ChartState` | interface | Persistence format |
-| `Drawing` | interface | Annotation data type |
+| `Drawing` | interface | Extensible drawing data type |
+| `DrawingData` | interface | Type-specific drawing payload |
 | `LAYOUT` | const | Layout constants |
 | `ValidationError` | class | Option validation error |
 | `Projection` | namespace | priceToY, yToPrice, indexToX, xToIndex |

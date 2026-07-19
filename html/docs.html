@@ -1955,6 +1955,42 @@ chart.updateLastBarFast(currentCandle);
   | { type: 'setSubPane'; id: string; show: boolean }
   | { type: 'setReverse'; reverse: boolean };</code></pre>
 
+        <h2>Drawing</h2>
+        <p>Persistent chart drawing (annotation, position, custom). Rendered on the main canvas overlay every frame.</p>
+        <pre><code>interface Drawing {
+  id: string;            // Unique identifier
+  type: string;          // 'arrow_up' | 'arrow_down' | 'label' | 'hline' | 'vline' | 'position' | &lt;custom&gt;
+  color: string;         // CSS color
+  text?: string;
+
+  // Primary anchor (one of barIndex/time required for anchored types)
+  barIndex?: number;     // Bar index anchor (prefer time for stability)
+  time?: number;         // Anchor timestamp (survives maxBars cleanup)
+  price?: number;
+
+  // Secondary anchor (two-point drawings: trendline, box — future)
+  barIndex2?: number;
+  time2?: number;
+  price2?: number;
+
+  data?: DrawingData;    // Type-specific payload
+}
+
+interface DrawingData {
+  side?: 'long' | 'short';     // Position
+  qty?: number;
+  sl?: number;                 // Stop-loss
+  tp?: number;                 // Take-profit
+  status?: 'open' | 'closed' | 'pending';
+  lineWidth?: number;          // Two-point (future)
+  lineStyle?: 'solid' | 'dashed' | 'dotted';
+  extend?: 'none' | 'left' | 'right' | 'both';
+  fill?: string;
+  [key: string]: unknown;      // Custom types
+}</code></pre>
+
+        <p>Built-in types are registered at module load. Custom types can be registered via <code>chart.registerDrawingType(type, renderer)</code> — the renderer must implement the <code>DrawingRenderer</code> interface (a <code>render(ctx, chart, drawing)</code> method). The <code>resolveAnchor()</code> helper is exported for reuse in custom renderers.</p>
+
         <h2>ChartContext (LLM Output)</h2>
         <p>The structured object returned by <code>getContext()</code>.</p>
         <pre><code>interface ChartContext {
