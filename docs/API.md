@@ -300,6 +300,24 @@ chart.onDataUpdate?: ((bars: Bar[]) => void) | null
 ```
 Callback fired on every data mutation: `appendBar()`, `updateLastBar()`, and `updateLastBarFast()`. Receives the bar(s) that were updated. Designed for plugin/indicator re-evaluation.
 
+```typescript
+chart.onCandleClose?: (closedBar: Bar) => void
+```
+Callback fired **once per actual candle close** — when an incoming bar's timestamp differs from the last bar's timestamp, causing a new bar to be appended. Receives the finalized closed bar (its O/H/L/C/volume are the final values for that period).
+
+Only triggered by `updateLastBar()` and `updateLastBarFast()`. Does NOT fire from `setData()`, `appendBar()`, or `prependData()` (those are bulk loads, not live closes). Useful for persisting finalized candles, triggering downstream analytics, or snapshotting chart state at period boundaries.
+
+```typescript
+chart.onCandleClose = (closedBar) => {
+  console.log(`Candle closed at ${closedBar.time}: O=${closedBar.open} H=${closedBar.high} L=${closedBar.low} C=${closedBar.close}`);
+};
+
+// Or via constructor:
+const chart = createChart('#container', {
+  onCandleClose: (closedBar) => { archiveBar(closedBar); }
+});
+```
+
 #### Configuration
 
 ```typescript

@@ -168,6 +168,7 @@ chart.onCrosshairMove = fn
 chart.onBarClick = fn
 chart.onVisibleRangeChange = fn
 chart.onDataUpdate = fn
+chart.onCandleClose = fn
 ```
 
 ### Component APIs

@@ -197,6 +197,8 @@ export interface ChartOptions {
   onScrollLockChange?: ScrollLockChangeCallback;
   /** Fires when data is appended or updated. */
   onDataUpdate?: ((bars: Bar[]) => void) | null;
+  /** Fires once per candle close (new bar appended via updateLastBar/updateLastBarFast). Receives the finalized closed bar. */
+  onCandleClose?: CandleCloseCallback;
 
   // === Init-Only ===
   /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
@@ -238,6 +240,18 @@ export type VisibleRangeChangeCallback = (range: {
   fromTime: number;
   toTime: number;
 }) => void;
+
+/**
+ * Callback invoked when a candle closes and a new candle opens.
+ * Fires once per actual candle close (when the incoming bar's timestamp
+ * differs from the last bar's timestamp, causing a new bar to be appended).
+ * Receives the finalized (closed) bar — its O/H/L/C/volume are the final
+ * values for that period.
+ *
+ * Triggered by `updateLastBar()` and `updateLastBarFast()` only.
+ * Does NOT fire from `setData()`, `appendBar()`, or `prependData()` (bulk loads).
+ */
+export type CandleCloseCallback = (closedBar: Bar) => void;
 
 /**
  * Command type for LLM-driven chart control
@@ -343,6 +357,7 @@ export interface IChart {
   onBarClick?: BarClickCallback;
   onVisibleRangeChange?: VisibleRangeChangeCallback;
   onDataUpdate?: ((bars: Bar[]) => void) | null;
+  onCandleClose?: CandleCloseCallback;
   timeScale(): import('../api/time-scale.js').TimeScaleAPI;
   setOptions(partial: Partial<ChartOptions>): void;
   getActiveSubPanes(): import('../subpanes/SubPane.js').SubPane[];

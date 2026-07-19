@@ -182,6 +182,11 @@ chart.onScrollLockChange = (locked) => {
 chart.onDataUpdate = (bars) => {
   console.log(`Received ${bars.length} bar(s)`);
 };
+
+// Candle closed — finalized bar (new candle just opened)
+chart.onCandleClose = (closedBar) => {
+  console.log(`Closed: O=${closedBar.open} H=${closedBar.high} L=${closedBar.low} C=${closedBar.close}`);
+};
 ```
 
 ### Practical LLM Integration Pattern
@@ -301,6 +306,7 @@ REACT:
   chart.onBarClick = fn          → fires on bar click
   chart.onVisibleRangeChange = fn → fires on pan/zoom
   chart.onDataUpdate = fn        → fires on data mutation
+  chart.onCandleClose = fn       → fires once per candle close
 
 EXPORT:
   chart.toDataURL()           → base64 PNG screenshot
