@@ -1981,7 +1981,8 @@ interface DrawingData {
   qty?: number;
   sl?: number;                 // Stop-loss
   tp?: number;                 // Take-profit
-  status?: 'open' | 'closed' | 'pending';
+  status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
+  kind?: 'limit' | 'stop' | 'stop_limit' | 'market';   // Order
   lineWidth?: number;          // Two-point (future)
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   extend?: 'none' | 'left' | 'right' | 'both';

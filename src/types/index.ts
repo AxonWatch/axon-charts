@@ -291,19 +291,21 @@ export interface ChartState {
  * drawing types can carry their own data without extending this interface.
  */
 export interface DrawingData {
-  // === Position ===
-  /** Position side. Required by the 'position' drawing type. */
+  // === Position / Order (shared side/qty fields) ===
+  /** Side. Required by 'position' and 'order' drawing types. 'long' = buy, 'short' = sell. */
   side?: 'long' | 'short';
-  /** Position size/quantity. Required by the 'position' drawing type. */
+  /** Size/quantity. Required by 'position' and 'order' drawing types. */
   qty?: number;
   /** Stop-loss price level (optional, position only). Draws a dashed red line. */
   sl?: number;
   /** Take-profit price level (optional, position only). Draws a dashed green line. */
   tp?: number;
-  /** Position lifecycle status. 'open' is the default; renderers may style closed/pending differently. */
-  status?: 'open' | 'closed' | 'pending';
+  /** Lifecycle status. Renderers may style non-working states differently. */
+  status?: 'open' | 'closed' | 'pending' | 'working' | 'cancelled' | 'filled' | 'rejected';
+  /** Order kind. Required by the 'order' drawing type. */
+  kind?: 'limit' | 'stop' | 'stop_limit' | 'market';
 
-  // === Two-point drawings (trendline, box, fib — future) ===
+  // === Two-point drawings (trendline, box, fib, measure) ===
   /** Stroke width in pixels (default 1). */
   lineWidth?: number;
   /** Stroke style (default 'solid'). */
@@ -312,6 +314,12 @@ export interface DrawingData {
   extend?: 'none' | 'left' | 'right' | 'both';
   /** Fill color for closed shapes (box). Semi-transparent recommended. */
   fill?: string;
+
+  // === Text (multi-line annotation) ===
+  /** Multi-line text content. Each entry is one line. */
+  lines?: string[];
+  /** Text background fill (semi-transparent recommended). Defaults to 10%-alpha of color. */
+  textFill?: string;
 
   // === Custom (user-registered drawing types) ===
   [key: string]: unknown;
