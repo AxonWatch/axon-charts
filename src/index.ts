@@ -17,6 +17,13 @@ export { LAYOUT } from './core/layout.js';
 export { SubPane } from './subpanes/SubPane.js';
 export { ScalePane } from './subpanes/ScalePane.js';
 export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
+export { DrawingRenderer } from './drawings/DrawingRenderer.js';
+export { registerDrawingType, getDrawingRenderer } from './drawings/registry.js';
+export { resolveAnchor, AnchorPoint, AnchorSpec } from './drawings/anchor.js';
+export { ArrowRenderer } from './drawings/ArrowRenderer.js';
+export { LabelRenderer } from './drawings/LabelRenderer.js';
+export { HLineRenderer } from './drawings/HLineRenderer.js';
+export { VLineRenderer } from './drawings/VLineRenderer.js';
 
 /**
  * Global chart registry for AI agent discovery.

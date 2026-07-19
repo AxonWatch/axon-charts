@@ -1,4 +1,4 @@
-import { ChartOptions } from '../types/index.js';
+import { ChartOptions, Drawing } from '../types/index.js';
 
 /**
  * Validation error class
@@ -532,5 +532,69 @@ function validateMaxBars(value: any, path: string): void {
 function validateDevicePixelRatio(value: any): void {
   if (typeof value !== 'number' || value < 1 || value > 4) {
     throw new ValidationError('devicePixelRatio', 'Device pixel ratio must be a number between 1 and 4', value);
+  }
+}
+
+// ── Drawing validation ──────────────────────────────────────────────
+
+/**
+ * Validate a drawing before it's added to the chart.
+ *
+ * Lenient on legacy types (arrow_up, arrow_down, label, hline, vline):
+ * these were never validated before, so we only check the bare minimum
+ * (id, type, color) to avoid breaking existing callers who may have
+ * omitted fields the renderers don't strictly require.
+ *
+ * Strict on the 'position' type: requires data.side and data.qty.
+ *
+ * Unknown (user-registered) types: validates id, type, color only —
+ * the custom renderer is responsible for any further validation.
+ */
+export function validateDrawing(drawing: Drawing): void {
+  if (!drawing || typeof drawing !== 'object') {
+    throw new ValidationError('drawing', 'Drawing must be an object', drawing);
+  }
+  if (typeof drawing.id !== 'string' || drawing.id.trim().length === 0) {
+    throw new ValidationError('drawing.id', 'Drawing id must be a non-empty string', drawing.id);
+  }
+  if (typeof drawing.type !== 'string' || drawing.type.trim().length === 0) {
+    throw new ValidationError('drawing.type', 'Drawing type must be a non-empty string', drawing.type);
+  }
+  if (drawing.color !== undefined) {
+    validateColor(drawing.color, 'drawing.color');
+  }
+
+  // Type-specific validation
+  if (drawing.type === 'position') {
+    validatePositionDrawing(drawing);
+  }
+  // Legacy types: no further validation (preserves backward compatibility)
+  // Unknown/custom types: no further validation (renderer handles its own contract)
+}
+
+function validatePositionDrawing(drawing: Drawing): void {
+  const data = drawing.data;
+  if (!data || typeof data !== 'object') {
+    throw new ValidationError('drawing.data', 'Position drawing requires a data object with side and qty', data);
+  }
+  if (data.side !== 'long' && data.side !== 'short') {
+    throw new ValidationError('drawing.data.side', "Position drawing data.side must be 'long' or 'short'", data.side);
+  }
+  if (typeof data.qty !== 'number' || !isFinite(data.qty) || data.qty <= 0) {
+    throw new ValidationError('drawing.data.qty', 'Position drawing data.qty must be a positive finite number', data.qty);
+  }
+  if (drawing.price == null || typeof drawing.price !== 'number' || !isFinite(drawing.price)) {
+    throw new ValidationError('drawing.price', 'Position drawing requires a numeric entry price', drawing.price);
+  }
+  // At least one anchor is required — time (preferred) or barIndex
+  if (drawing.time == null && drawing.barIndex == null) {
+    throw new ValidationError('drawing', 'Position drawing requires either time or barIndex as anchor', drawing);
+  }
+  // SL/TP are optional but if present must be finite numbers
+  if (data.sl != null && (typeof data.sl !== 'number' || !isFinite(data.sl))) {
+    throw new ValidationError('drawing.data.sl', 'Position drawing data.sl must be a finite number', data.sl);
+  }
+  if (data.tp != null && (typeof data.tp !== 'number' || !isFinite(data.tp))) {
+    throw new ValidationError('drawing.data.tp', 'Position drawing data.tp must be a finite number', data.tp);
   }
 }
