@@ -298,6 +298,7 @@ interface DrawingData {
 | `order` | `{barIndex|time, price, data}` | Pending order (limit/stop/market) with side, qty, kind label |
 | `text` | `{barIndex|time, price, data}` | Multi-line freeform text annotation (richer than `label`) |
 | `highlighter` | `{barIndex|time, barIndex2|time2, data}` | Vertical time band spanning full chart height (earnings window, session range) |
+| `position_closed` | `{barIndex|time, price, barIndex2|time2, price2, data}` | Closed trade — entry + exit markers, connector, realized PnL label |
 
 ##### `position` drawing type
 
@@ -353,6 +354,71 @@ chart.removeDrawing('pos-1');
 **Anchoring note:** prefer `time` over `barIndex` for positions. When `maxBars` auto-cleanup splices the oldest bars out, `barIndex` shifts but `time` stays stable — the renderer re-resolves the bar via binary search on `time`.
 
 **Scale modes:** works in linear, logarithmic, and percentage modes (PnL is always computed in real price space; the label is formatted via `priceFormatter.formatPrice` which honors the chart's price format).
+
+##### `position_closed` drawing type
+
+Renders a closed trading position — a trade that was opened AND exited. Complements the `position` drawing type:
+- `position` = open trade with live unrealized PnL (entry marker + dashed entry line + live PnL label)
+- `position_closed` = closed trade with entry + exit markers and fixed realized PnL
+
+**Required fields:**
+- `price` — entry price
+- `price2` — exit price
+- `data.side` — `'long'` or `'short'`
+- `data.qty` — position size (positive number)
+- Two anchors: entry `{time|barIndex, price}` and exit `{time2|barIndex2, price2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.status` — `'closed'` (default) / `'cancelled'`
+
+**Renders:**
+1. Entry marker — filled circle at `(entryX, entryY)` (in `color`)
+2. Exit marker — hollow square at `(exitX, exitY)` (in PnL color: green for profit, red for loss)
+3. Connector line — dashed line from entry to exit (the trade's lifespan on the chart)
+4. Entry dashed line — from entry X to exit X at entry price (entry level during the trade)
+5. Exit dashed line — from exit X to right edge at exit price (where the trade closed)
+6. Right-axis label box — two lines:
+   - Line 1: `"SIDE qty  in:entryPrice  out:exitPrice"` (e.g. `"LONG 0.5  in:42150.5  out:42850.0"`)
+   - Line 2: realized PnL (green for profit, red for loss)
+
+**Realized PnL** is computed from the fixed entry and exit prices (the trade is closed, so PnL doesn't change):
+- long:  `(exitPrice - entryPrice) * qty`
+- short: `(entryPrice - exitPrice) * qty`
+
+**Example — a winning long trade:**
+
+```typescript
+chart.addDrawing({
+  id: 'pos-closed-1',
+  type: 'position_closed',
+  time:  1704067200000, price: 42150.5,   // entry: bar 1 @ 42150.5
+  time2: 1704153600000, price2: 42850.0,  // exit: bar 2 @ 42850.0
+  color: '#3b82f6',
+  data: { side: 'long', qty: 0.5 }
+});
+// → renders "+350.0" realized PnL label (green)
+```
+
+**Lifecycle pattern** — open → close:
+
+```typescript
+// Open: add a 'position' drawing
+chart.addDrawing({
+  id: 'pos-1', type: 'position',
+  time: 1704067200000, price: 42150.5, color: '#3b82f6',
+  data: { side: 'long', qty: 0.5, sl: 41800, tp: 43000 }
+});
+
+// ... later, when the trade closes:
+chart.removeDrawing('pos-1');
+chart.addDrawing({
+  id: 'pos-closed-1', type: 'position_closed',
+  time:  1704067200000, price: 42150.5,
+  time2: 1704153600000, price2: 42850.0,
+  color: '#3b82f6',
+  data: { side: 'long', qty: 0.5 }
+});
+```
 
 ##### `order` drawing type
 
@@ -1239,6 +1305,15 @@ chart.addDrawing({
   data: { side: 'long', qty: 0.5, kind: 'limit' }
 });
 
+// Closed long trade with realized PnL
+chart.addDrawing({
+  id: 'pos-c-1', type: 'position_closed',
+  time: 1704067200000, price: 42150.5,
+  time2: 1704153600000, price2: 42850.0,
+  color: '#3b82f6',
+  data: { side: 'long', qty: 0.5 }
+});
+
 // Trendline extending right with a label
 chart.addDrawing({
   id: 'tl-1', type: 'trendline',
@@ -1421,6 +1496,7 @@ All exported from the package entry point:
 | `OrderRenderer` | class | Built-in order drawing renderer |
 | `TextRenderer` | class | Built-in text drawing renderer |
 | `HighlighterRenderer` | class | Built-in highlighter drawing renderer |
+| `PositionClosedRenderer` | class | Built-in position_closed drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |

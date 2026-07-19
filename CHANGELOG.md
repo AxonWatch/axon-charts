@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file.
 - `order` drawing type — pending order (limit/stop/stop_limit/market) drawn as a dashed horizontal line at the order price with a right-axis label showing `"SIDE KIND qty @ price"` (e.g. `"BUY LIMIT 0.5 @ 42150.5"`). Complements the `position` drawing — where `position` visualizes a filled trade, `order` visualizes a resting order that hasn't filled yet. Color defaults to side-based (green for buy/long, red for sell/short), overridable via `drawing.color`.
 - `text` drawing type — multi-line freeform text annotation. Distinct from the simpler `label` type (single-line, fixed 16px box, centered): `text` accepts `data.lines` (array of strings), sizes the box to content, and anchors at the top-left with auto-flip when near the right edge. Optional `data.textFill` overrides the default 10%-alpha-of-color background. Falls back to the `text` field as a single-line convenience when `data.lines` is not set.
 - `highlighter` drawing type — vertical time band spanning the full chart height between two time anchors. Common uses: earnings windows, news event periods, session ranges. Unlike `box`, only the X range (time range) is user-controlled; price/price2 are ignored. Optional `data.fill` (defaults to 20%-alpha of `color`), `lineStyle`, `lineWidth`, and a top-left text label. Draws on top of candles — use low fill alpha (0.05–0.15) for readability.
+- `position_closed` drawing type — closed trade with entry + exit markers, a connector line between them, entry/exit dashed lines, and a right-axis label showing side, qty, entry price, exit price, and realized PnL (green for profit, red for loss). Complements the `position` drawing: where `position` shows an open trade with live unrealized PnL, `position_closed` shows a finalized trade with fixed realized PnL computed from the two anchor prices. Useful for trade history visualization.
 - Extensible drawing system:
   - `DrawingRenderer` interface — plugin contract for rendering a drawing type (mirrors the `SeriesRenderer` pattern used for series types).
   - `chart.registerDrawingType(type, renderer)` — register custom drawing types without forking the library. Overwriting built-ins is allowed.
@@ -29,8 +30,9 @@ All notable changes to this project will be documented in this file.
   - `OrderRenderer` — built-in renderer for the `order` drawing type. Exported from the package.
   - `TextRenderer` — built-in renderer for the `text` drawing type. Exported from the package.
   - `HighlighterRenderer` — built-in renderer for the `highlighter` drawing type. Exported from the package.
-  - `validateDrawing()` — validates drawings on `addDrawing()`. Lenient on legacy types (no regression for existing callers); strict on `position` (requires `data.side`, `data.qty`, `price`, and an anchor) and `order` (requires `data.side`, `data.qty`, `data.kind`, and `price`).
-  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`, `FibRetracementRenderer`, `MeasureRenderer`, `OrderRenderer`, `TextRenderer`, `HighlighterRenderer`.
+  - `PositionClosedRenderer` — built-in renderer for the `position_closed` drawing type. Exported from the package.
+  - `validateDrawing()` — validates drawings on `addDrawing()`. Lenient on legacy types (no regression for existing callers); strict on `position` (requires `data.side`, `data.qty`, `price`, and an anchor), `order` (requires `data.side`, `data.qty`, `data.kind`, and `price`), and `position_closed` (requires `data.side`, `data.qty`, both `price` and `price2`, and both anchors).
+  - Exports: `DrawingRenderer`, `registerDrawingType`, `getDrawingRenderer`, `resolveAnchor`, `ArrowRenderer`, `LabelRenderer`, `HLineRenderer`, `VLineRenderer`, `PositionRenderer`, `TrendlineRenderer`, `BoxRenderer`, `FibRetracementRenderer`, `MeasureRenderer`, `OrderRenderer`, `TextRenderer`, `HighlighterRenderer`, `PositionClosedRenderer`.
 
 ### Changed
 - `Drawing` interface restructured for extensibility:
@@ -40,7 +42,7 @@ All notable changes to this project will be documented in this file.
 - `Renderer.renderDrawings()` slimmed from 80-line switch statement to 12-line registry lookup. Unknown drawing types are silently skipped.
 - `IChart.dataManager` interface: added `getBarAtTime(timestamp)` (already existed on concrete `DataManager` class; now part of the contract for drawing anchor resolution).
 - Color/style helpers (`hexToRgba`, `NAMED_COLORS`) extracted from `Renderer` to `src/utils/style.ts` for reuse by drawing renderers. New helpers: `chartBottomEdge()`, `clampYToChartArea()`.
-- Bundle: 26709 → 30040 bytes gzipped (+3331 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, FibRetracementRenderer, MeasureRenderer, OrderRenderer, TextRenderer, and HighlighterRenderer).
+- Bundle: 26709 → 30401 bytes gzipped (+3692 bytes for the plugin registry, 4 extracted renderers, anchor helper, validation, shared style utils, PositionRenderer, TrendlineRenderer, BoxRenderer, FibRetracementRenderer, MeasureRenderer, OrderRenderer, TextRenderer, HighlighterRenderer, and PositionClosedRenderer).
 
 ### Backward Compatibility
 - All 5 legacy drawing types (`arrow_up`, `arrow_down`, `label`, `hline`, `vline`) render pixel-identically (verbatim port to per-type renderer classes).

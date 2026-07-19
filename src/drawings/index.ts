@@ -12,4 +12,5 @@ export { MeasureRenderer } from './MeasureRenderer.js';
 export { OrderRenderer } from './OrderRenderer.js';
 export { TextRenderer } from './TextRenderer.js';
 export { HighlighterRenderer } from './HighlighterRenderer.js';
+export { PositionClosedRenderer } from './PositionClosedRenderer.js';
 export { resolveAnchor, AnchorPoint, AnchorSpec } from './anchor.js';

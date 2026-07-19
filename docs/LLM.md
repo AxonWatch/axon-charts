@@ -299,7 +299,7 @@ CONTROL:
     - { type: 'setSubPane', id: string, show: boolean }
 
   chart.setOptions({ ... })   → any ChartOptions field
-  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, order, trendline, box, fib_retracement, measure, text, highlighter, custom)
+  chart.addDrawing({ ... })   → persistent annotations (arrow, label, hline, vline, position, position_closed, order, trendline, box, fib_retracement, measure, text, highlighter, custom)
   chart.registerDrawingType(type, renderer) → add custom drawing type
 
   Position drawing example:
@@ -310,6 +310,15 @@ CONTROL:
     })
     → renders entry marker, dashed entry line, optional SL/TP lines,
       and a live PnL label on the right axis (updates every tick)
+
+  Closed position example:
+    chart.addDrawing({
+      id: 'posc-1', type: 'position_closed',
+      time: 1704067200000, price: 42150.5,
+      time2: 1704153600000, price2: 42850.0,
+      color: '#3b82f6', data: { side: 'long', qty: 0.5 }
+    })
+    → entry + exit markers, connector, realized PnL label (green/red)
 
   Order drawing example:
     chart.addDrawing({
