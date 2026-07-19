@@ -32,6 +32,7 @@ export { MeasureRenderer } from './drawings/MeasureRenderer.js';
 export { OrderRenderer } from './drawings/OrderRenderer.js';
 export { TextRenderer } from './drawings/TextRenderer.js';
 export { HighlighterRenderer } from './drawings/HighlighterRenderer.js';
+export { PositionClosedRenderer } from './drawings/PositionClosedRenderer.js';
 
 /**
  * Global chart registry for AI agent discovery.

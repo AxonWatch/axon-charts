@@ -12,6 +12,7 @@ import { MeasureRenderer } from './MeasureRenderer.js';
 import { OrderRenderer } from './OrderRenderer.js';
 import { TextRenderer } from './TextRenderer.js';
 import { HighlighterRenderer } from './HighlighterRenderer.js';
+import { PositionClosedRenderer } from './PositionClosedRenderer.js';
 
 /**
  * Central registry of drawing type → renderer.
@@ -41,6 +42,7 @@ const registry = new Map<string, DrawingRenderer<any>>([
   ['order',      new OrderRenderer()],
   ['text',       new TextRenderer()],
   ['highlighter', new HighlighterRenderer()],
+  ['position_closed', new PositionClosedRenderer()],
 ]);
 
 /**

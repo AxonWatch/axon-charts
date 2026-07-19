@@ -569,6 +569,8 @@ export function validateDrawing(drawing: Drawing): void {
     validatePositionDrawing(drawing);
   } else if (drawing.type === 'order') {
     validateOrderDrawing(drawing);
+  } else if (drawing.type === 'position_closed') {
+    validatePositionClosedDrawing(drawing);
   }
   // Legacy types: no further validation (preserves backward compatibility)
   // Unknown/custom types: no further validation (renderer handles its own contract)
@@ -618,5 +620,31 @@ function validateOrderDrawing(drawing: Drawing): void {
   }
   if (drawing.price == null || typeof drawing.price !== 'number' || !isFinite(drawing.price)) {
     throw new ValidationError('drawing.price', 'Order drawing requires a numeric order price', drawing.price);
+  }
+}
+function validatePositionClosedDrawing(drawing: Drawing): void {
+  const data = drawing.data;
+  if (!data || typeof data !== 'object') {
+    throw new ValidationError('drawing.data', 'position_closed drawing requires a data object with side and qty', data);
+  }
+  if (data.side !== 'long' && data.side !== 'short') {
+    throw new ValidationError('drawing.data.side', "position_closed drawing data.side must be 'long' or 'short'", data.side);
+  }
+  if (typeof data.qty !== 'number' || !isFinite(data.qty) || data.qty <= 0) {
+    throw new ValidationError('drawing.data.qty', 'position_closed drawing data.qty must be a positive finite number', data.qty);
+  }
+  // Both entry and exit prices are required
+  if (drawing.price == null || typeof drawing.price !== 'number' || !isFinite(drawing.price)) {
+    throw new ValidationError('drawing.price', 'position_closed drawing requires a numeric entry price', drawing.price);
+  }
+  if (drawing.price2 == null || typeof drawing.price2 !== 'number' || !isFinite(drawing.price2)) {
+    throw new ValidationError('drawing.price2', 'position_closed drawing requires a numeric exit price', drawing.price2);
+  }
+  // Both anchors are required — entry (time/barIndex) and exit (time2/barIndex2)
+  if (drawing.time == null && drawing.barIndex == null) {
+    throw new ValidationError('drawing', 'position_closed drawing requires either time or barIndex as the entry anchor', drawing);
+  }
+  if (drawing.time2 == null && drawing.barIndex2 == null) {
+    throw new ValidationError('drawing', 'position_closed drawing requires either time2 or barIndex2 as the exit anchor', drawing);
   }
 }
