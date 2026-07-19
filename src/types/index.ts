@@ -445,6 +445,12 @@ export interface IChart {
   removeDrawing(id: string): void;
   clearDrawings(): void;
   getDrawings(): Drawing[];
+  /** Update an existing drawing in place (used by the drag interaction layer). */
+  updateDrawing(id: string, updates: Partial<Drawing>): void;
+  /** Get the currently selected drawing id, or null. */
+  getSelectedDrawingId(): string | null;
+  /** Select a drawing (draws a selection outline) or null to clear. */
+  selectDrawing(id: string | null): void;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }

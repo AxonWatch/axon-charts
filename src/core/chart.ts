@@ -210,6 +210,7 @@ export class Chart {
   public onDataUpdate?: ((bars: Bar[]) => void) | null = null;
   public onCandleClose?: CandleCloseCallback;
   private _drawings: Drawing[] = [];
+  private _selectedDrawingId: string | null = null;
 
   // Event handlers stored for proper removal
   private readonly handleResizeBound: () => void;
@@ -1146,6 +1147,24 @@ export class Chart {
   }
   getDrawings(): Drawing[] {
     return this._drawings;
+  }
+  /**
+   * Update an existing drawing in place by id. Used by the drag
+   * interaction layer to move/resize drawings without removing and
+   * re-adding them. Triggers a render so the new position is visible.
+   */
+  updateDrawing(id: string, updates: Partial<Drawing>): void {
+    const idx = this._drawings.findIndex(d => d.id === id);
+    if (idx < 0) return;
+    this._drawings[idx] = { ...this._drawings[idx], ...updates };
+    this.render();
+  }
+  getSelectedDrawingId(): string | null {
+    return this._selectedDrawingId;
+  }
+  selectDrawing(id: string | null): void {
+    this._selectedDrawingId = id;
+    this.render();
   }
   /**
    * Register a custom drawing type. After registration, drawings with

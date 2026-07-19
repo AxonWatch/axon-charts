@@ -1,5 +1,5 @@
 import type { IChart } from '../types/index.js';
-import { indexToX, priceToY } from '../utils/projection.js';
+import { indexToX, priceToY, xToIndex, yToPrice } from '../utils/projection.js';
 
 /**
  * A resolved drawing anchor — screen coordinates + the bar index that
@@ -21,6 +21,44 @@ export interface AnchorSpec {
   barIndex?: number;
   time?: number;
   price: number;
+}
+
+/**
+ * The inverse of resolveAnchor: given a screen point, resolve it back
+ * to chart-data coordinates (time + price + barIndex). Used by the
+ * drawing interaction layer to convert drag movements back into
+ * anchor updates.
+ *
+ * X is snapped to the nearest bar center via xToIndex (the chart's
+ * standard hit-testing function). Y is mapped to price via yToPrice
+ * (handles linear/log/percentage/reverse modes).
+ *
+ * Returns null when the cursor is outside the data range (no bar to
+ * snap to). Drag handlers should treat null as "skip the update" so
+ * the drawing stays at its last valid position instead of jumping.
+ *
+ * The returned `time` is the snapped bar's actual timestamp — this is
+ * what gets stored back on the drawing so the anchor survives
+ * maxBars auto-cleanup.
+ */
+export function screenToAnchor(chart: IChart, x: number, y: number): { time: number; price: number; barIndex: number } | null {
+  const { data } = chart.state;
+  if (data.length === 0) return null;
+
+  const barIndex = xToIndex(x, chart.state);
+  if (barIndex < 0 || barIndex >= data.length) return null;
+
+  const bar = data[barIndex];
+  if (!bar) return null;
+
+  const price = yToPrice(y, chart.state);
+  if (!isFinite(price)) return null;
+
+  return {
+    time: bar.time,
+    price,
+    barIndex
+  };
 }
 
 /**
