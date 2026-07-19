@@ -287,6 +287,7 @@ interface DrawingData {
 | `vline` | `{barIndex|time}` | Vertical dashed line spanning chart height |
 | `position` | `{barIndex|time, price, data}` | Trading position with live PnL, optional SL/TP |
 | `trendline` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point line with optional extend/lineStyle/lineWidth + end label |
+| `box` | `{barIndex|time, price, barIndex2|time2, price2, data}` | 2-point rectangle (opposite corners) with fill + optional label |
 
 ##### `position` drawing type
 
@@ -374,6 +375,38 @@ chart.addDrawing({
 ```
 
 **Scale modes:** works in linear, logarithmic, and percentage modes (both anchors' Y coordinates go through `priceToY`, the single source of truth).
+
+##### `box` drawing type
+
+Renders a rectangle between two anchor points (opposite corners). Common uses: trading ranges, supply/demand zones, pattern completion zones, highlight regions.
+
+**Required fields:**
+- `price`, `price2` — prices at the two opposite corners
+- Two anchors: `{time|barIndex, price}` and `{time2|barIndex2, price2}` (prefer `time`/`time2` for stability)
+
+**Optional `data` fields:**
+- `data.fill` — CSS color for the rectangle fill (semi-transparent recommended; if omitted, defaults to a 15%-alpha version of `color`)
+- `data.lineStyle` — `'solid'` (default) / `'dashed'` / `'dotted'` (border style)
+- `data.lineWidth` — border width in pixels (default 1)
+- `text` — optional label at the top-left corner of the box
+
+**Example — supply zone:**
+
+```typescript
+chart.addDrawing({
+  id: 'box-1',
+  type: 'box',
+  time: 1704067200000,
+  price: 42800,
+  time2: 1704153600000,
+  price2: 42100,
+  color: '#ef4444',
+  text: 'Supply',
+  data: { fill: 'rgba(239, 68, 68, 0.12)', lineStyle: 'dashed' }
+});
+```
+
+**Scale modes:** works in linear, logarithmic, and percentage modes.
 
 **Registering a custom drawing type:**
 
@@ -989,6 +1022,15 @@ chart.addDrawing({
   data: { extend: 'right', lineStyle: 'dashed' }
 });
 
+// Box marking a supply zone
+chart.addDrawing({
+  id: 'box-1', type: 'box',
+  time: 1704067200000, price: 42800,
+  time2: 1704153600000, price2: 42100,
+  color: '#ef4444', text: 'Supply',
+  data: { fill: 'rgba(239, 68, 68, 0.12)', lineStyle: 'dashed' }
+});
+
 // Custom drawing type
 chart.registerDrawingType('fib', new FibRenderer());
 chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' });
@@ -1115,6 +1157,7 @@ All exported from the package entry point:
 | `VLineRenderer` | class | Built-in vline drawing renderer |
 | `PositionRenderer` | class | Built-in position drawing renderer |
 | `TrendlineRenderer` | class | Built-in trendline drawing renderer |
+| `BoxRenderer` | class | Built-in box drawing renderer |
 | `Bar` | interface | OHLCV data type |
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
