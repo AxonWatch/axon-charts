@@ -453,6 +453,14 @@ export interface IChart {
   selectDrawing(id: string | null): void;
   /** Get the currently hovered handle (drawingId + handleId), or null. Used by renderers to draw hover highlights. */
   getHoveredHandle(): { drawingId: string; handleId: string } | null;
+  /** Enter drawing-creation mode. Click on the chart to place anchor 1, move + click to place anchor 2, commit. */
+  beginDrawing(type: string): void;
+  /** Cancel drawing-creation mode (Escape or second click on the same point). */
+  cancelDrawing(): void;
+  /** True when drawing-creation mode is active. */
+  isDrawing(): boolean;
+  /** Get the in-progress drawing's preview anchor (first click), or null. */
+  getDrawingPreview(): { time: number; price: number; time2?: number; price2?: number } | null;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }
