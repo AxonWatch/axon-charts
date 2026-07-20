@@ -46,6 +46,10 @@ export class DrawingInteraction {
   /** Drawing id + handle id under the cursor (for cursor styling), or null. */
   private hoverDrawingId: string | null = null;
   private hoverHandleId: string | null = null;
+  /** True when a drawing/handle is currently hovered (cursor is over it).
+   *  Set by onMouseMove; read by EventManager to decide whether to
+   *  override the cursor. Cleared when the cursor leaves the drawing. */
+  private hoverActive: boolean = false;
   /** Cached handles per drawing (recomputed on each mousemove). */
   private cachedHandles: DrawingHandle[] = [];
 
@@ -95,7 +99,9 @@ export class DrawingInteraction {
 
   /**
    * Called by EventManager on mousemove. Returns true if the event
-   * was consumed (a drawing is being dragged — chart pan should NOT fire).
+   * was consumed (a drawing is being dragged OR a drawing is hovered
+   * — in both cases the chart's cursor logic should NOT fire, since
+   * the dispatcher sets the cursor to match the handle).
    */
   onMouseMove(x: number, y: number): boolean {
     // If we're mid-drag, update the drawing position
@@ -106,8 +112,11 @@ export class DrawingInteraction {
 
     // Otherwise just update hover state for cursor styling
     if (!this.isInChartArea(x, y)) {
-      this.hoverDrawingId = null;
-      this.hoverHandleId = null;
+      if (this.hoverActive) {
+        this.hoverDrawingId = null;
+        this.hoverHandleId = null;
+        this.hoverActive = false;
+      }
       return false;
     }
 
@@ -115,24 +124,42 @@ export class DrawingInteraction {
     if (handleHit) {
       this.hoverDrawingId = handleHit.drawingId;
       this.hoverHandleId = handleHit.handleId;
+      this.hoverActive = true;
       const handle = this.cachedHandles.find(h => h.id === handleHit.handleId);
       if (handle) {
         this.chart.mainCanvas.style.cursor = handle.cursor;
       }
-      return false;  // not a drag, just hover — let chart see the move too
+      return true;  // consume so EventManager doesn't overwrite the cursor
     }
 
     const bodyHit = this.hitTestBodies(x, y);
     if (bodyHit) {
       this.hoverDrawingId = bodyHit;
       this.hoverHandleId = 'body';
+      this.hoverActive = true;
       this.chart.mainCanvas.style.cursor = 'move';
-      return false;
+      return true;  // consume so EventManager doesn't overwrite the cursor
     }
 
+    // Not over any drawing — clear hover, let chart set the cursor
+    if (this.hoverActive) {
+      this.hoverDrawingId = null;
+      this.hoverHandleId = null;
+      this.hoverActive = false;
+    }
+    return false;
+  }
+
+  /** True when a drawing handle/body is currently hovered (EventManager checks this). */
+  isHovering(): boolean {
+    return this.hoverActive;
+  }
+
+  /** Clear hover state (called by EventManager on mouseleave). */
+  clearHover(): void {
     this.hoverDrawingId = null;
     this.hoverHandleId = null;
-    return false;
+    this.hoverActive = false;
   }
 
   /**
@@ -156,6 +183,7 @@ export class DrawingInteraction {
     this.dragStartDrawing = null;
     this.hoverDrawingId = null;
     this.hoverHandleId = null;
+    this.hoverActive = false;
   }
 
   // ── Drag application ──────────────────────────────────────────

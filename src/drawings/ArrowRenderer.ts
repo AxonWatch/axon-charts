@@ -26,11 +26,13 @@ export class ArrowRenderer implements DrawingRenderer {
     ctx.fillStyle = d.color;
     ctx.beginPath();
     if (this.direction === 'up') {
-      ctx.moveTo(x, y + 8);
+      // Up arrow: point above the anchor (smaller Y in canvas coords)
+      ctx.moveTo(x, y - 8);
       ctx.lineTo(x - 5, y);
       ctx.lineTo(x + 5, y);
     } else {
-      ctx.moveTo(x, y - 8);
+      // Down arrow: point below the anchor (larger Y in canvas coords)
+      ctx.moveTo(x, y + 8);
       ctx.lineTo(x - 5, y);
       ctx.lineTo(x + 5, y);
     }

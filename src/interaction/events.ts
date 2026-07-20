@@ -747,6 +747,8 @@ export class EventManager {
       }
       this.requestRender();
     }
+    // Clear drawing hover state so handle highlights don't linger
+    this.drawingInteraction.clearHover();
   }
 
   private handleTouchStart = (e: TouchEvent): void => {
