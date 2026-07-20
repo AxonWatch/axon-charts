@@ -33,6 +33,7 @@ export { Overlay } from './overlays/Overlay.js';
 export { LineOverlay } from './overlays/LineOverlay.js';
 export { SMAOverlay } from './overlays/SMAOverlay.js';
 export { EMAOverlay } from './overlays/EMAOverlay.js';
+export { BollingerBandsOverlay } from './overlays/BollingerBandsOverlay.js';
 export { ArrowRenderer } from './drawings/ArrowRenderer.js';
 export { LabelRenderer } from './drawings/LabelRenderer.js';
 export { HLineRenderer } from './drawings/HLineRenderer.js';
