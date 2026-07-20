@@ -436,8 +436,10 @@ REACT:
 EXPORT:
   chart.toDataURL()           → base64 PNG screenshot
   chart.toBlob()              → Blob (async)
-  chart.saveState()           → full state JSON
-  chart.loadState(state)      → restore everything
+  chart.saveState()           → full state JSON (options, data, viewport, drawings, overlays)
+  chart.loadState(state)      → restore everything (accepts any 1.x schema version)
+  chart.resetState(opts?)     → clear drawings + overlays (preserves options/data/viewport)
+  migrateSnapshot(oldState)  → upgrade old snapshot to current schema
 ```
 
 ---

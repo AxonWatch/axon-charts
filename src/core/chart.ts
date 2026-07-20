@@ -2,12 +2,13 @@ import { DataManager } from './data.js';
 import { Renderer } from './renderer.js';
 import { Crosshair } from '../ui/crosshair.js';
 import { EventManager } from '../interaction/events.js';
-import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback, CandleCloseCallback } from '../types/index.js';
+import { ChartOptions, Bar, Drawing, ScrollLockChangeCallback, ChartCommand, ChartState, CrosshairMoveCallback, BarClickCallback, VisibleRangeChangeCallback, CandleCloseCallback, OverlaySnapshot } from '../types/index.js';
 import { LIB_VERSION } from '../version.js';
 import { LAYOUT } from './layout.js';
 import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calculateRightEdgeOffset } from '../utils/projection.js';
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
+import { migrateSnapshot } from '../utils/migrate.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
@@ -16,6 +17,7 @@ import { registerDrawingType as registerDrawingTypeImpl } from '../drawings/regi
 import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
 import { DrawingController } from '../interaction/drawing-controller.js';
 import type { Overlay } from '../overlays/Overlay.js';
+import { registerOverlayType as registerOverlayTypeImpl, getOverlayTypeName, getOverlayType as getOverlayTypeImpl } from '../overlays/registry.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { RSISubPane } from '../subpanes/RSISubPane.js';
 import { MACDSubPane } from '../subpanes/MACDSubPane.js';
@@ -1616,11 +1618,36 @@ export class Chart {
   }
 
   /**
-   * Save complete chart state
+   * Save complete chart state (options, data, viewport, drawings, overlays).
+   *
+   * The returned object is JSON-serializable. Pass it to loadState() to
+   * restore the chart, or to JSON.stringify() for persistence in
+   * localStorage / IndexedDB / backend storage.
+   *
+   * Schema version: 1.1.0 (adds drawings + overlays).
+   * Older 1.0.0 snapshots load fine — new fields default to empty arrays.
+   * See migrateSnapshot() for upgrading old snapshots.
    */
   public saveState(): ChartState {
+    // Serialize overlays: walk the overlay stack, look up each
+    // overlay's registered type string, and capture { id, type, options }.
+    const overlaySnapshots: OverlaySnapshot[] = [];
+    for (const overlay of this.renderer.getOverlays()) {
+      const typeName = getOverlayTypeName(overlay.constructor);
+      if (typeName) {
+        overlaySnapshots.push({
+          id: overlay.id,
+          type: typeName,
+          options: deepClone(overlay.getOptions()) as Record<string, unknown>
+        });
+      }
+      // If the overlay's constructor isn't registered (e.g. a custom
+      // overlay the consumer didn't register), it's silently skipped —
+      // can't reconstruct without the constructor.
+    }
+
     return {
-      version: '1.0.0',
+      version: '1.1.0',
       options: deepClone(this.options),
       data: [...this.dataManager.data],
       referencePrice: this.state.referencePrice,
@@ -1631,28 +1658,91 @@ export class Chart {
         barWidth: this.state.barWidth,
         priceScale: this.state.priceScale,
         priceOffset: this.state.priceOffset
-      }
+      },
+      drawings: [...this._drawings],
+      overlays: overlaySnapshots
     };
   }
 
   /**
-   * Load chart state
+   * Load chart state (options, data, viewport, drawings, overlays).
+   *
+   * Accepts snapshots from any schema version 1.x. Older snapshots
+   * (version 1.0.0, without drawings/overlays) load fine — new fields
+   * default to empty arrays.
+   *
+   * Call migrateSnapshot() first if you want to upgrade a stored
+   * snapshot to the current schema before loading.
    */
   public loadState(state: ChartState): void {
+    // Migrate old snapshots to current schema
+    const snap = migrateSnapshot(state);
+
     // Restore options
-    this.setOptions(state.options);
+    this.setOptions(snap.options);
 
     // Restore data
-    this.setData(state.data);
+    this.setData(snap.data);
+
+    // Restore drawings (direct assignment, bypass addDrawing to avoid
+    // per-drawing validation + render — one render at the end)
+    this._drawings = snap.drawings ?? [];
+
+    // Restore overlays (clear existing, reconstruct from snapshots)
+    this.renderer.clearOverlays();
+    if (snap.overlays) {
+      for (const oSnap of snap.overlays) {
+        const ctor = getOverlayTypeImpl(oSnap.type);
+        if (ctor) {
+          this.renderer.addOverlay(new ctor(oSnap.options as any));
+        }
+        // Unknown overlay types are silently skipped — can't reconstruct
+        // without the constructor. The consumer should register custom
+        // overlay types before calling loadState().
+      }
+    }
 
     // Restore viewport
-    this.state.offsetX = state.viewport.offsetX;
-    this.state.barWidth = state.viewport.barWidth;
-    this.state.priceScale = state.viewport.priceScale;
-    this.state.priceOffset = state.viewport.priceOffset;
+    this.state.offsetX = snap.viewport.offsetX;
+    this.state.barWidth = snap.viewport.barWidth;
+    this.state.priceScale = snap.viewport.priceScale;
+    this.state.priceOffset = snap.viewport.priceOffset;
 
-    // Re-render with restored viewport
+    // Re-render with restored state
     this.render();
+  }
+
+  /**
+   * Reset user-added state (drawings + overlays) in a single render call.
+   * Preserves options, data, and viewport.
+   *
+   * @param opts  { drawings?: boolean; overlays?: boolean }
+   *              Both default to true. Set one to false to skip it.
+   *
+   * Usage:
+   *   chart.resetState();                         // clears both
+   *   chart.resetState({ overlays: false });      // clears drawings only
+   *   chart.resetState({ drawings: false });      // clears overlays only
+   */
+  public resetState(opts?: { drawings?: boolean; overlays?: boolean }): void {
+    const clearDrawings = opts?.drawings !== false;
+    const clearOverlays = opts?.overlays !== false;
+
+    if (clearDrawings) this._drawings = [];
+    if (clearOverlays) this.renderer.clearOverlays();
+    if (clearDrawings || clearOverlays) this.render();
+  }
+
+  /**
+   * Register a custom overlay type. After registration, saveState()
+   * can serialize instances of this overlay type, and loadState() can
+   * reconstruct them from { type, options } snapshots.
+   *
+   * Custom overlays must be registered before loadState() is called
+   * with a snapshot that contains them.
+   */
+  public registerOverlayType(type: string, ctor: new (opts?: any) => Overlay): void {
+    registerOverlayTypeImpl(type, ctor);
   }
 
   /**

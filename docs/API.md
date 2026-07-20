@@ -215,12 +215,28 @@ Export the current chart view as a PNG Blob. Same layer merge as `toDataURL()`.
 ```typescript
 chart.saveState(): ChartState
 ```
-Returns a serializable object with current options, data, reference price, price scale mode, reverse state, and viewport settings (offsetX, barWidth, priceScale, priceOffset).
+Returns a serializable object with current options, data, reference price, price scale mode, reverse state, viewport settings (offsetX, barWidth, priceScale, priceOffset), **drawings** (trendlines, boxes, positions, etc.), and **overlays** (SMA, EMA, BB, etc. as `{ id, type, options }` snapshots). JSON-safe — pass to `JSON.stringify()` for storage.
 
 ```typescript
 chart.loadState(state: ChartState): void
 ```
-Restores options, data, and viewport from a previously saved state. Calls `setOptions()` → `setData()` → restores viewport geometry → `render()`.
+Restores options, data, drawings, overlays, and viewport from a previously saved state. Accepts snapshots from any 1.x schema version — older 1.0.0 snapshots (without drawings/overlays) load fine, with empty arrays substituted. Calls `migrateSnapshot()` internally, then `setOptions()` → `setData()` → restores drawings → restores overlays → restores viewport → `render()`.
+
+```typescript
+chart.resetState(opts?: { drawings?: boolean; overlays?: boolean }): void
+```
+Clears user-added state in a single render call. Defaults to clearing both drawings and overlays. Preserves options, data, and viewport.
+
+```typescript
+chart.registerOverlayType(type: string, ctor: new (opts?: any) => Overlay): void
+```
+Register a custom overlay type so `saveState()` can serialize it and `loadState()` can reconstruct it. Must be called before `loadState()` with a snapshot containing custom overlay types. Mirrors `registerDrawingType()` for drawings.
+
+```typescript
+import { migrateSnapshot } from 'axon-charts';
+const upgraded = migrateSnapshot(oldSnapshot);
+```
+Upgrades a snapshot from any 1.x schema version to the current one. Returns a deep-cloned, upgraded copy. Safe to call on already-current snapshots.
 
 #### Sub-Pane Management
 
@@ -718,6 +734,64 @@ chart.addDrawing({ id: 'f1', type: 'fib', time: ..., price: ..., color: '#888' }
 
 The `DrawingRenderer` interface and the `resolveAnchor()` helper are exported from the package so custom renderers can reuse the same coordinate mapping and anchor resolution as the built-ins.
 
+#### Overlay API
+
+```typescript
+chart.addOverlay(overlay: Overlay): void
+chart.removeOverlay(id: string): void
+chart.getOverlays(): Overlay[]
+chart.registerOverlayType(type: string, ctor: new (opts?: any) => Overlay): void
+```
+Manage overlay indicators drawn on the main chart on top of candles, sharing the main chart's price scale. Overlays are re-rendered every frame, including on `updateLastBarFast()` ticks.
+
+`registerOverlayType()` allows external code to register custom overlay types for serialization. Built-in overlays (SMA, EMA, BB, VWAP, Ichimoku) self-register at module load.
+
+**Built-in overlay classes** (all exported from the package):
+
+| Class | Type | Description |
+|-------|------|-------------|
+| `SMAOverlay` | `'sma'` | Simple Moving Average line |
+| `EMAOverlay` | `'ema'` | Exponential Moving Average line |
+| `BollingerBandsOverlay` | `'bb'` | 3 lines + filled band region |
+| `VWAPOverlay` | `'vwap'` | Volume Weighted Average Price (daily reset) |
+| `IchimokuCloudOverlay` | `'ichimoku'` | 5 components + filled cloud (Kumo) |
+
+**Example — adding overlays:**
+
+```typescript
+import { SMAOverlay, EMAOverlay, BollingerBandsOverlay } from 'axon-charts';
+
+chart.addOverlay(new SMAOverlay({ period: 20, color: '#3b82f6' }));
+chart.addOverlay(new SMAOverlay({ period: 50, color: '#10B981' }));
+chart.addOverlay(new EMAOverlay({ period: 12, color: '#f59e0b' }));
+chart.addOverlay(new BollingerBandsOverlay({ period: 20, numStdDev: 2 }));
+
+// Remove by id
+chart.removeOverlay('sma-20');
+
+// List all
+const overlays = chart.getOverlays();
+```
+
+**Custom overlay (with serialization support):**
+
+```typescript
+import { Overlay, registerOverlayType } from 'axon-charts';
+
+class MyCustomMA implements Overlay {
+  readonly id = 'my-ma';
+  getOptions() { return { show: true, period: 10 }; }
+  compute(chart) { /* ... */ return values; }
+  render(ctx, chart, values) { /* ... */ }
+}
+registerOverlayType('myMA', MyCustomMA);
+
+// Now saveState() can serialize MyCustomMA instances,
+// and loadState() can reconstruct them from { type: 'myMA', options }.
+```
+
+The `Overlay` interface and `LineOverlay` abstract base class are exported for custom overlay implementation.
+
 #### Events / Callbacks
 
 All callbacks can be set either via `createChart()` options or as properties on the chart instance:
@@ -1210,8 +1284,15 @@ type ChartCommand =
 ### `ChartState` (Persistence)
 
 ```typescript
+interface OverlaySnapshot {
+  id: string;                               // Overlay's unique id (e.g. 'sma-20')
+  type: string;                             // Registry type string (e.g. 'sma', 'ema', 'bb')
+  options: Record<string, unknown>;         // Constructor options, deep-cloned
+}
+
 interface ChartState {
-  version: string;
+  /** Schema version (NOT the library version). See version contract below. */
+  version: string;                          // Current: '1.1.0'
   options: Required<ChartOptions>;
   data: Bar[];
   referencePrice: number;
@@ -1223,8 +1304,54 @@ interface ChartState {
     priceScale: number;
     priceOffset: number;
   };
+  /** User drawings (trendlines, boxes, positions, etc.). Added in schema v1.1. */
+  drawings?: Drawing[];
+  /** Overlay indicator snapshots (SMA, EMA, BB, etc.). Added in schema v1.1. */
+  overlays?: OverlaySnapshot[];
 }
 ```
+
+**Version contract:**
+- **Major** (1.0 → 2.0): breaking shape change. `loadState()` may reject old snapshots.
+- **Minor** (1.0 → 1.1): additive. Old snapshots still load; new fields default to empty arrays.
+- **Patch**: no shape change.
+
+Older 1.0.0 snapshots (without `drawings`/`overlays`) load fine — new fields default to `[]`. Use `migrateSnapshot()` to upgrade old snapshots before loading.
+
+### `migrateSnapshot(state)` — Schema Migration Helper
+
+```typescript
+import { migrateSnapshot } from 'axon-charts';
+
+const upgraded = migrateSnapshot(oldSnapshot);
+chart.loadState(upgraded);
+```
+
+Upgrades a snapshot from any 1.x schema version to the current one (1.1.0). Does NOT mutate the input — returns a deep-cloned, upgraded copy. Safe to call on snapshots that are already current (no-op).
+
+### `chart.resetState(opts?)` — Clear User-Added State
+
+```typescript
+chart.resetState(): void                          // clears drawings + overlays
+chart.resetState({ overlays: false }): void         // clears drawings only
+chart.resetState({ drawings: false }): void         // clears overlays only
+```
+
+Single render call, O(n) removal. Preserves options, data, and viewport.
+
+### `chart.registerOverlayType(type, ctor)` — Custom Overlay Registration
+
+```typescript
+import { registerOverlayType } from 'axon-charts';
+
+class MyCustomMA implements Overlay { ... }
+registerOverlayType('myMA', MyCustomMA);
+
+// Now saveState() can serialize instances of MyCustomMA,
+// and loadState() can reconstruct them from { type: 'myMA', options }.
+```
+
+Must be called before `loadState()` with a snapshot containing custom overlay types. Mirrors the existing `registerDrawingType()` pattern for custom drawing types.
 
 ---
 
@@ -1403,10 +1530,18 @@ chart.updateLastBarFast({ time: Date.now(), open: 105, high: 108, low: 104, clos
 const dataUrl = chart.toDataURL();
 const blob = await chart.toBlob();
 
-// Persistence
+// Persistence (includes drawings + overlays)
 const state = chart.saveState();
-// ... later ...
+// ... later, or after page reload ...
 chart.loadState(state);
+
+// Or migrate an old snapshot before loading:
+// import { migrateSnapshot } from 'axon-charts';
+// chart.loadState(migrateSnapshot(oldState));
+
+// Reset user-added state (clears drawings + overlays, preserves options/data/viewport)
+chart.resetState();
+chart.resetState({ overlays: false });  // drawings only
 
 // Cleanup
 chart.destroy();
@@ -1445,6 +1580,136 @@ chart.setOptions({
 - Vertical grid lines align with main chart via same `calculateTimeStep()` function
 - Data must include `volume` field on Bar objects (optional, defaults to 0)
 - Precision auto-detected from data values when `precision: null`
+
+---
+
+## Sub-Pane Indicators
+
+Axon Charts includes 8 built-in sub-pane indicators (oscillators displayed in separate panes below the main chart). All extend the `ScalePane` base class and share the same interaction model (zoom, pan, separator drag, tooltip, current-value line).
+
+### Available Indicators
+
+| Indicator | Options key | Range | Description |
+|-----------|-------------|-------|-------------|
+| RSI | `rsi` | 0-100 | Relative Strength Index (Wilder's smoothing) |
+| MACD | `macd` | ±auto | MACD line + signal + histogram (symmetric around 0) |
+| Stochastic | `stochastic` | 0-100 | %K and %D lines (fast or slow) |
+| Williams %R | `williamsR` | -100..0 | Williams %R oscillator |
+| CCI | `cci` | ±auto | Commodity Channel Index (around 0) |
+| MFI | `mfi` | 0-100 | Money Flow Index (uses volume) |
+| ATR | `atr` | 0+ | Average True Range (absolute values) |
+| ADX | `adx` | 0-100 | ADX + +DI / -DI (Directional Movement System) |
+
+### Configuration
+
+All indicators are off by default. Enable via `setOptions` or `execute`:
+
+```typescript
+// Enable RSI with custom period
+chart.setOptions({ rsi: { show: true, period: 14, overbought: 80, oversold: 20 } });
+
+// Enable MACD with default settings
+chart.setOptions({ macd: { show: true } });
+
+// Via LLM command
+chart.execute({ type: 'setSubPane', id: 'rsi', show: true });
+
+// Or right-click the chart → toggle in the context menu
+```
+
+### Indicator Labels
+
+Each active sub-pane shows its name + key params in the top-left corner (e.g. `RSI(14)`, `MACD(12,26,9)`). Overlay indicators show similar labels on the main chart (e.g. `SMA(20)`, `EMA(12)`).
+
+### Runtime Editing
+
+```typescript
+// Change an indicator's settings at runtime
+chart.setIndicatorOptions('rsi', { period: 21, overbought: 80 });
+chart.setIndicatorOptions('sma-20', { color: '#ff0000', lineWidth: 2 });
+
+// Callback when user clicks an indicator label
+chart.onIndicatorClick = (id, type) => {
+  // id: 'rsi', 'macd', 'sma-20', etc.
+  // type: 'subpane' or 'overlay'
+  openSettingsPanel(id);
+};
+```
+
+### Right-Click Context Menu
+
+The right-click context menu includes toggle entries for all 8 sub-pane indicators (RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX), alongside the existing Volume, Grid, Crosshair, Market, and Watermark toggles.
+
+### Options Reference
+
+```typescript
+// RSI
+rsi: { show?, period?, heightPercent?, color?, overbought?, oversold?, showLevels? }
+
+// MACD
+macd: { show?, fastPeriod?, slowPeriod?, signalPeriod?, heightPercent?,
+        macdColor?, signalColor?, histogramUpColor?, histogramDownColor? }
+
+// Stochastic
+stochastic: { show?, kPeriod?, dPeriod?, smoothK?, heightPercent?,
+              kColor?, dColor?, overbought?, oversold?, showLevels? }
+
+// Williams %R
+williamsR: { show?, period?, heightPercent?, color?, overbought?, oversold?, showLevels? }
+
+// CCI
+cci: { show?, period?, heightPercent?, color?, upperLevel?, lowerLevel?, showLevels? }
+
+// MFI
+mfi: { show?, period?, heightPercent?, color?, overbought?, oversold?, showLevels? }
+
+// ATR
+atr: { show?, period?, heightPercent?, color? }
+
+// ADX
+adx: { show?, period?, heightPercent?, adxColor?, plusDiColor?, minusDiColor?,
+       threshold?, showThreshold? }
+```
+
+All `heightPercent` values default to 0.15 (15% of chart height) and are clamped to 0.05-0.5.
+
+---
+
+## Overlay Indicators
+
+Axon Charts includes 5 built-in overlay indicators (drawn on the main chart on top of candles, sharing the main price scale). All implement the `Overlay` interface.
+
+### Available Overlays
+
+| Class | Registry type | Description |
+|-------|---------------|-------------|
+| `SMAOverlay` | `'sma'` | Simple Moving Average line |
+| `EMAOverlay` | `'ema'` | Exponential Moving Average line |
+| `BollingerBandsOverlay` | `'bb'` | 3 lines (mid/upper/lower) + filled band |
+| `VWAPOverlay` | `'vwap'` | Volume Weighted Average Price (daily reset) |
+| `IchimokuCloudOverlay` | `'ichimoku'` | 5 components + filled cloud (Kumo) |
+
+### Usage
+
+```typescript
+import { SMAOverlay, EMAOverlay, BollingerBandsOverlay, VWAPOverlay, IchimokuCloudOverlay } from 'axon-charts';
+
+chart.addOverlay(new SMAOverlay({ period: 20, color: '#3b82f6' }));
+chart.addOverlay(new EMAOverlay({ period: 12, color: '#f59e0b' }));
+chart.addOverlay(new BollingerBandsOverlay({ period: 20, numStdDev: 2 }));
+chart.addOverlay(new VWAPOverlay({ resetDaily: true }));
+chart.addOverlay(new IchimokuCloudOverlay());
+
+// Remove by id
+chart.removeOverlay('sma-20');
+
+// List all
+chart.getOverlays();
+```
+
+### Serialization
+
+Overlays are serialized to `{ id, type, options }` snapshots by `saveState()` and reconstructed by `loadState()` via the overlay registry. Custom overlays must be registered via `registerOverlayType()` before `loadState()` can reconstruct them.
 
 ---
 
@@ -1491,6 +1756,22 @@ All exported from the package entry point:
 | `SubPane` | interface | Sub-pane contract |
 | `ScalePane` | class | Abstract scale pane base |
 | `VolumeSubPane` | class | Volume histogram sub-pane |
+| `RSISubPane` | class | RSI sub-pane indicator |
+| `MACDSubPane` | class | MACD sub-pane indicator |
+| `StochasticSubPane` | class | Stochastic Oscillator sub-pane indicator |
+| `WilliamsRSubPane` | class | Williams %R sub-pane indicator |
+| `CCISubPane` | class | CCI sub-pane indicator |
+| `MFISubPane` | class | MFI sub-pane indicator |
+| `ATRSubPane` | class | ATR sub-pane indicator |
+| `ADXSubPane` | class | ADX sub-pane indicator |
+| `Overlay` | interface | Overlay indicator plugin contract |
+| `LineOverlay` | class | Abstract base for single-line overlays |
+| `SMAOverlay` | class | Simple Moving Average overlay |
+| `EMAOverlay` | class | Exponential Moving Average overlay |
+| `BollingerBandsOverlay` | class | Bollinger Bands overlay |
+| `VWAPOverlay` | class | VWAP overlay |
+| `IchimokuCloudOverlay` | class | Ichimoku Cloud overlay |
+| `Indicators` | namespace | Technical indicator math functions (sma, ema, rsi, macd, etc.) |
 | `DrawingRenderer` | interface | Drawing plugin contract |
 | `registerDrawingType` | function | Register custom drawing type |
 | `getDrawingRenderer` | function | Look up renderer by type |
@@ -1512,7 +1793,10 @@ All exported from the package entry point:
 | `ChartOptions` | interface | Full options schema |
 | `PriceFormat` | interface | Price formatting |
 | `ChartCommand` | type | LLM command union |
-| `ChartState` | interface | Persistence format |
+| `ChartState` | interface | Persistence format (schema v1.1: +drawings, +overlays) |
+| `OverlaySnapshot` | interface | Serialized overlay for persistence |
+| `migrateSnapshot` | function | Upgrade old snapshots to current schema |
+| `registerOverlayType` | function | Register custom overlay type for serialization |
 | `Drawing` | interface | Extensible drawing data type |
 | `DrawingData` | interface | Type-specific drawing payload |
 | `LAYOUT` | const | Layout constants |

@@ -1622,11 +1622,19 @@ window.__AXON_CHARTS__.charts['Bitcoin-1m'].setOptions({
           </tr>
           <tr>
             <td><code>saveState()</code></td>
-            <td>Serialize chart state</td>
+            <td>Serialize chart state (options, data, viewport, drawings, overlays)</td>
           </tr>
           <tr>
             <td><code>loadState(state)</code></td>
-            <td>Restore chart state</td>
+            <td>Restore chart state (accepts any 1.x schema version)</td>
+          </tr>
+          <tr>
+            <td><code>resetState(opts?)</code></td>
+            <td>Clear drawings + overlays (single render, preserves options/data/viewport)</td>
+          </tr>
+          <tr>
+            <td><code>registerOverlayType(type, ctor)</code></td>
+            <td>Register custom overlay type for saveState/loadState</td>
           </tr>
           <tr>
             <td><code>appendBar(bar)</code></td>
@@ -2097,6 +2105,8 @@ interface DrawingData {
           <li><strong>Streaming:</strong> Use <code>updateLastBarFast()</code> for tick-by-tick updates (10-1000/sec). Call <code>chart.render()</code> every 20 ticks to refresh axes/grid.</li>
           <li><strong>Data Limits:</strong> Set <code>data.maxBars</code> to the minimum required for your viewport. 500 bars is sufficient for most charts.</li>
           <li><strong>Sub-Panes:</strong> Only enable volume/indicators when needed — each sub-pane adds render overhead.</li>
+          <li><strong>Overlays:</strong> Overlay indicators (SMA, EMA, BB, etc.) re-compute every frame. For large datasets, pre-compute values and inject via <code>SubPane.setData()</code>.</li>
+          <li><strong>Persistence:</strong> <code>saveState()</code> captures drawings + overlays. Use <code>migrateSnapshot()</code> to upgrade old snapshots before <code>loadState()</code>.</li>
           <li><strong>Resize:</strong> The library uses ResizeObserver with a re-entrancy guard — avoid manual resize calls when using auto-sizing containers.</li>
           <li><strong>Canvas Export:</strong> <code>toDataURL()</code> is the most expensive operation — debounce to every 500ms.</li>
         </ul>

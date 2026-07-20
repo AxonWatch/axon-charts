@@ -397,9 +397,32 @@ export type ChartCommand =
   | { type: 'setReverse'; reverse: boolean };
 
 /**
- * Chart state for serialization
+ * Serialized snapshot of an overlay indicator, used by saveState/loadState.
+ * The `type` string maps to a constructor registered via registerOverlayType().
+ */
+export interface OverlaySnapshot {
+  /** The overlay's unique id (e.g. 'sma-20', 'ema-50') */
+  id: string;
+  /** The registry type string (e.g. 'sma', 'ema', 'bb', 'vwap', 'ichimoku') */
+  type: string;
+  /** The overlay's constructor options, deep-cloned */
+  options: Record<string, unknown>;
+}
+
+/**
+ * Chart state for serialization.
+ *
+ * Version contract:
+ *   Major (1.0 → 2.0): breaking shape change. loadState() may reject old snapshots.
+ *   Minor (1.0 → 1.1): additive. Old snapshots still load; new fields default.
+ *   Patch: no shape change.
+ *
+ * Current schema version: 1.1.0 (adds drawings + overlays)
+ * Older 1.0.0 snapshots load fine — drawings/overlays default to empty arrays.
+ * Use migrateSnapshot() to upgrade old snapshots before loading if desired.
  */
 export interface ChartState {
+  /** Schema version (NOT the library version). See version contract above. */
   version: string;
   options: Required<ChartOptions>;
   data: Bar[];
@@ -412,6 +435,10 @@ export interface ChartState {
     priceScale: number;
     priceOffset: number;
   };
+  /** User drawings (trendlines, boxes, positions, etc.). Added in schema v1.1. */
+  drawings?: Drawing[];
+  /** Overlay indicator snapshots (SMA, EMA, BB, etc.). Added in schema v1.1. */
+  overlays?: OverlaySnapshot[];
 }
 
 /**
@@ -608,4 +635,8 @@ export interface IChart {
   getOverlays(): import('../overlays/Overlay.js').Overlay[];
   /** Update a sub-pane indicator's options at runtime (e.g. chart.setIndicatorOptions('rsi', { period: 21 })). */
   setIndicatorOptions(id: string, options: Record<string, any>): void;
+  /** Register a custom overlay type (e.g. 'myCustomMA') with its constructor. */
+  registerOverlayType(type: string, ctor: new (opts?: any) => import('../overlays/Overlay.js').Overlay): void;
+  /** Reset user-added state (drawings + overlays) in a single render call. Preserves options, data, viewport. */
+  resetState(opts?: { drawings?: boolean; overlays?: boolean }): void;
 }
