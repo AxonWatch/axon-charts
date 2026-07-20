@@ -472,6 +472,10 @@ export interface IChart {
   getDrawingPreviewShape(): 'line' | 'rect' | 'hline' | 'vline' | 'point' | null;
   /** Toggle drawing magnet mode at runtime. When on, anchors snap to nearest OHLC. */
   setDrawingMagnet(enabled: boolean): void;
+  /** Route a mousedown to the drawing controller (create mode). Returns true if consumed. */
+  routeDrawingMouseDown(x: number, y: number): boolean;
+  /** Route a mousemove to the drawing controller (create mode preview update). */
+  routeDrawingMouseMove(x: number, y: number): void;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }
