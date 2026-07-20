@@ -1213,6 +1213,16 @@ export class Chart {
     this.options.drawing.magnet = enabled;
   }
 
+  /** Route a mousedown to the drawing controller (create mode). */
+  routeDrawingMouseDown(x: number, y: number): boolean {
+    return this.drawingController.onMouseDown(x, y);
+  }
+
+  /** Route a mousemove to the drawing controller (create mode preview). */
+  routeDrawingMouseMove(x: number, y: number): void {
+    this.drawingController.onMouseMove(x, y);
+  }
+
   public destroy(): void {
     if (this._destroyed) return;
     this._destroyed = true;

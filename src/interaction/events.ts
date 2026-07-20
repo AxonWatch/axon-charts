@@ -478,7 +478,7 @@ export class EventManager {
     // If the user is mid-drawing (clicked beginDrawing), route the
     // click to the drawing controller instead of panning the chart.
     if (this.chart.isDrawing()) {
-      (this.chart as any).drawingController.onMouseDown(mouseX, mouseY);
+      this.chart.routeDrawingMouseDown(mouseX, mouseY);
       this.isDragging = true;
       this.lastMouseX = mouseX;
       this.lastMouseY = mouseY;
@@ -581,7 +581,7 @@ export class EventManager {
 
     // Drawing-creation mode: update the preview anchor + set cursor.
     if (this.chart.isDrawing()) {
-      (this.chart as any).drawingController.onMouseMove(mouseX, mouseY);
+      this.chart.routeDrawingMouseMove(mouseX, mouseY);
       this.chart.mainCanvas.style.cursor = 'crosshair';
       this.lastMouseX = mouseX;
       this.lastMouseY = mouseY;
