@@ -1,4 +1,4 @@
-# Settings Reference — Axon Charts v1.5.1
+# Settings Reference — Axon Charts v1.5.2
 
 Complete configuration reference for all chart options. All options are optional — every field has a sensible default. Pass a `Partial<ChartOptions>` to `createChart()` or `chart.setOptions()`.
 
