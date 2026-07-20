@@ -199,7 +199,7 @@ export abstract class ScalePane implements SubPane {
 
     const maxVal = this.getMaxVisible(chart);
     const visibleMax = maxVal / this.paneState.scale;
-    const visibleMin = Math.max(this.getMinVisible(chart), this.paneState.offset);
+    const visibleMin = this.getMinVisible(chart) + this.paneState.offset;
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
     // Compute indicator values once per render (cached in paneState.computedValues)
@@ -292,7 +292,7 @@ export abstract class ScalePane implements SubPane {
 
     const maxVal = this.getMaxVisible(chart);
     const visibleMax = maxVal / this.paneState.scale;
-    const visibleMin = Math.max(this.getMinVisible(chart), this.paneState.offset);
+    const visibleMin = this.getMinVisible(chart) + this.paneState.offset;
     const visibleRange = Math.max(1, visibleMax - visibleMin);
 
     const topGap = Math.max(12, Math.round(subPaneHeight * 0.12));
@@ -318,8 +318,9 @@ export abstract class ScalePane implements SubPane {
 
   protected formatValue(value: number): string {
     const precision = this.resolvePrecision();
-    if (value >= 1000000) return (value / 1000000).toFixed(precision) + 'M';
-    if (value >= 1000) return (value / 1000).toFixed(precision) + 'K';
+    const abs = Math.abs(value);
+    if (abs >= 1000000) return (value / 1000000).toFixed(precision) + 'M';
+    if (abs >= 1000) return (value / 1000).toFixed(precision) + 'K';
     return value.toFixed(precision);
   }
 
