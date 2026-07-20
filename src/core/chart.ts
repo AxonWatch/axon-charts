@@ -19,6 +19,11 @@ import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { RSISubPane } from '../subpanes/RSISubPane.js';
 import { MACDSubPane } from '../subpanes/MACDSubPane.js';
 import { StochasticSubPane } from '../subpanes/StochasticSubPane.js';
+import { WilliamsRSubPane } from '../subpanes/WilliamsRSubPane.js';
+import { CCISubPane } from '../subpanes/CCISubPane.js';
+import { MFISubPane } from '../subpanes/MFISubPane.js';
+import { ATRSubPane } from '../subpanes/ATRSubPane.js';
+import { ADXSubPane } from '../subpanes/ADXSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
@@ -157,6 +162,49 @@ const DEFAULT_OPTIONS = {
     overbought: 80,
     oversold: 20,
     showLevels: true
+  },
+  williamsR: {
+    show: false,
+    period: 14,
+    heightPercent: 0.15,
+    color: '#9ca3af',
+    overbought: -20,
+    oversold: -80,
+    showLevels: true
+  },
+  cci: {
+    show: false,
+    period: 20,
+    heightPercent: 0.15,
+    color: '#9ca3af',
+    upperLevel: 100,
+    lowerLevel: -100,
+    showLevels: true
+  },
+  mfi: {
+    show: false,
+    period: 14,
+    heightPercent: 0.15,
+    color: '#9ca3af',
+    overbought: 80,
+    oversold: 20,
+    showLevels: true
+  },
+  atr: {
+    show: false,
+    period: 14,
+    heightPercent: 0.15,
+    color: '#9ca3af'
+  },
+  adx: {
+    show: false,
+    period: 14,
+    heightPercent: 0.15,
+    adxColor: '#3b82f6',
+    plusDiColor: '#10B981',
+    minusDiColor: '#E11D48',
+    threshold: 25,
+    showThreshold: true
   }
 };
 
@@ -200,6 +248,11 @@ export class Chart {
   public rsiSubPane!: RSISubPane;
   public macdSubPane!: MACDSubPane;
   public stochasticSubPane!: StochasticSubPane;
+  public williamsRSubPane!: WilliamsRSubPane;
+  public cciSubPane!: CCISubPane;
+  public mfiSubPane!: MFISubPane;
+  public atrSubPane!: ATRSubPane;
+  public adxSubPane!: ADXSubPane;
 
   // Chart state
   public state: {
@@ -332,6 +385,16 @@ export class Chart {
     this.addSubPane(this.macdSubPane);
     this.stochasticSubPane = new StochasticSubPane(this);
     this.addSubPane(this.stochasticSubPane);
+    this.williamsRSubPane = new WilliamsRSubPane(this);
+    this.addSubPane(this.williamsRSubPane);
+    this.cciSubPane = new CCISubPane(this);
+    this.addSubPane(this.cciSubPane);
+    this.mfiSubPane = new MFISubPane(this);
+    this.addSubPane(this.mfiSubPane);
+    this.atrSubPane = new ATRSubPane(this);
+    this.addSubPane(this.atrSubPane);
+    this.adxSubPane = new ADXSubPane(this);
+    this.addSubPane(this.adxSubPane);
 
     this.startCountdownTimer();
 

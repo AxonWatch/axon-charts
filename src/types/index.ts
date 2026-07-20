@@ -244,6 +244,59 @@ export interface ChartOptions {
     showLevels?: boolean;
   };
 
+  // === Williams %R Sub-Pane ===
+  williamsR?: {
+    show?: boolean;
+    period?: number;          // default: 14
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#9ca3af'
+    overbought?: number;      // default: -20
+    oversold?: number;        // default: -80
+    showLevels?: boolean;     // default: true
+  };
+
+  // === CCI Sub-Pane ===
+  cci?: {
+    show?: boolean;
+    period?: number;          // default: 20
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#9ca3af'
+    upperLevel?: number;      // default: 100
+    lowerLevel?: number;      // default: -100
+    showLevels?: boolean;     // default: true
+  };
+
+  // === MFI Sub-Pane ===
+  mfi?: {
+    show?: boolean;
+    period?: number;          // default: 14
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#9ca3af'
+    overbought?: number;      // default: 80
+    oversold?: number;        // default: 20
+    showLevels?: boolean;     // default: true
+  };
+
+  // === ATR Sub-Pane ===
+  atr?: {
+    show?: boolean;
+    period?: number;          // default: 14
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#9ca3af'
+  };
+
+  // === ADX Sub-Pane ===
+  adx?: {
+    show?: boolean;
+    period?: number;          // default: 14
+    heightPercent?: number;   // default: 0.15
+    adxColor?: string;        // default: '#3b82f6'
+    plusDiColor?: string;     // default: '#10B981'
+    minusDiColor?: string;    // default: '#E11D48'
+    threshold?: number;       // default: 25 (reference line)
+    showThreshold?: boolean;  // default: true
+  };
+
   // === Attribution Logo ===
   attribution?: {
     /** Show the Axon.Watch attribution logo at bottom-left. Default: true */
