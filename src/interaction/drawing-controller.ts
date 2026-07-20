@@ -107,6 +107,33 @@ export class DrawingController {
   }
 
   /**
+   * Get the visual shape category for the rubber-band preview, so
+   * the renderer can draw the right preview (line vs rectangle vs
+   * horizontal line vs vertical line).
+   */
+  getPreviewShape(): 'line' | 'rect' | 'hline' | 'vline' | 'point' | null {
+    if (!this.activeType) return null;
+    switch (this.activeType) {
+      case 'box':
+      case 'highlighter':
+        return 'rect';
+      case 'hline':
+        return 'hline';
+      case 'vline':
+        return 'vline';
+      case 'arrow_up':
+      case 'arrow_down':
+      case 'label':
+      case 'text':
+      case 'position':
+      case 'order':
+        return 'point';
+      default:
+        return 'line';  // trendline, fib_retracement, measure, position_closed
+    }
+  }
+
+  /**
    * Called by EventManager on mousedown when isDrawing() is true.
    * Returns true if the event was consumed (chart pan should NOT fire).
    */

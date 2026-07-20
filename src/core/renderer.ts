@@ -618,6 +618,7 @@ export class Renderer {
     // Rubber-band preview during drawing-creation mode
     if (isCreating) {
       const preview = this.chart.getDrawingPreview();
+      const shape = this.chart.getDrawingPreviewShape();
       if (preview) {
         const previewColor = '#4a9eff';
         ctx.strokeStyle = previewColor;
@@ -626,28 +627,67 @@ export class Renderer {
         ctx.setLineDash([4, 4]);
         ctx.globalAlpha = 0.7;
 
-        // Draw a simple line from p1 to p2Preview (or just a dot at p1
-        // if p2Preview isn't set yet)
         const x1 = this.chart.state.data[0] ? this.previewTimeToX(preview.time) : 0;
         const y1 = this.previewPriceToY(preview.price);
-        if (preview.time2 != null && preview.price2 != null) {
-          const x2 = this.previewTimeToX(preview.time2);
-          const y2 = this.previewPriceToY(preview.price2);
-          ctx.beginPath();
-          ctx.moveTo(x1, y1);
-          ctx.lineTo(x2, y2);
-          ctx.stroke();
-          // Small circle at p2
-          ctx.setLineDash([]);
-          ctx.beginPath();
-          ctx.arc(x2, y2, 3, 0, Math.PI * 2);
-          ctx.fill();
+        const hasP2 = preview.time2 != null && preview.price2 != null;
+        const x2 = hasP2 ? this.previewTimeToX(preview.time2!) : x1;
+        const y2 = hasP2 ? this.previewPriceToY(preview.price2!) : y1;
+        const chartW = this.chart.state.w - this.chart.state.axisWidth;
+        const cb = this.chart.state.chartBottom || (this.chart.state.h - this.chart.state.bottomMargin);
+
+        switch (shape) {
+          case 'rect': {
+            // Box / highlighter: dashed rectangle from p1 to p2Preview
+            const left = Math.min(x1, x2);
+            const top = Math.min(y1, y2);
+            const w = Math.abs(x2 - x1);
+            const h = Math.abs(y2 - y1);
+            if (w > 0 && h > 0) {
+              ctx.strokeRect(left, top, w, h);
+            }
+            break;
+          }
+          case 'hline': {
+            // Horizontal line at the price, full chart width
+            ctx.beginPath();
+            ctx.moveTo(0, y1);
+            ctx.lineTo(chartW, y1);
+            ctx.stroke();
+            break;
+          }
+          case 'vline': {
+            // Vertical line at the bar, full chart height
+            ctx.beginPath();
+            ctx.moveTo(x1, 0);
+            ctx.lineTo(x1, cb);
+            ctx.stroke();
+            break;
+          }
+          case 'line': {
+            // Trendline / measure / fib / position_closed: line p1→p2
+            if (hasP2) {
+              ctx.beginPath();
+              ctx.moveTo(x1, y1);
+              ctx.lineTo(x2, y2);
+              ctx.stroke();
+            }
+            break;
+          }
+          case 'point':
+          default:
+            break;  // just the p1 dot below
         }
-        // Small circle at p1
+
+        // Small circle at p1 (and p2 for two-point shapes)
         ctx.setLineDash([]);
         ctx.beginPath();
         ctx.arc(x1, y1, 3, 0, Math.PI * 2);
         ctx.fill();
+        if (hasP2 && (shape === 'line' || shape === 'rect')) {
+          ctx.beginPath();
+          ctx.arc(x2, y2, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
 
         ctx.globalAlpha = 1;
       }
