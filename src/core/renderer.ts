@@ -696,23 +696,22 @@ export class Renderer {
     ctx.restore();
   }
 
-  /** Convert a timestamp to screen X for the drawing preview. */
+  /**
+   * Convert a timestamp to screen X for the drawing preview.
+   * Reuses DataManager.getBarAtTime (the same binary search resolveAnchor
+   * uses) instead of reimplementing it. Falls back to extrapolation
+   * from the first bar's interval when the time isn't found (cursor
+   * is between bars or beyond the data range).
+   */
   private previewTimeToX(time: number): number {
     const { data } = this.chart.state;
     if (data.length === 0) return 0;
-    // Binary search for the bar (same as resolveAnchor uses)
-    let left = 0, right = data.length - 1;
-    while (left <= right) {
-      const mid = Math.floor((left + right) / 2);
-      if (data[mid].time === time) {
-        return indexToX(mid, this.chart.state);
-      } else if (data[mid].time < time) {
-        left = mid + 1;
-      } else {
-        right = mid - 1;
-      }
+    const found = this.chart.dataManager.getBarAtTime(time);
+    if (found) {
+      const idx = data.indexOf(found);
+      return indexToX(idx, this.chart.state);
     }
-    // Not found — extrapolate from the nearest bar
+    // Not found — extrapolate from the first bar's interval
     if (data.length > 1) {
       const interval = data[1].time - data[0].time;
       const idx = (time - data[0].time) / interval;
