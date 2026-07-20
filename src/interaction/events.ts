@@ -572,16 +572,17 @@ export class EventManager {
     // Drawing drag in progress: route to dispatcher, skip chart pan.
     // Also handles hover cursor styling when not dragging.
     if (this.drawingInteraction.onMouseMove(mouseX, mouseY)) {
-      // Drawing is being dragged — update lastMouse for delta calc,
-      // but don't run the chart pan logic below.
+      // Drawing is being dragged OR a drawing is hovered — update
+      // lastMouse for delta calc, don't run the chart pan/cursor logic.
       this.lastMouseX = mouseX;
       this.lastMouseY = mouseY;
       return;
     }
 
-    // Drawing-creation mode: update the preview anchor.
+    // Drawing-creation mode: update the preview anchor + set cursor.
     if (this.chart.isDrawing()) {
       (this.chart as any).drawingController.onMouseMove(mouseX, mouseY);
+      this.chart.mainCanvas.style.cursor = 'crosshair';
       this.lastMouseX = mouseX;
       this.lastMouseY = mouseY;
       return;
