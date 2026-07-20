@@ -1189,6 +1189,9 @@ export class Chart {
   getDrawingPreview(): { time: number; price: number; time2?: number; price2?: number } | null {
     return this.drawingController.getPreview();
   }
+  getDrawingPreviewShape(): 'line' | 'rect' | 'hline' | 'vline' | 'point' | null {
+    return this.drawingController.getPreviewShape();
+  }
   /**
    * Register a custom drawing type. After registration, drawings with
    * this `type` value passed to addDrawing() will be rendered by the
