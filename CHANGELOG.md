@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.2] - 2026-07-20
+
+### Fixed
+- **Negative-value sub-pane indicators were clipped** — two bugs in the `ScalePane` base class broke MACD, CCI, and Williams %R:
+  - `visibleMin` was computed as `Math.max(getMinVisible(), paneState.offset)` — `paneState.offset` defaults to 0, so `Math.max(-200, 0) = 0`, clipping the entire negative half of the indicator off-screen. Fixed to `getMinVisible() + paneState.offset` (add the pan offset instead of max'ing it). Same fix applied to `renderAxisLabel()`.
+  - `formatValue()` only checked `value >= 1000` for the K/M suffix — negative values like `-50000` rendered as `-50000.00` instead of `-50.00K`. Fixed to use `Math.abs(value)` for the threshold check.
+- **Williams %R** (range -100..0) never rendered at all — the entire indicator was below the clipped Y-axis minimum of 0. Now renders correctly with the full -100..0 range visible.
+
 ## [1.5.1] - 2026-07-20
 
 ### Fixed
