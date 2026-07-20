@@ -19,7 +19,7 @@ export { ScalePane } from './subpanes/ScalePane.js';
 export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
 export { DrawingRenderer, DrawingHandle } from './drawings/DrawingRenderer.js';
 export { registerDrawingType, getDrawingRenderer } from './drawings/registry.js';
-export { resolveAnchor, screenToAnchor, AnchorPoint, AnchorSpec } from './drawings/anchor.js';
+export { resolveAnchor, screenToAnchor, magnetToOHLC, AnchorPoint, AnchorSpec } from './drawings/anchor.js';
 export { ArrowRenderer } from './drawings/ArrowRenderer.js';
 export { LabelRenderer } from './drawings/LabelRenderer.js';
 export { HLineRenderer } from './drawings/HLineRenderer.js';

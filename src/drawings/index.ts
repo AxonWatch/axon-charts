@@ -13,4 +13,4 @@ export { OrderRenderer } from './OrderRenderer.js';
 export { TextRenderer } from './TextRenderer.js';
 export { HighlighterRenderer } from './HighlighterRenderer.js';
 export { PositionClosedRenderer } from './PositionClosedRenderer.js';
-export { resolveAnchor, screenToAnchor, AnchorPoint, AnchorSpec } from './anchor.js';
+export { resolveAnchor, screenToAnchor, magnetToOHLC, AnchorPoint, AnchorSpec } from './anchor.js';

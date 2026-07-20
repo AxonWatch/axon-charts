@@ -1,5 +1,5 @@
 import type { IChart, Drawing } from '../types/index.js';
-import { screenToAnchor } from '../drawings/anchor.js';
+import { screenToAnchor, magnetToOHLC } from '../drawings/anchor.js';
 
 /**
  * Drawing-creation mode state machine.
@@ -134,13 +134,27 @@ export class DrawingController {
   }
 
   /**
+   * Resolve a screen point to chart coordinates, applying magnet
+   * snapping if drawing.magnet is enabled. Returns null if the
+   * cursor is outside the data range.
+   */
+  private resolveWithMagnet(x: number, y: number): { time: number; price: number; barIndex: number } | null {
+    const magnet = (this.chart.options as any).drawing?.magnet === true;
+    if (magnet) {
+      const snapped = magnetToOHLC(this.chart, x, y);
+      if (snapped) return snapped;
+    }
+    return screenToAnchor(this.chart, x, y);
+  }
+
+  /**
    * Called by EventManager on mousedown when isDrawing() is true.
    * Returns true if the event was consumed (chart pan should NOT fire).
    */
   onMouseDown(x: number, y: number): boolean {
     if (!this.activeType) return false;
 
-    const anchor = screenToAnchor(this.chart, x, y);
+    const anchor = this.resolveWithMagnet(x, y);
     if (!anchor) return true;  // outside data range — consume but no-op
 
     if (!this.p1) {
@@ -167,7 +181,7 @@ export class DrawingController {
    */
   onMouseMove(x: number, y: number): void {
     if (!this.activeType || !this.p1) return;
-    const anchor = screenToAnchor(this.chart, x, y);
+    const anchor = this.resolveWithMagnet(x, y);
     if (anchor) {
       this.p2Preview = anchor;
       this.chart.render();

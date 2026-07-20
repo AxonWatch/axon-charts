@@ -97,3 +97,61 @@ export function resolveAnchor(chart: IChart, spec: AnchorSpec): AnchorPoint | nu
     barIndex
   };
 }
+/**
+ * Magnet snapping for drawing anchors. Given a screen point, find
+ * the nearest OHLC of the bar under the cursor and return it.
+ *
+ * Used by the drawing interaction layer when drawing.magnet is enabled:
+ *   - During create mode (click-to-place): the anchor snaps to the
+ *     nearest OHLC of the bar under the cursor
+ *   - During drag: the dragged anchor snaps to the nearest OHLC
+ *
+ * Snapping logic:
+ *   1. Resolve the bar under the cursor via xToIndex
+ *   2. Compute the Y for each of O, H, L, C via priceToY
+ *   3. Return the one whose Y is closest to the cursor Y
+ *
+ * Returns null when the cursor is outside the data range (no bar to
+ * snap to). The caller should fall back to the raw screenToAnchor
+ * result in that case.
+ */
+export function magnetToOHLC(chart: IChart, x: number, y: number): { time: number; price: number; barIndex: number } | null {
+  const { data } = chart.state;
+  if (data.length === 0) return null;
+
+  const barIndex = xToIndex(x, chart.state);
+  if (barIndex < 0 || barIndex >= data.length) return null;
+
+  const bar = data[barIndex];
+  if (!bar) return null;
+
+  // Compute the screen Y for each of O, H, L, C
+  const yO = priceToY(bar.open, chart.state);
+  const yH = priceToY(bar.high, chart.state);
+  const yL = priceToY(bar.low, chart.state);
+  const yC = priceToY(bar.close, chart.state);
+
+  // Find the closest to the cursor Y
+  const candidates = [
+    { price: bar.open,  y: yO },
+    { price: bar.high,  y: yH },
+    { price: bar.low,   y: yL },
+    { price: bar.close, y: yC },
+  ];
+
+  let best = candidates[0];
+  let bestDist = Math.abs(y - best.y);
+  for (let i = 1; i < candidates.length; i++) {
+    const dist = Math.abs(y - candidates[i].y);
+    if (dist < bestDist) {
+      best = candidates[i];
+      bestDist = dist;
+    }
+  }
+
+  return {
+    time: bar.time,
+    price: best.price,
+    barIndex
+  };
+}
