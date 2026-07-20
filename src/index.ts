@@ -12,6 +12,7 @@ export { TimeScaleAPI } from './api/time-scale.js';
 export { CrosshairAPI } from './api/crosshair.js';
 export * from './types/index.js';
 export * from './utils/math.js';
+export * as Indicators from './utils/indicators.js';
 export * as Projection from './utils/projection.js';
 export { LAYOUT } from './core/layout.js';
 export { SubPane } from './subpanes/SubPane.js';
