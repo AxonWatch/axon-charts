@@ -214,6 +214,14 @@ export class EventManager {
       save: ['item', 'Save Chart Image As...', () => this.saveChartImage()],
       grid: ['toggle', 'Grid', opts.grid.show ?? true, { grid: { show: !(opts.grid.show ?? true) } }],
       volume: ['toggle', 'Volume', opts.volume.show ?? false, { volume: { show: !(opts.volume.show ?? false) } }],
+      rsi: ['toggle', 'RSI', opts.rsi?.show ?? false, { rsi: { show: !(opts.rsi?.show ?? false) } as any }],
+      macd: ['toggle', 'MACD', opts.macd?.show ?? false, { macd: { show: !(opts.macd?.show ?? false) } as any }],
+      stochastic: ['toggle', 'Stochastic', opts.stochastic?.show ?? false, { stochastic: { show: !(opts.stochastic?.show ?? false) } as any }],
+      williamsR: ['toggle', 'Williams %R', opts.williamsR?.show ?? false, { williamsR: { show: !(opts.williamsR?.show ?? false) } as any }],
+      cci: ['toggle', 'CCI', opts.cci?.show ?? false, { cci: { show: !(opts.cci?.show ?? false) } as any }],
+      mfi: ['toggle', 'MFI', opts.mfi?.show ?? false, { mfi: { show: !(opts.mfi?.show ?? false) } as any }],
+      atr: ['toggle', 'ATR', opts.atr?.show ?? false, { atr: { show: !(opts.atr?.show ?? false) } as any }],
+      adx: ['toggle', 'ADX', opts.adx?.show ?? false, { adx: { show: !(opts.adx?.show ?? false) } as any }],
       crosshair: ['toggle', 'Crosshair', (opts.crosshair.mode ?? 'magnet') !== 'none', { crosshair: { mode: (opts.crosshair.mode ?? 'magnet') !== 'none' ? 'none' : 'magnet' } }],
       market: ['toggle', 'Market Header', opts.market.show ?? false, { market: { show: !(opts.market.show ?? false) } }],
       watermark: ['toggle', 'Watermark', opts.watermark.show ?? false, { watermark: { show: !(opts.watermark.show ?? false) } }],
@@ -229,7 +237,7 @@ export class EventManager {
     // Determine order: use items list if set, otherwise default order
     const orderedIds = Array.isArray(items) && items.length > 0
       ? items
-      : ['copy', 'save', 'divider1', 'grid', 'volume', 'crosshair', 'market', 'watermark', 'divider2', 'fit-content', 'reset-price', 'reverse', 'divider3', 'fullscreen'];
+      : ['copy', 'save', 'divider1', 'grid', 'volume', 'rsi', 'macd', 'stochastic', 'williamsR', 'cci', 'mfi', 'atr', 'adx', 'divider2', 'crosshair', 'market', 'watermark', 'divider3', 'fit-content', 'reset-price', 'reverse', 'divider4', 'fullscreen'];
 
     const makeToggle = (text: string, checked: boolean, partial: Partial<import('../types/index.js').ChartOptions>) => {
       const el = document.createElement('div');
