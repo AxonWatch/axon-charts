@@ -111,6 +111,9 @@ const DEFAULT_OPTIONS = {
   attribution: {
     show: true
   },
+  drawing: {
+    magnet: false
+  },
   context: {
     exposeData: false
   },
@@ -1199,6 +1202,15 @@ export class Chart {
    */
   registerDrawingType(type: string, renderer: DrawingRenderer): void {
     registerDrawingTypeImpl(type, renderer);
+  }
+
+  /**
+   * Toggle drawing magnet mode at runtime. When on, drawing anchors
+   * snap to the nearest OHLC of the bar under the cursor during both
+   * create mode and drag.
+   */
+  setDrawingMagnet(enabled: boolean): void {
+    this.options.drawing.magnet = enabled;
   }
 
   public destroy(): void {

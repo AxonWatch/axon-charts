@@ -186,6 +186,13 @@ export interface ChartOptions {
     show?: boolean;
   };
 
+  // === Drawings ===
+  drawing?: {
+    /** When true, drawing anchors snap to the nearest OHLC of the bar under the cursor.
+     *  Default: false (free placement). */
+    magnet?: boolean;
+  };
+
   // === Callbacks ===
   /** Fires when visible range changes (scroll, zoom, resize). */
   onVisibleRangeChange?: VisibleRangeChangeCallback;
@@ -463,6 +470,8 @@ export interface IChart {
   getDrawingPreview(): { time: number; price: number; time2?: number; price2?: number } | null;
   /** Get the visual shape category for the rubber-band preview ('line' | 'rect' | 'hline' | 'vline' | 'point' | null). */
   getDrawingPreviewShape(): 'line' | 'rect' | 'hline' | 'vline' | 'point' | null;
+  /** Toggle drawing magnet mode at runtime. When on, anchors snap to nearest OHLC. */
+  setDrawingMagnet(enabled: boolean): void;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
 }

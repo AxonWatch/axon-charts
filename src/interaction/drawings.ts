@@ -1,7 +1,7 @@
 import type { IChart, Drawing } from '../types/index.js';
 import type { DrawingRenderer, DrawingHandle } from '../drawings/DrawingRenderer.js';
 import { getDrawingRenderer } from '../drawings/registry.js';
-import { screenToAnchor, resolveAnchor } from '../drawings/anchor.js';
+import { screenToAnchor, resolveAnchor, magnetToOHLC } from '../drawings/anchor.js';
 
 /**
  * Hit-test tolerance in pixels. Cursor within this distance of a
@@ -190,7 +190,8 @@ export class DrawingInteraction {
 
   /**
    * Convert the current cursor position to chart coordinates and
-   * update the dragged drawing's anchor(s) in place.
+   * update the dragged drawing's anchor(s) in place. Applies magnet
+   * snapping if drawing.magnet is enabled.
    */
   private applyDrag(x: number, y: number): void {
     const drawing = this.chart.getDrawings().find(d => d.id === this.dragDrawingId);
@@ -199,8 +200,15 @@ export class DrawingInteraction {
     const renderer = getDrawingRenderer(drawing.type);
     if (!renderer) return;
 
-    // Convert screen to chart coordinates
-    const anchor = screenToAnchor(this.chart, x, y);
+    // Convert screen to chart coordinates (with magnet snapping if enabled)
+    const magnet = (this.chart.options as any).drawing?.magnet === true;
+    let anchor: { time: number; price: number; barIndex: number } | null;
+    if (magnet) {
+      anchor = magnetToOHLC(this.chart, x, y);
+      if (!anchor) anchor = screenToAnchor(this.chart, x, y);
+    } else {
+      anchor = screenToAnchor(this.chart, x, y);
+    }
     if (!anchor) return;  // outside data range — skip update, drawing stays put
 
     const updates: Partial<Drawing> = {};
