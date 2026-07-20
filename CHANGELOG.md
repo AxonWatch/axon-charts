@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+- `getContext()` now exposes three previously-missing data blocks when `context.exposeData !== false`:
+  - **Sub-pane indicator values**: RSI, MACD, Stochastic, etc. now include their computed values for the visible bars (`values: number[]`) and `latestValue`, not just metadata (show, heightPercent, scale, offset).
+  - **Drawings**: all drawings (positions, trendlines, boxes, etc.) are now exposed as a flat array with their id, type, color, anchors (time/price/time2/price2), and type-specific data (side, qty, SL/TP, etc.).
+  - **Overlays**: all active overlays (SMA, EMA, Bollinger Bands, VWAP, Ichimoku) are now exposed as an object keyed by overlay id, with their type, options, computed values for the visible bars, and `latestValue`. Hidden overlays (`show === false`) are skipped.
+
 ## [1.5.0] - 2026-07-20
 
 ### Added — Sub-Pane Indicators (8 indicators)
