@@ -12,6 +12,7 @@ import { HeikenAshiRenderer } from '../series/HeikenAshiRenderer.js';
 import { HollowRenderer } from '../series/HollowRenderer.js';
 import { hexToRgba } from '../utils/style.js';
 import { getDrawingRenderer } from '../drawings/registry.js';
+import type { Overlay } from '../overlays/Overlay.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -28,6 +29,8 @@ export class Renderer {
   private latestClose: number | null = null;
   private lastChangeTime: number = 0;
   private _pulseRafId: number | null = null;
+  /** Overlay indicators (SMA, EMA, BB, etc.) drawn on top of candles. */
+  private overlays: Overlay[] = [];
 
   constructor(chart: IChart) {
     this.chart = chart;
@@ -254,6 +257,55 @@ export class Renderer {
     this.drawCurrentPriceLine(mainCtx);
     this.drawLatestPriceMarker(mainCtx);
     this.renderDrawings(mainCtx);
+    this.renderOverlays(mainCtx);
+  }
+
+  /**
+   * Add an overlay indicator (drawn on top of candles on the main chart).
+   */
+  addOverlay(overlay: Overlay): void {
+    this.overlays.push(overlay);
+  }
+
+  /**
+   * Remove an overlay by id.
+   */
+  removeOverlay(id: string): void {
+    this.overlays = this.overlays.filter(o => o.id !== id);
+  }
+
+  /**
+   * Get all registered overlays.
+   */
+  getOverlays(): Overlay[] {
+    return this.overlays;
+  }
+
+  /**
+   * Render all active overlays on the main canvas. Called every frame
+   * from drawViewport, after drawings. Each overlay's render() is
+   * called only if getOptions().show is not false.
+   */
+  private renderOverlays(ctx: CanvasRenderingContext2D): void {
+    if (this.overlays.length === 0) return;
+    if (this.chart.state.data.length === 0) return;
+
+    ctx.save();
+    // Clip to chart area (same clip as the buffer copy)
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
+    const clipBottom = chartBottom || (h - bottomMargin);
+    if (w - axisWidth > 0 && clipBottom > 0) {
+      ctx.beginPath();
+      ctx.rect(0, 0, w - axisWidth, clipBottom);
+      ctx.clip();
+
+      for (const overlay of this.overlays) {
+        if (overlay.getOptions()?.show === false) continue;
+        const values = overlay.compute(this.chart);
+        overlay.render(ctx, this.chart, values);
+      }
+    }
+    ctx.restore();
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {

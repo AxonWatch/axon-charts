@@ -15,6 +15,7 @@ import { validateOptions, validateDrawing } from '../utils/validation.js';
 import { registerDrawingType as registerDrawingTypeImpl } from '../drawings/registry.js';
 import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
 import { DrawingController } from '../interaction/drawing-controller.js';
+import type { Overlay } from '../overlays/Overlay.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { RSISubPane } from '../subpanes/RSISubPane.js';
 import { MACDSubPane } from '../subpanes/MACDSubPane.js';
@@ -1309,6 +1310,23 @@ export class Chart {
    */
   registerDrawingType(type: string, renderer: DrawingRenderer): void {
     registerDrawingTypeImpl(type, renderer);
+  }
+
+  /** Add an overlay indicator (drawn on top of candles on the main chart). */
+  addOverlay(overlay: Overlay): void {
+    this.renderer.addOverlay(overlay);
+    this.render();
+  }
+
+  /** Remove an overlay by id. */
+  removeOverlay(id: string): void {
+    this.renderer.removeOverlay(id);
+    this.render();
+  }
+
+  /** Get all registered overlays. */
+  getOverlays(): Overlay[] {
+    return this.renderer.getOverlays();
   }
 
   /**

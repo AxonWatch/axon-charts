@@ -29,6 +29,7 @@ export { ADXSubPane } from './subpanes/ADXSubPane.js';
 export { DrawingRenderer, DrawingHandle } from './drawings/DrawingRenderer.js';
 export { registerDrawingType, getDrawingRenderer } from './drawings/registry.js';
 export { resolveAnchor, screenToAnchor, magnetToOHLC, AnchorPoint, AnchorSpec } from './drawings/anchor.js';
+export { Overlay } from './overlays/Overlay.js';
 export { ArrowRenderer } from './drawings/ArrowRenderer.js';
 export { LabelRenderer } from './drawings/LabelRenderer.js';
 export { HLineRenderer } from './drawings/HLineRenderer.js';

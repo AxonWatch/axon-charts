@@ -595,4 +595,10 @@ export interface IChart {
   routeDrawingMouseMove(x: number, y: number): void;
   /** Register a custom drawing type (e.g. 'fib') with its renderer. */
   registerDrawingType(type: string, renderer: import('../drawings/DrawingRenderer.js').DrawingRenderer): void;
+  /** Add an overlay indicator (drawn on top of candles on the main chart). */
+  addOverlay(overlay: import('../overlays/Overlay.js').Overlay): void;
+  /** Remove an overlay by id. */
+  removeOverlay(id: string): void;
+  /** Get all registered overlays. */
+  getOverlays(): import('../overlays/Overlay.js').Overlay[];
 }
