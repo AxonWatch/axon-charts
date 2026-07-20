@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-07-20
+
+### Added — Sub-Pane Indicators (8 indicators)
+- **RSI sub-pane** — Relative Strength Index (Wilder's smoothing), 0-100 oscillator with overbought/oversold reference lines. Options: `chart.options.rsi` (period, color, overbought, oversold, showLevels, heightPercent).
+- **MACD sub-pane** — MACD line + signal line + histogram. Auto-scaled Y-axis symmetric around zero. Options: `chart.options.macd` (fastPeriod, slowPeriod, signalPeriod, macdColor, signalColor, histogramUpColor, histogramDownColor).
+- **Stochastic sub-pane** — %K and %D lines, 0-100 range. Supports fast (%K smoothing=1) and slow (smoothing=3) stochastic. Options: `chart.options.stochastic` (kPeriod, dPeriod, smoothK, kColor, dColor, overbought, oversold).
+- **Williams %R sub-pane** — -100..0 oscillator. Options: `chart.options.williamsR`.
+- **CCI sub-pane** — Commodity Channel Index, around 0, auto-scaled. Options: `chart.options.cci`.
+- **MFI sub-pane** — Money Flow Index (uses volume), 0-100. Options: `chart.options.mfi`.
+- **ATR sub-pane** — Average True Range, absolute values, auto-scaled. Options: `chart.options.atr`.
+- **ADX sub-pane** — ADX + +DI / -DI (Directional Movement System), 3 lines + threshold at 25. Options: `chart.options.adx`.
+
+All sub-pane indicators:
+- Extend the existing `ScalePane` base class (inherit zoom/pan, separator drag, grid, axis labels, tooltip, current-value line, LLM context)
+- Registered in the `Chart` constructor alongside VolumeSubPane
+- Toggle via `chart.setOptions({ rsi: { show: true } })` or `chart.execute({ type: 'setSubPane', id: 'rsi', show: true })`
+- Exported from the package (`RSISubPane`, `MACDSubPane`, etc.)
+
+### Added — Overlay Indicators (4 indicators)
+- **Overlay stack infrastructure** — `Overlay` interface + `chart.addOverlay(overlay)` / `chart.removeOverlay(id)` / `chart.getOverlays()`. Overlays draw on the main chart on top of candles, sharing the main price scale.
+- **SMA overlay** — Simple Moving Average line. `chart.addOverlay(new SMAOverlay({ period: 20, color: '#3b82f6' }))`.
+- **EMA overlay** — Exponential Moving Average line. `chart.addOverlay(new EMAOverlay({ period: 12, color: '#f59e0b' }))`.
+- **Bollinger Bands overlay** — 3 lines (mid/upper/lower) + filled band region. `chart.addOverlay(new BollingerBandsOverlay({ period: 20, numStdDev: 2 }))`.
+- **VWAP overlay** — Volume Weighted Average Price, daily reset by default. `chart.addOverlay(new VWAPOverlay())`.
+- **Ichimoku Cloud overlay** — 5 components (Tenkan, Kijun, Senkou A, Senkou B, Chikou) + filled cloud (Kumo). `chart.addOverlay(new IchimokuCloudOverlay())`.
+- `LineOverlay` abstract base class for single-line overlays (SMA, EMA, VWAP extend it).
+- All overlays exported from the package.
+
+### Added — Indicators Math Utilities
+- `Indicators` namespace exported from the package with pure functions:
+  - `sma(bars|values, period, field?)` — Simple Moving Average
+  - `ema(bars, period, field?)` — Exponential MA (SMA-seeded)
+  - `wma(bars, period, field?)` — Weighted MA (linear weights)
+  - `rollingStdDev(bars|values, period, field?)` — Rolling population stdev
+  - `trueRange(bar, prevClose)` — Single-bar True Range
+  - `rsi(bars, period=14)` — RSI (Wilder's smoothing)
+  - `macd(bars, 12, 26, 9)` — MACD line + signal + histogram
+  - `stochastic(bars, 14, 3, 1)` — %K, %D (configurable slow)
+  - `williamsR(bars, period=14)` — Williams %R
+  - `cci(bars, period=20)` — Commodity Channel Index
+  - `mfi(bars, period=14)` — Money Flow Index
+  - `atr(bars, period=14)` — Average True Range
+  - `adx(bars, period=14)` — ADX + +DI / -DI
+- All functions are pure (no chart dependency), return `number[]` aligned with input bars, NaN where not yet defined.
+
+### Changed
+- Bundle: 33851 → 39725 bytes gzipped (+5874 bytes, +17.3%) for the indicators math utils, 8 sub-pane indicators, overlay stack infrastructure, and 4 overlay indicators.
+- New exports: `Indicators` (namespace), `RSISubPane`, `MACDSubPane`, `StochasticSubPane`, `WilliamsRSubPane`, `CCISubPane`, `MFISubPane`, `ATRSubPane`, `ADXSubPane`, `Overlay`, `LineOverlay`, `SMAOverlay`, `EMAOverlay`, `BollingerBandsOverlay`, `VWAPOverlay`, `IchimokuCloudOverlay`.
+
+### Backward Compatibility
+- All existing options, APIs, and sub-panes unchanged.
+- New sub-pane indicators default to `show: false` — no visual change unless explicitly enabled.
+- Overlays are opt-in via `chart.addOverlay()` — no visual change unless explicitly added.
+
 ## [1.4.1] - 2026-07-20
 
 ### Fixed
