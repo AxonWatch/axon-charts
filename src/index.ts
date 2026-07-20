@@ -19,6 +19,7 @@ export { SubPane } from './subpanes/SubPane.js';
 export { ScalePane } from './subpanes/ScalePane.js';
 export { VolumeSubPane } from './subpanes/VolumeSubPane.js';
 export { RSISubPane } from './subpanes/RSISubPane.js';
+export { MACDSubPane } from './subpanes/MACDSubPane.js';
 export { DrawingRenderer, DrawingHandle } from './drawings/DrawingRenderer.js';
 export { registerDrawingType, getDrawingRenderer } from './drawings/registry.js';
 export { resolveAnchor, screenToAnchor, magnetToOHLC, AnchorPoint, AnchorSpec } from './drawings/anchor.js';

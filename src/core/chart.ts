@@ -17,6 +17,7 @@ import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
 import { DrawingController } from '../interaction/drawing-controller.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { RSISubPane } from '../subpanes/RSISubPane.js';
+import { MACDSubPane } from '../subpanes/MACDSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
@@ -196,6 +197,7 @@ export class Chart {
   private _subPaneShow: Map<string, boolean> = new Map();
   public volumeSubPane!: VolumeSubPane;
   public rsiSubPane!: RSISubPane;
+  public macdSubPane!: MACDSubPane;
 
   // Chart state
   public state: {
@@ -324,6 +326,8 @@ export class Chart {
     this.addSubPane(this.volumeSubPane);
     this.rsiSubPane = new RSISubPane(this);
     this.addSubPane(this.rsiSubPane);
+    this.macdSubPane = new MACDSubPane(this);
+    this.addSubPane(this.macdSubPane);
 
     this.startCountdownTimer();
 
