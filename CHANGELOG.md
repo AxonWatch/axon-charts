@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## [1.5.1] - 2026-07-20
 
 ### Fixed
 - `getContext()` now exposes three previously-missing data blocks when `context.exposeData !== false`:
