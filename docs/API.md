@@ -143,7 +143,18 @@ Returns a structured JSON object with current viewport state, visible bars, pric
   // Only if context.exposeData !== false:
   visibleBars: Bar[],
   latestBar: Bar,
-  subPanes: { volume: { ... } }
+  subPanes: {
+    volume: { show, heightPercent, scale, offset },
+    rsi: { show, heightPercent, scale, offset, values: number[], latestValue: number },
+    macd: { show, values: number[], latestValue: number },
+    // ... other active sub-pane indicators
+  },
+  drawings: Drawing[],  // all drawings (positions, trendlines, boxes, etc.)
+  overlays: {           // keyed by overlay id
+    'sma-20': { id, type, options, values: number[], latestValue },
+    'ema-50': { ... },
+    // ... other active overlays
+  }
 }
 ```
 

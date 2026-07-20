@@ -38,12 +38,56 @@ Returns everything an LLM needs to reason about the current chart state:
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
   "state": {
-    "id": "ax-a1b2c3", "version": "1.1.0", "totalBars": 5000, "isAutoScrolling": true,
+    "id": "ax-a1b2c3", "version": "1.5.0", "totalBars": 5000, "isAutoScrolling": true,
     "market": { "baseAsset": "BTC", "quoteAsset": "USDT", "timeframe": "1m", "source": "Binance" }
   },
   "visibleBars": [ /* OHLCV bars visible on screen */ ],
   "latestBar": { "time": ..., "open": ..., "high": ..., "low": ..., "close": ..., "volume": ... },
-  "subPanes": { "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0 } }
+  "subPanes": {
+    "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0 },
+    "rsi": {
+      "show": true, "heightPercent": 0.15, "scale": 1, "offset": 0,
+      "values": [52.3, 54.1, 56.7, ...],  // RSI values for visible bars (null where not yet defined)
+      "latestValue": 56.7
+    },
+    "macd": {
+      "show": true, "values": [0.523, 0.518, ...], "latestValue": 0.518
+    }
+  },
+  "drawings": [
+    {
+      "id": "pos-1", "type": "position", "color": "#3b82f6",
+      "text": null, "time": 1704067200000, "price": 42150.5,
+      "time2": null, "price2": null,
+      "data": { "side": "long", "qty": 0.5, "sl": 41800, "tp": 43000 }
+    },
+    {
+      "id": "tl-1", "type": "trendline", "color": "#3b82f6",
+      "text": "Support", "time": 1704067200000, "price": 42150,
+      "time2": 1704153600000, "price2": 42500,
+      "data": { "extend": "right", "lineStyle": "dashed" }
+    }
+  ],
+  "overlays": {
+    "sma-20": {
+      "id": "sma-20", "type": "SMAOverlay",
+      "options": { "period": 20, "color": "#3b82f6" },
+      "values": [42150, 42155, 42160, ...],
+      "latestValue": 42160
+    },
+    "ema-12": {
+      "id": "ema-12", "type": "EMAOverlay",
+      "options": { "period": 12, "color": "#f59e0b" },
+      "values": [42148, 42152, ...],
+      "latestValue": 42152
+    },
+    "bb-20-2": {
+      "id": "bb-20-2", "type": "BollingerBandsOverlay",
+      "options": { "period": 20, "numStdDev": 2, "color": "#3b82f6" },
+      "values": [42150, 42155, ...],
+      "latestValue": 42155
+    }
+  }
 }
 ```
 
@@ -55,6 +99,9 @@ Returns everything an LLM needs to reason about the current chart state:
 - Whether the chart is auto-scrolling
 - The current (latest) candle with volume
 - All active sub-panes with their current scale/offset
+- **Sub-pane indicator values** (RSI, MACD, Stochastic, etc.) for the visible bars + latest value
+- **All drawings** (positions, trendlines, boxes, etc.) with their anchors, colors, and type-specific data (side, qty, SL/TP, etc.)
+- **All overlay indicators** (SMA, EMA, Bollinger Bands, VWAP, Ichimoku) with their computed values for the visible bars + latest value
 
 **Note:** `context.exposeData` controls whether visible bars, latest bar, and sub-panes are returned. When `false` (default), only viewport metadata is returned — reduces token cost for agents that only need spatial reasoning.
 
