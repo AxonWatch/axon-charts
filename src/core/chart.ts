@@ -988,13 +988,72 @@ export class Chart {
       result.visibleBars = visibleBars;
       result.latestBar = data[data.length - 1];
 
-      // Auto-expose all active sub-panes
+      // Auto-expose all active sub-panes (with computed values for the visible range)
       const subPanes: Record<string, any> = {};
       for (const pane of this.getActiveSubPanes()) {
-        subPanes[pane.id] = pane.getContextData();
+        const ctxData = pane.getContextData();
+        // Include computed values for the visible range if available
+        // (RSISubPane, MACDSubPane, etc. cache them in paneState.computedValues)
+        const scalePane = pane as any;
+        if (scalePane.paneState?.computedValues) {
+          const values = scalePane.paneState.computedValues as number[];
+          ctxData.values = values.slice(startIdx, endIdx + 1).map(v =>
+            (v != null && !isNaN(v)) ? v : null
+          );
+          // Include the latest value explicitly for convenience
+          const latestVal = values[values.length - 1];
+          if (latestVal != null && !isNaN(latestVal)) {
+            ctxData.latestValue = latestVal;
+          }
+        }
+        subPanes[pane.id] = ctxData;
       }
       if (Object.keys(subPanes).length > 0) {
         result.subPanes = subPanes;
+      }
+
+      // Expose drawings (positions, trendlines, boxes, etc.)
+      if (this._drawings.length > 0) {
+        result.drawings = this._drawings.map(d => ({
+          id: d.id,
+          type: d.type,
+          color: d.color,
+          text: d.text ?? null,
+          time: d.time ?? null,
+          price: d.price ?? null,
+          time2: d.time2 ?? null,
+          price2: d.price2 ?? null,
+          data: d.data ?? null
+        }));
+      }
+
+      // Expose overlays (SMA, EMA, Bollinger Bands, etc.) with their computed values
+      const overlays = this.renderer.getOverlays();
+      if (overlays.length > 0) {
+        const overlayData: Record<string, any> = {};
+        for (const overlay of overlays) {
+          const opts = overlay.getOptions();
+          if (opts?.show === false) continue;
+          const values = overlay.compute(this);
+          const entry: Record<string, any> = {
+            id: overlay.id,
+            type: overlay.constructor.name,
+            options: { ...opts }
+          };
+          if (values) {
+            entry.values = values.slice(startIdx, endIdx + 1).map(v =>
+              (v != null && !isNaN(v)) ? v : null
+            );
+            const latestVal = values[values.length - 1];
+            if (latestVal != null && !isNaN(latestVal)) {
+              entry.latestValue = latestVal;
+            }
+          }
+          overlayData[overlay.id] = entry;
+        }
+        if (Object.keys(overlayData).length > 0) {
+          result.overlays = overlayData;
+        }
       }
     }
 
