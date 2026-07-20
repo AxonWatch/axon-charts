@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.3] - 2026-07-20
+
+### Added
+- **On-chart indicator labels** — each active sub-pane shows its name + key params (e.g. `RSI(14)`, `MACD(12,26,9)`) in the top-left corner. Overlay indicators (SMA, EMA, BB, VWAP, Ichimoku) show similar labels on the main chart. Canvas-rendered, no DOM overhead.
+- **Right-click context menu — indicator toggles** — the existing right-click menu now includes toggle entries for all 8 sub-pane indicators (RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX), alongside the existing Volume and Grid toggles.
+- **`setIndicatorOptions` API** — `chart.setIndicatorOptions(id, options)` updates a sub-pane or overlay indicator's options at runtime. For sub-panes: merges into `chart.options[id]` and re-renders. For overlays: merges into the overlay's options object in place.
+- **`onIndicatorClick` callback** — `chart.onIndicatorClick = (id, type) => { ... }` fires when the user clicks an indicator label. The integrating app can use this to open a custom settings panel (`type` is `'subpane'` or `'overlay'`).
+
+### Changed
+- Bundle: 39989 → 40576 bytes gzipped (+587 bytes, +1.5%) for the indicator labels, 8 context menu entries, `setIndicatorOptions` method, and `onIndicatorClick` callback.
+
 ## [1.5.2] - 2026-07-20
 
 ### Fixed
