@@ -1389,6 +1389,44 @@ export class Chart {
   }
 
   /**
+   * Update a sub-pane indicator's options at runtime.
+   * For sub-panes: merges into chart.options[id] (e.g. 'rsi', 'macd').
+   * For overlays: finds the overlay by id and replaces its options object.
+   * Triggers a render so the new settings are immediately visible.
+   *
+   * Usage:
+   *   chart.setIndicatorOptions('rsi', { period: 21, overbought: 80 });
+   *   chart.setIndicatorOptions('sma-20', { color: '#ff0000' });
+   */
+  setIndicatorOptions(id: string, options: Record<string, any>): void {
+    // Check sub-panes first
+    const pane = this.getSubPane(id);
+    if (pane) {
+      const current = (this.options as any)[id] || {};
+      (this.options as any)[id] = { ...current, ...options };
+      this.render();
+      return;
+    }
+    // Check overlays
+    const overlay = this.renderer.getOverlays().find(o => o.id === id);
+    if (overlay) {
+      // Overlays store their options internally — we can't mutate them
+      // directly (they're passed by the caller), but we can replace the
+      // overlay with one that has the merged options. Since we don't
+      // know the constructor, we mutate the options object in place
+      // if it's an object, or fall back to setOptions for sub-panes.
+      // The common pattern: the caller passes a mutable options object,
+      // so we merge into it:
+      const opts = overlay.getOptions() as any;
+      Object.assign(opts, options);
+      this.render();
+      return;
+    }
+    // Not found — silently no-op (or could throw, but lenient is better
+    // for dynamic UIs that might call this before the indicator is added)
+  }
+
+  /**
    * Toggle drawing magnet mode at runtime. When on, drawing anchors
    * snap to the nearest OHLC of the bar under the cursor during both
    * create mode and drag.

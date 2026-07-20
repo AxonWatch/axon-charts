@@ -290,10 +290,11 @@ export class Renderer {
     if (this.overlays.length === 0) return;
     if (this.chart.state.data.length === 0) return;
 
-    ctx.save();
-    // Clip to chart area (same clip as the buffer copy)
     const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const clipBottom = chartBottom || (h - bottomMargin);
+    const visibleOverlays: string[] = [];
+
+    ctx.save();
     if (w - axisWidth > 0 && clipBottom > 0) {
       ctx.beginPath();
       ctx.rect(0, 0, w - axisWidth, clipBottom);
@@ -303,9 +304,45 @@ export class Renderer {
         if (overlay.getOptions()?.show === false) continue;
         const values = overlay.compute(this.chart);
         overlay.render(ctx, this.chart, values);
+        // Collect label for the post-render label bar
+        const label = this.getOverlayLabel(overlay);
+        if (label) visibleOverlays.push(label);
       }
     }
     ctx.restore();
+
+    // Draw overlay labels in the top-left of the chart area
+    // (below the OHLC tooltip, which is drawn by the crosshair)
+    if (visibleOverlays.length > 0) {
+      const layout = this.chart.options.layout;
+      ctx.font = `${layout.fontSize ?? 12}px ${layout.fontFamily ?? 'system-ui'}`;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      const topMargin = this.chart.state.topMargin;
+      let labelY = topMargin + 18;  // below the OHLC tooltip line
+      for (const label of visibleOverlays) {
+        ctx.fillStyle = layout.textColor ?? '#aaa';
+        ctx.fillText(label, 8, labelY);
+        labelY += (layout.fontSize ?? 12) + 4;
+      }
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+  }
+
+  /**
+   * Build a short label for an overlay, e.g. "SMA(20)" or "EMA(12)".
+   * Uses the overlay's constructor name + key option (period).
+   */
+  private getOverlayLabel(overlay: Overlay): string {
+    const name = overlay.constructor.name
+      .replace('Overlay', '')
+      .replace('BollingerBands', 'BB')
+      .replace('IchimokuCloud', 'Ichimoku')
+      .toUpperCase();
+    const opts = overlay.getOptions() as any;
+    if (opts.period != null) return `${name}(${opts.period})`;
+    return name;
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {

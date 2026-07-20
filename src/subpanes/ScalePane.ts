@@ -137,6 +137,20 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
+    // Indicator label at the top-left of the sub-pane
+    // e.g. "RSI(14)" or "MACD(12,26,9)" — uses the tooltip label
+    // (minus the trailing colon) for consistency.
+    if (options.show !== false && this.getTooltipLabel) {
+      const labelText = this.getTooltipLabel().replace(/:$/, '');
+      ctx.font = `${chart.options.layout.fontSize ?? 12}px ${chart.options.layout.fontFamily ?? 'system-ui'}`;
+      ctx.fillStyle = chart.options.layout.textColor ?? '#aaa';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText(labelText, 8, subPaneTop + 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
+
     // Vertical axis border (matching main chart's axis border style)
     if (chart.options.layout.borderVisible !== false) {
       const borderColor = chart.options.layout.textColor ?? '#aaa';

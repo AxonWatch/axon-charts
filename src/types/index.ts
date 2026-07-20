@@ -323,6 +323,11 @@ export interface ChartOptions {
   onDataUpdate?: ((bars: Bar[]) => void) | null;
   /** Fires once per candle close (new bar appended via updateLastBar/updateLastBarFast). Receives the finalized closed bar. */
   onCandleClose?: CandleCloseCallback;
+  /** Fires when the user clicks an on-chart indicator label (sub-pane or overlay).
+   *  The integrating app can use this to open a settings panel.
+   *  id: the sub-pane id (e.g. 'rsi') or overlay id (e.g. 'sma-20').
+   *  type: 'subpane' for indicators in a separate pane, 'overlay' for main-chart overlays. */
+  onIndicatorClick?: (id: string, type: 'subpane' | 'overlay') => void;
 
   // === Init-Only ===
   /** Custom device pixel ratio (defaults to window.devicePixelRatio) — only read at init */
@@ -601,4 +606,6 @@ export interface IChart {
   removeOverlay(id: string): void;
   /** Get all registered overlays. */
   getOverlays(): import('../overlays/Overlay.js').Overlay[];
+  /** Update a sub-pane indicator's options at runtime (e.g. chart.setIndicatorOptions('rsi', { period: 21 })). */
+  setIndicatorOptions(id: string, options: Record<string, any>): void;
 }
