@@ -18,6 +18,7 @@ import { DrawingController } from '../interaction/drawing-controller.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
 import { RSISubPane } from '../subpanes/RSISubPane.js';
 import { MACDSubPane } from '../subpanes/MACDSubPane.js';
+import { StochasticSubPane } from '../subpanes/StochasticSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
@@ -198,6 +199,7 @@ export class Chart {
   public volumeSubPane!: VolumeSubPane;
   public rsiSubPane!: RSISubPane;
   public macdSubPane!: MACDSubPane;
+  public stochasticSubPane!: StochasticSubPane;
 
   // Chart state
   public state: {
@@ -328,6 +330,8 @@ export class Chart {
     this.addSubPane(this.rsiSubPane);
     this.macdSubPane = new MACDSubPane(this);
     this.addSubPane(this.macdSubPane);
+    this.stochasticSubPane = new StochasticSubPane(this);
+    this.addSubPane(this.stochasticSubPane);
 
     this.startCountdownTimer();
 
