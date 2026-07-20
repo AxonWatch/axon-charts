@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2026-07-20
+
+### Fixed
+- **Cursor overwritten by chart's cursor logic** — `DrawingInteraction.onMouseMove()` set the cursor when hovering a drawing handle/body, but returned `false` so `EventManager`'s cursor logic below overwrote it with `'crosshair'` or `'default'`. The user got no visual feedback when hovering a draggable drawing. Fix: `onMouseMove` now returns `true` when a drawing is hovered (consuming the event); new `hoverActive` flag + `clearHover()` method.
+- **Hover state not cleared on mouseleave** — `handleMouseLeave` only reset the separator hover state; the drawing hover circle stayed drawn after the cursor left the canvas. Fix: `handleMouseLeave` now calls `drawingInteraction.clearHover()`.
+- **Rubber-band preview always drew a line, even for box** — creating a `box` showed a line while dragging, then the box appeared only after the second click. Fix: the preview is now type-aware (`getDrawingPreviewShape()`): `box`/`highlighter` → dashed rectangle, `hline` → horizontal line, `vline` → vertical line, `trendline`/`measure`/`fib`/`position_closed` → line, single-point types → just a dot at p1.
+- **`arrow_up` and `arrow_down` rendered with swapped directions** — pre-existing bug from the original `Renderer.renderDrawings()` switch (ported verbatim). In canvas coordinates Y increases downward, so `arrow_up` used `y+8` (point below anchor, looked like down) and `arrow_down` used `y-8` (point above, looked like up). Fix: swapped the y offsets.
+
+### Added
+- **OHLC magnet mode for drawing anchors** — new `drawing.magnet` option (default `false`) + `chart.setDrawingMagnet(enabled)` runtime toggle. When on, drawing anchors snap to the nearest Open, High, Low, or Close of the bar under the cursor during both create mode and drag. New `magnetToOHLC(chart, x, y)` helper exported from the package.
+- **Crosshair cursor in create mode** — when `chart.isDrawing()` is true, the canvas cursor becomes `crosshair`, signaling placement mode.
+
+### Changed
+- `DrawingController` accessed via `(this.chart as any).drawingController` in `EventManager` — replaced with proper `IChart` methods `routeDrawingMouseDown` / `routeDrawingMouseMove` for type-safe access.
+- `Renderer.previewTimeToX` — reimplemented to reuse `DataManager.getBarAtTime` (the same binary search `resolveAnchor` uses) instead of an inline duplicate. Bundle shrank by 50 bytes.
+- Bundle: 33365 → 33851 bytes gzipped (+486 bytes, +1.5%) for the hover-consume fix, type-aware preview, magnet mode, crosshair cursor, and clean controller routing.
+
 ## [1.4.0] - 2026-07-20
 
 ### Added — Interactive Drawing System
