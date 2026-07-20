@@ -1,6 +1,6 @@
 {
   "name": "axon-charts",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration",
   "type": "module",
   "main": "dist/chart.js",
