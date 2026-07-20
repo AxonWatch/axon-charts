@@ -35,6 +35,7 @@ export { SMAOverlay } from './overlays/SMAOverlay.js';
 export { EMAOverlay } from './overlays/EMAOverlay.js';
 export { BollingerBandsOverlay } from './overlays/BollingerBandsOverlay.js';
 export { VWAPOverlay } from './overlays/VWAPOverlay.js';
+export { IchimokuCloudOverlay } from './overlays/IchimokuCloudOverlay.js';
 export { ArrowRenderer } from './drawings/ArrowRenderer.js';
 export { LabelRenderer } from './drawings/LabelRenderer.js';
 export { HLineRenderer } from './drawings/HLineRenderer.js';
