@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.4] - 2026-07-20
+
+### Fixed — State Persistence
+
+- **`saveState()` now includes drawings and overlays.** Previously, user-drawn annotations (trendlines, boxes, positions) and overlay indicators (SMA, EMA, BB, VWAP, Ichimoku) were not captured in the serialized state — users lost their work on page reload. Now `saveState()` returns `{ ..., drawings: Drawing[], overlays: OverlaySnapshot[] }`.
+- **`loadState()` now restores drawings and overlays.** Drawings are restored via direct internal assignment (bypassing `addDrawing()` to avoid O(n) validation + render per drawing). Overlays are reconstructed from `{ id, type, options }` snapshots via the overlay registry. Unknown overlay types are silently skipped — consumers must register custom overlay types before calling `loadState()`.
+- **Schema version bumped from 1.0.0 to 1.1.0** (additive — old snapshots still load, with `drawings`/`overlays` defaulting to empty arrays). Version contract documented: major = breaking, minor = additive, patch = no shape change.
+- **`migrateSnapshot(state)` helper** — upgrades a snapshot from any 1.x schema version to the current one. Returns a deep-cloned, upgraded copy. Does not mutate the input. Exported from the package.
+
+### Added — Overlay Registry + Reset
+
+- **`chart.registerOverlayType(type, ctor)`** — register a custom overlay type so `saveState()` can serialize it and `loadState()` can reconstruct it. Mirrors the existing `registerDrawingType()` pattern for custom drawing types. Built-in overlays (SMA, EMA, BB, VWAP, Ichimoku) self-register at module load.
+- **`chart.resetState(opts?)`** — clears user-added state (drawings + overlays) in a single render call. Preserves options, data, and viewport. Defaults to clearing both; pass `{ drawings: false }` or `{ overlays: false }` to skip one.
+- **`OverlaySnapshot` interface** — `{ id: string; type: string; options: Record<string, unknown> }` — the serialized form of an overlay, used by `saveState`/`loadState`.
+- **`registerOverlayType` / `getOverlayType`** exported from the package — lets external code register and look up overlay constructors.
+
+### Changed
+- `ChartState` interface: `drawings?: Drawing[]` and `overlays?: OverlaySnapshot[]` are now optional fields (backward compatible with 1.0.0 snapshots).
+- `Renderer.clearOverlays()` added (internal — used by `resetState` and `loadState`).
+- Bundle: 40576 → 40885 bytes gzipped (+309 bytes for the overlay registry, `migrateSnapshot`, `resetState`, `registerOverlayType`, and the extended `saveState`/`loadState`).
+
 ## [1.5.3] - 2026-07-20
 
 ### Added

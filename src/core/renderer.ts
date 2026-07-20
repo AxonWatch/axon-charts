@@ -275,6 +275,13 @@ export class Renderer {
   }
 
   /**
+   * Remove all overlays. Used by resetState() and loadState().
+   */
+  clearOverlays(): void {
+    this.overlays = [];
+  }
+
+  /**
    * Get all registered overlays.
    */
   getOverlays(): Overlay[] {

@@ -31,6 +31,25 @@ Axon Charts is a minimal-dependency candlestick charting library for modern web 
 - Market info header + auto-scaling watermark
 - Percentage mode with 0% reference line and smart formatting
 
+### Indicators
+- **8 sub-pane indicators**: RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX
+- **5 overlay indicators**: SMA, EMA, Bollinger Bands, VWAP, Ichimoku Cloud
+- Overlay plugin system (`chart.addOverlay()`, `registerOverlayType()`)
+- 13 indicator math functions exported as `Indicators` namespace
+- On-chart indicator labels + right-click toggle menu
+- Runtime editing via `chart.setIndicatorOptions()`
+
+### Drawings
+- **14 drawing types**: arrows, labels, hline/vline, position, trendline, box, fib_retracement, measure, order, text, highlighter, position_closed
+- Interactive: drag, resize, select, delete (keyboard), create-by-click (`beginDrawing`)
+- OHLC magnet mode for snapping anchors to exact prices
+- Custom drawing types via `registerDrawingType()`
+
+### Persistence
+- Full state serialization: options, data, viewport, **drawings + overlays** round-trip through `saveState()` / `loadState()`
+- `migrateSnapshot()` helper for upgrading old snapshots
+- `resetState()` clears user-added state (drawings + overlays) in one call
+
 ### Series Types
 - **Line** -- polyline connecting close prices, independent lineColor, latest price pulse animation
 - **Area** -- filled polyline with gradient, close markers, latest price marker
@@ -153,6 +172,7 @@ chart.toBlob(): Promise<Blob>
 // State management
 chart.saveState(): ChartState
 chart.loadState(state): void
+chart.resetState(opts?): void
 
 // LLM command execution
 chart.execute(command): void
@@ -163,6 +183,17 @@ chart.removeDrawing(id): void
 chart.clearDrawings(): void
 chart.getDrawings(): Drawing[]
 chart.registerDrawingType(type, renderer): void
+chart.beginDrawing(type): void
+
+// Overlay API
+chart.addOverlay(overlay): void
+chart.removeOverlay(id): void
+chart.getOverlays(): Overlay[]
+chart.registerOverlayType(type, ctor): void
+
+// Indicator API
+chart.setIndicatorOptions(id, options): void
+chart.onIndicatorClick = fn
 
 // Events
 chart.onCrosshairMove = fn
