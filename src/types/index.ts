@@ -180,6 +180,70 @@ export interface ChartOptions {
     minMove?: number | null;
   };
 
+  // === RSI Sub-Pane ===
+  rsi?: {
+    /** Show the RSI sub-pane. Default: false */
+    show?: boolean;
+    /** RSI period. Default: 14 */
+    period?: number;
+    /** Percentage of total chart height (0.05-0.5). Default: 0.15 */
+    heightPercent?: number;
+    /** RSI line color. Default: '#9ca3af' (light gray) */
+    color?: string;
+    /** Overbought level (reference line). Default: 70 */
+    overbought?: number;
+    /** Oversold level (reference line). Default: 30 */
+    oversold?: number;
+    /** Show overbought/oversold reference lines. Default: true */
+    showLevels?: boolean;
+  };
+
+  // === MACD Sub-Pane ===
+  macd?: {
+    /** Show the MACD sub-pane. Default: false */
+    show?: boolean;
+    /** Fast EMA period. Default: 12 */
+    fastPeriod?: number;
+    /** Slow EMA period. Default: 26 */
+    slowPeriod?: number;
+    /** Signal EMA period. Default: 9 */
+    signalPeriod?: number;
+    /** Percentage of total chart height (0.05-0.5). Default: 0.15 */
+    heightPercent?: number;
+    /** MACD line color. Default: '#3b82f6' (blue) */
+    macdColor?: string;
+    /** Signal line color. Default: '#f59e0b' (amber) */
+    signalColor?: string;
+    /** Histogram color (up). Default: '#10B981' (green) */
+    histogramUpColor?: string;
+    /** Histogram color (down). Default: '#E11D48' (red) */
+    histogramDownColor?: string;
+  };
+
+  // === Stochastic Sub-Pane ===
+  stochastic?: {
+    /** Show the Stochastic sub-pane. Default: false */
+    show?: boolean;
+    /** %K lookback period. Default: 14 */
+    kPeriod?: number;
+    /** %D smoothing period. Default: 3 */
+    dPeriod?: number;
+    /** Slow %K smoothing (1 = fast, 3 = slow). Default: 3 */
+    smoothK?: number;
+    /** Percentage of total chart height (0.05-0.5). Default: 0.15 */
+    heightPercent?: number;
+    /** %K line color. Default: '#3b82f6' (blue) */
+    kColor?: string;
+    /** %D line color. Default: '#f59e0b' (amber) */
+    dColor?: string;
+    /** Overbought level. Default: 80 */
+    overbought?: number;
+    /** Oversold level. Default: 20 */
+    oversold?: number;
+    /** Show overbought/oversold reference lines. Default: true */
+    showLevels?: boolean;
+  };
+
   // === Attribution Logo ===
   attribution?: {
     /** Show the Axon.Watch attribution logo at bottom-left. Default: true */

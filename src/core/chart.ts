@@ -16,6 +16,7 @@ import { registerDrawingType as registerDrawingTypeImpl } from '../drawings/regi
 import type { DrawingRenderer } from '../drawings/DrawingRenderer.js';
 import { DrawingController } from '../interaction/drawing-controller.js';
 import { VolumeSubPane } from '../subpanes/VolumeSubPane.js';
+import { RSISubPane } from '../subpanes/RSISubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
@@ -122,6 +123,38 @@ const DEFAULT_OPTIONS = {
     upColor: '#10B981',
     downColor: '#E11D48',
     heightPercent: 0.2
+  },
+  rsi: {
+    show: false,
+    period: 14,
+    heightPercent: 0.15,
+    color: '#9ca3af',
+    overbought: 70,
+    oversold: 30,
+    showLevels: true
+  },
+  macd: {
+    show: false,
+    fastPeriod: 12,
+    slowPeriod: 26,
+    signalPeriod: 9,
+    heightPercent: 0.15,
+    macdColor: '#3b82f6',
+    signalColor: '#f59e0b',
+    histogramUpColor: '#10B981',
+    histogramDownColor: '#E11D48'
+  },
+  stochastic: {
+    show: false,
+    kPeriod: 14,
+    dPeriod: 3,
+    smoothK: 3,
+    heightPercent: 0.15,
+    kColor: '#3b82f6',
+    dColor: '#f59e0b',
+    overbought: 80,
+    oversold: 20,
+    showLevels: true
   }
 };
 
@@ -162,6 +195,7 @@ export class Chart {
   private subPanes: Map<string, SubPane> = new Map();
   private _subPaneShow: Map<string, boolean> = new Map();
   public volumeSubPane!: VolumeSubPane;
+  public rsiSubPane!: RSISubPane;
 
   // Chart state
   public state: {
@@ -288,6 +322,8 @@ export class Chart {
     // Initialize sub-panes
     this.volumeSubPane = new VolumeSubPane(this);
     this.addSubPane(this.volumeSubPane);
+    this.rsiSubPane = new RSISubPane(this);
+    this.addSubPane(this.rsiSubPane);
 
     this.startCountdownTimer();
 
