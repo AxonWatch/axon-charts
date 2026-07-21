@@ -675,8 +675,20 @@ export class Renderer {
     if (drawings.length === 0 && !isCreating) return;
     if (this.chart.state.data.length === 0) return;
 
+    const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
+    const clipBottom = chartBottom || (h - bottomMargin);
+
     ctx.save();
     ctx.setLineDash([]);
+
+    // Clip to the main chart area (above sub-panes) so drawings
+    // don't render into the sub-pane region. Same clip as the
+    // candle buffer copy and overlays.
+    if (w - axisWidth > 0 && clipBottom > 0) {
+      ctx.beginPath();
+      ctx.rect(0, 0, w - axisWidth, clipBottom);
+      ctx.clip();
+    }
 
     const selectedId = this.chart.getSelectedDrawingId();
     const hoveredHandle = this.chart.getHoveredHandle();

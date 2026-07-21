@@ -1997,6 +1997,13 @@ interface DrawingData {
   fill?: string;
   lines?: string[];            // Text (multi-line)
   textFill?: string;
+  showBackground?: boolean;    // Default true
+  showBorder?: boolean;        // Default true
+  borderColor?: string;
+  textColor?: string;
+  maxWidth?: number;           // Wrap width (pixels)
+  showAnchorDot?: boolean;     // Default true
+  showPrice?: boolean;         // Label: show formatted price
   [key: string]: unknown;      // Custom types
 }</code></pre>
 

@@ -314,7 +314,7 @@ interface DrawingData {
 |------|---------|-------------|
 | `arrow_up` | `{barIndex|time, price}` | Up-pointing filled triangle |
 | `arrow_down` | `{barIndex|time, price}` | Down-pointing filled triangle |
-| `label` | `{barIndex|time, price}` | Boxed text annotation centered on anchor |
+| `label` | `{barIndex|time, price, data?}` | Boxed text annotation centered on anchor; optional price display (`data.showPrice`) |
 | `hline` | `{price}` | Horizontal dashed line spanning chart width |
 | `vline` | `{barIndex|time}` | Vertical dashed line spanning chart height |
 | `position` | `{barIndex|time, price, data}` | Trading position with live PnL, optional SL/TP |
@@ -634,7 +634,7 @@ chart.addDrawing({
 
 Renders a multi-line freeform text annotation. Distinct from the simpler `label` type:
 - `label` = single-line, small fixed 16px box, centered on the anchor
-- `text`  = multi-line, box sized to content, anchored at the top-left
+- `text`  = multi-line, box sized to content (or constrained to `maxWidth`), anchored at the top-left
 
 **Required fields:**
 - `price` — anchor price
@@ -642,16 +642,22 @@ Renders a multi-line freeform text annotation. Distinct from the simpler `label`
 - Either `data.lines` (array of strings) OR `text` (single line, convenience)
 
 **Optional `data` fields:**
-- `data.lines` — `string[]`, each entry is one line
+- `data.lines` — `string[]`, each entry is one line (before wrapping)
 - `data.textFill` — CSS color for the box background (defaults to 10%-alpha of `color`)
+- `data.showBackground` — boolean (default `true`); set `false` for transparent background
+- `data.showBorder` — boolean (default `true`); set `false` for borderless text
+- `data.borderColor` — CSS color (default: `drawing.color`)
+- `data.textColor` — CSS color (default: `drawing.color`); set independently for e.g. dark border + white text
+- `data.maxWidth` — number (optional); when set, long lines wrap at word boundaries to fit within this width in pixels
+- `data.showAnchorDot` — boolean (default `true`); set `false` to hide the anchor dot unless the drawing is selected/hovered
 - `text` — single-line convenience (used only if `data.lines` is not set)
 
 **Renders:**
-1. Small dot at the anchor point (so the user can see what the text marks)
-2. Box positioned with its top-left corner at the anchor, offset 4px so the dot is visible. Box flips to the left of the anchor if it would overflow the right edge; Y is clamped to the visible chart area.
-3. Each line of `data.lines` drawn left-aligned, top-baseline, inside the box
+1. Optional dot at the anchor point (visible by default, or only when selected/hovered if `showAnchorDot: false`)
+2. Optional background box + optional border, positioned with its top-left corner at the anchor, offset 4px. Box flips left if it would overflow the right edge; Y is clamped to the visible chart area. Width is constrained to the chart width.
+3. Text lines drawn left-aligned, top-baseline, inside the box. Lines wrap at word boundaries when `maxWidth` is set.
 
-**Example — multi-line note:**
+**Example — multi-line note with wrapping:**
 
 ```typescript
 chart.addDrawing({
@@ -662,12 +668,25 @@ chart.addDrawing({
   color: '#f59e0b',
   data: {
     lines: [
-      'Earnings release',
-      'Q3 2026',
-      'Expect volatility'
+      'Earnings release — Q3 2026. Expect significant volatility in the first hour after the bell. Position accordingly.'
     ],
-    textFill: 'rgba(245, 158, 11, 0.10)'
+    textFill: 'rgba(245, 158, 11, 0.10)',
+    borderColor: '#f59e0b',
+    textColor: '#ffffff',
+    maxWidth: 200,
+    showAnchorDot: false
   }
+});
+```
+
+**Example — borderless, no background:**
+
+```typescript
+chart.addDrawing({
+  id: 'note-2', type: 'text',
+  time: 1704153600000, price: 41800, color: '#3b82f6',
+  text: 'Support level',
+  data: { showBorder: false, showBackground: false }
 });
 ```
 
@@ -1260,8 +1279,17 @@ interface DrawingData {
   lineStyle?: 'solid' | 'dashed' | 'dotted';
   extend?: 'none' | 'left' | 'right' | 'both';
   fill?: string;
-  lines?: string[];            // Text (multi-line annotation)
-  textFill?: string;
+  // Text (multi-line annotation)
+  lines?: string[];
+  textFill?: string;           // Background fill (default: 10%-alpha of color)
+  showBackground?: boolean;     // Default true; set false for transparent
+  showBorder?: boolean;        // Default true; set false for borderless
+  borderColor?: string;         // Default: drawing.color
+  textColor?: string;          // Default: drawing.color
+  maxWidth?: number;           // Wrap long lines at this width (pixels)
+  showAnchorDot?: boolean;     // Default true; set false for hover-only
+  // Label
+  showPrice?: boolean;         // Show formatted price in the label text
   [key: string]: unknown;      // Custom types
 }
 ```

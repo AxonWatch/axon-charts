@@ -472,10 +472,26 @@ export interface DrawingData {
   fill?: string;
 
   // === Text (multi-line annotation) ===
-  /** Multi-line text content. Each entry is one line. */
+  /** Multi-line text content. Each entry is one line (before wrapping). */
   lines?: string[];
   /** Text background fill (semi-transparent recommended). Defaults to 10%-alpha of color. */
   textFill?: string;
+  /** Show the text background. Default: true. Set false for transparent background. */
+  showBackground?: boolean;
+  /** Show the text border. Default: true. Set false for borderless text. */
+  showBorder?: boolean;
+  /** Border color. Default: drawing.color. */
+  borderColor?: string;
+  /** Text color. Default: drawing.color. */
+  textColor?: string;
+  /** Maximum text width in pixels. When set, long lines wrap at word boundaries. */
+  maxWidth?: number;
+  /** Show the anchor dot. Default: true (always visible). Set false to hide unless hovered/selected. */
+  showAnchorDot?: boolean;
+
+  // === Label ===
+  /** Show the formatted price at the anchor next to the label text. Default: false. */
+  showPrice?: boolean;
 
   // === Custom (user-registered drawing types) ===
   [key: string]: unknown;
