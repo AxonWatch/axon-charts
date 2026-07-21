@@ -210,21 +210,12 @@ export class Crosshair {
       }
     }
 
-    // 5. Draw sub-pane tooltips (volume, RSI, etc.)
-    // Each tooltip is drawn inside its own sub-pane (at the top-left
-    // of that pane), NOT stacked on the first sub-pane.
-    if (this.chart.options.crosshair.showTooltip) {
-      let currentTop = this.chart.state.chartBottom;
-
-      for (const pane of this.chart.getActiveSubPanes()) {
-        const bar = data[barIndex];
-        if (bar) {
-          // Draw the tooltip at the top of THIS sub-pane, offset slightly
-          pane.renderTooltip(this.overlayCtx, this.chart, bar, currentTop, currentTop + 2);
-        }
-        currentTop += pane.computeHeight(this.chart.state, pane.getOptions());
-      }
-    }
+    // 5. Sub-pane tooltips are not drawn separately — the sub-pane
+    // label (drawn by ScalePane.render on the bgCanvas) already shows
+    // the indicator name + value. When the crosshair is over a bar,
+    // the label shows the hovered bar's value; otherwise it shows
+    // the latest value. This avoids duplicate text and keeps each
+    // sub-pane's information in its own area.
   }
 
   /**

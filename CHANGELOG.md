@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.7] - 2026-07-20
+
+### Fixed
+- **Sub-pane: extra right-side tooltip removed** — a right-aligned tooltip was accidentally added on each sub-pane in v1.5.6. Now each sub-pane shows only the top-left label (name + value), nothing on the right side.
+- **Sub-pane label format** — now shows `RSI(14): 56.7` with the value colored in the indicator's tooltip color (same coloring as the original tooltip). When the crosshair hovers over a bar, the value updates to show that bar's value; otherwise shows the latest value.
+- **Overlay label alignment** — labels are now aligned to `TOOLTIP_MARGIN_X` (10px), same as the OHLC tooltip. Previously used 8px (2px offset). Labels start below the OHLC tooltip line, accounting for the market header height.
+- **Overlay label format** — now shows `EMA(20): 42,150.5` with the label in text color and the value in the overlay's color (e.g. blue for SMA, amber for EMA). Previously was a single-color string.
+
+### Changed
+- Sub-pane tooltips from the crosshair are no longer drawn separately — the sub-pane label (drawn by ScalePane.render on the bgCanvas) serves both purposes (shows latest value by default, hovered bar's value when the crosshair is active).
+- Overlay labels now use a structured { label, valueText, color } format so the label and value can be drawn in different colors.
+- Bundle: 41313 → 41515 bytes gzipped (+202 bytes).
+
 ## [1.5.6] - 2026-07-20
 
 ### Fixed

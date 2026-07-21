@@ -2,7 +2,7 @@ import { SubPane } from './SubPane.js';
 import { IChart, Bar } from '../types/index.js';
 import type { ChartState } from '../utils/projection.js';
 import { LAYOUT } from '../core/layout.js';
-import { deriveVisibleStartIdx, indexToX } from '../utils/projection.js';
+import { deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
 import { calculateTimeStep } from '../utils/math.js';
 
 /**
@@ -137,20 +137,42 @@ export abstract class ScalePane implements SubPane {
     ctx.lineTo(w, subPaneTop);
     ctx.stroke();
 
-    // Indicator label at the top-left of the sub-pane
-    // e.g. "RSI(14)  56.7" — uses the tooltip label (minus colon) +
-    // the current (latest) value for at-a-glance reading.
+    // Indicator label at the top-left of the sub-pane.
+    // Format: "RSI(14): value" — value is colored with the indicator's
+    // tooltip color. When the crosshair is over a bar, shows that bar's
+    // value; otherwise shows the latest value.
     if (options.show !== false && this.getTooltipLabel) {
       const labelText = this.getTooltipLabel().replace(/:$/, '');
-      const latest = this.getLatestValue(chart);
-      const displayText = (latest != null && !isNaN(latest))
-        ? `${labelText}  ${this.formatValue(latest)}`
-        : labelText;
-      ctx.font = `${chart.options.layout.fontSize ?? 12}px ${chart.options.layout.fontFamily ?? 'system-ui'}`;
-      ctx.fillStyle = chart.options.layout.textColor ?? '#aaa';
+      const fontSize = chart.options.layout.fontSize ?? 12;
+      const fontFamily = chart.options.layout.fontFamily ?? 'system-ui';
+      ctx.font = `${fontSize}px ${fontFamily}`;
+
+      // Determine which value to show: hovered bar's value if the
+      // crosshair is active on a bar, otherwise the latest value.
+      let displayValue: string;
+      let valueColor: string;
+      const hoveredValue = this.getHoveredValue(chart);
+      if (hoveredValue != null) {
+        displayValue = this.formatValue(hoveredValue.value);
+        valueColor = hoveredValue.color;
+      } else {
+        const latest = this.getLatestValue(chart);
+        displayValue = (latest != null && !isNaN(latest)) ? this.formatValue(latest) : '—';
+        valueColor = this.getTooltipColor(chart.state.data[chart.state.data.length - 1] ?? {} as Bar);
+      }
+
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText(displayText, 8, subPaneTop + 2);
+
+      // Draw label part in text color
+      ctx.fillStyle = chart.options.layout.textColor ?? '#aaa';
+      ctx.fillText(`${labelText}:`, 8, subPaneTop + 2);
+      const labelWidth = ctx.measureText(`${labelText}:`).width;
+
+      // Draw value part in indicator color
+      ctx.fillStyle = valueColor;
+      ctx.fillText(displayValue, 8 + labelWidth + 4, subPaneTop + 2);
+
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
     }
@@ -388,6 +410,29 @@ export abstract class ScalePane implements SubPane {
    */
   protected getValueAtBar(bar: Bar): number | undefined {
     return this.getTooltipValue(bar) ?? undefined;
+  }
+
+  /**
+   * Check if the crosshair is hovering over a bar and return the
+   * indicator value at that bar + the tooltip color. Returns null
+   * when the crosshair is not active or the value isn't defined.
+   */
+  private getHoveredValue(chart: IChart): { value: number; color: string } | null {
+    try {
+      const crosshair = (chart as any).crosshair;
+      if (!crosshair || !crosshair.visible) return null;
+      const x = crosshair.x;
+      if (x == null) return null;
+      const barIndex = xToIndex(x, chart.state);
+      if (barIndex < 0 || barIndex >= chart.state.data.length) return null;
+      const bar = chart.state.data[barIndex];
+      if (!bar) return null;
+      const value = this.getTooltipValue(bar);
+      if (value == null || isNaN(value)) return null;
+      return { value, color: this.getTooltipColor(bar) };
+    } catch {
+      return null;
+    }
   }
 
   getContextData(): Record<string, any> {

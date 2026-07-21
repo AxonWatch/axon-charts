@@ -300,7 +300,7 @@ export class Renderer {
 
     const { w, h, axisWidth, bottomMargin, chartBottom } = this.chart.state;
     const clipBottom = chartBottom || (h - bottomMargin);
-    const visibleOverlays: string[] = [];
+    const visibleOverlays: { label: string; valueText: string; color: string }[] = [];
 
     ctx.save();
     if (w - axisWidth > 0 && clipBottom > 0) {
@@ -312,26 +312,43 @@ export class Renderer {
         if (overlay.getOptions()?.show === false) continue;
         const values = overlay.compute(this.chart);
         overlay.render(ctx, this.chart, values);
-        // Collect label + current value for the post-render label bar
-        const label = this.getOverlayLabel(overlay, values);
-        if (label) visibleOverlays.push(label);
+        // Collect label + value for the post-render label bar
+        const labelInfo = this.getOverlayLabel(overlay, values);
+        if (labelInfo) visibleOverlays.push(labelInfo);
       }
     }
     ctx.restore();
 
     // Draw overlay labels in the top-left of the chart area
-    // (below the OHLC tooltip, which is drawn by the crosshair)
+    // (below the OHLC tooltip, which is drawn by the crosshair).
+    // Aligned to the same X as the OHLC tooltip (LAYOUT.TOOLTIP_MARGIN_X).
+    // Format: "EMA(20): value" — label in text color, value in overlay color.
     if (visibleOverlays.length > 0) {
       const layout = this.chart.options.layout;
-      ctx.font = `${layout.fontSize ?? 12}px ${layout.fontFamily ?? 'system-ui'}`;
+      const fontSize = layout.fontSize ?? 12;
+      ctx.font = `${fontSize}px ${layout.fontFamily ?? 'system-ui'}`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      const topMargin = this.chart.state.topMargin;
-      let labelY = topMargin + 18;  // below the OHLC tooltip line
-      for (const label of visibleOverlays) {
+      const labelX = LAYOUT.TOOLTIP_MARGIN_X;  // same X as OHLC tooltip (10px)
+
+      // Account for the market header + OHLC tooltip lines
+      const headerFontSize = this.chart.options.market.fontSize ?? 15;
+      const headerOffset = this.chart.options.market?.show ? (headerFontSize + 4) : 0;
+      const ohlcLineHeight = fontSize + 2;
+      let labelY = LAYOUT.TOOLTIP_MARGIN_Y + headerOffset + ohlcLineHeight + 2;
+
+      for (const item of visibleOverlays) {
+        // Label part (e.g. "EMA(20):") in text color
         ctx.fillStyle = layout.textColor ?? '#aaa';
-        ctx.fillText(label, 8, labelY);
-        labelY += (layout.fontSize ?? 12) + 4;
+        ctx.fillText(item.label, labelX, labelY);
+        const labelWidth = ctx.measureText(item.label).width;
+
+        // Value part in the overlay's color
+        if (item.valueText) {
+          ctx.fillStyle = item.color ?? layout.textColor ?? '#aaa';
+          ctx.fillText(item.valueText, labelX + labelWidth + 4, labelY);
+        }
+        labelY += fontSize + 4;
       }
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
@@ -341,36 +358,40 @@ export class Renderer {
   /**
    * Build a label for an overlay using its registry type name (not
    * constructor.name, which gets minified to e.g. 'V4' in production
-   * builds). Includes the current (latest) value when available.
+   * builds). Returns { label, valueText, color } so the caller can
+   * draw the label and value in different colors.
    *
-   * Examples: "SMA(20)  42,150.5"  "BB(20,2)  42,155.0"  "VWAP  42,148.2"
+   * Examples: label="SMA(20):"  valueText="42,150.5"  color="#3b82f6"
    */
-  private getOverlayLabel(overlay: Overlay, values: number[] | null): string {
-    // Look up the registered type name (e.g. 'sma', 'ema', 'bb')
+  private getOverlayLabel(overlay: Overlay, values: number[] | null): { label: string; valueText: string; color: string } | null {
     const typeName = getOverlayTypeName(overlay.constructor);
     const name = (typeName ?? 'overlay').toUpperCase();
     const opts = overlay.getOptions() as any;
 
-    // Build the param suffix
+    // Build the label (name + params)
     let label: string;
     if (name === 'BB') {
-      label = `BB(${opts.period ?? 20}, ${opts.numStdDev ?? 2})`;
+      label = `BB(${opts.period ?? 20}, ${opts.numStdDev ?? 2}):`;
     } else if (name === 'ICHIMOKU') {
-      label = 'Ichimoku';
+      label = 'Ichimoku:';
     } else if (opts.period != null) {
-      label = `${name}(${opts.period})`;
+      label = `${name}(${opts.period}):`;
     } else {
-      label = name;
+      label = `${name}:`;
     }
 
-    // Append the current value if available
+    // Build the value text
+    let valueText = '';
     if (values && values.length > 0) {
       const latest = values[values.length - 1];
       if (latest != null && !isNaN(latest)) {
-        label += `  ${this.chart.priceFormatter.formatPrice(latest)}`;
+        valueText = this.chart.priceFormatter.formatPrice(latest);
       }
     }
-    return label;
+
+    // Use the overlay's color for the value text
+    const color = opts.color ?? '#3b82f6';
+    return { label, valueText, color };
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {
