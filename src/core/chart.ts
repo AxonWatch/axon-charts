@@ -138,7 +138,7 @@ const DEFAULT_OPTIONS = {
     show: false,
     period: 14,
     heightPercent: 0.15,
-    color: '#9ca3af',
+    color: '#a855f7',
     overbought: 70,
     oversold: 30,
     showLevels: true
@@ -170,7 +170,7 @@ const DEFAULT_OPTIONS = {
     show: false,
     period: 14,
     heightPercent: 0.15,
-    color: '#9ca3af',
+    color: '#ec4899',
     overbought: -20,
     oversold: -80,
     showLevels: true
@@ -179,7 +179,7 @@ const DEFAULT_OPTIONS = {
     show: false,
     period: 20,
     heightPercent: 0.15,
-    color: '#9ca3af',
+    color: '#06b6d4',
     upperLevel: 100,
     lowerLevel: -100,
     showLevels: true
@@ -188,7 +188,7 @@ const DEFAULT_OPTIONS = {
     show: false,
     period: 14,
     heightPercent: 0.15,
-    color: '#9ca3af',
+    color: '#f97316',
     overbought: 80,
     oversold: 20,
     showLevels: true
@@ -197,7 +197,7 @@ const DEFAULT_OPTIONS = {
     show: false,
     period: 14,
     heightPercent: 0.15,
-    color: '#9ca3af'
+    color: '#14b8a6'
   },
   adx: {
     show: false,

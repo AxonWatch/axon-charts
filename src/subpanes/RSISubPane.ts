@@ -20,7 +20,7 @@ import { rsi as computeRsi } from '../utils/indicators.js';
  *   show:         boolean  (default false)
  *   period:       number   (default 14)
  *   heightPercent: number  (default 0.15)
- *   color:        string   (default '#9ca3af')
+ *   color:        string   (default '#a855f7')
  *   overbought:   number   (default 70)
  *   oversold:     number   (default 30)
  *   showLevels:   boolean  (default true)
@@ -66,7 +66,7 @@ export class RSISubPane extends ScalePane {
     if (!values) return;
 
     const options = this.getOptions();
-    const lineColor = options.color ?? '#9ca3af';
+    const lineColor = options.color ?? '#a855f7';
     const overbought = options.overbought ?? 70;
     const oversold = options.oversold ?? 30;
     const showLevels = options.showLevels !== false;
@@ -123,7 +123,7 @@ export class RSISubPane extends ScalePane {
   }
 
   getTooltipColor(bar: Bar): string {
-    return this.getOptions().color ?? '#9ca3af';
+    return this.getOptions().color ?? '#a855f7';
   }
 
   getTooltipLabel(): string {
