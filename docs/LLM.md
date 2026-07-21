@@ -38,7 +38,7 @@ Returns everything an LLM needs to reason about the current chart state:
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
   "state": {
-    "id": "ax-a1b2c3", "version": "1.5.5", "totalBars": 5000, "isAutoScrolling": true,
+    "id": "ax-a1b2c3", "version": "1.5.6", "totalBars": 5000, "isAutoScrolling": true,
     "market": { "baseAsset": "BTC", "quoteAsset": "USDT", "timeframe": "1m", "source": "Binance" }
   },
   "visibleBars": [ /* OHLCV bars visible on screen */ ],
