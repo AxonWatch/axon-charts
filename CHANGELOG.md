@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.5] - 2026-07-20
+
+### Fixed
+- **Drawings visible in sub-pane area** — `renderDrawings()` was not clipping to the main chart area, so drawings (trendlines, boxes, text, etc.) rendered across sub-panes (RSI, MACD, Volume). Now clips to `chartBottom` (same clip as the candle buffer copy and overlays).
+- **`text` drawing — text overflowed the chart** — long single lines had no wrapping and could exceed the chart width. Now the box width is constrained to the chart area, and `data.maxWidth` wraps long lines at word boundaries (greedy word-break algorithm with character-level fallback for very long words).
+
+### Added — Text drawing options
+- `data.showBackground` (boolean, default `true`) — set `false` for transparent background.
+- `data.showBorder` (boolean, default `true`) — set `false` for borderless text.
+- `data.borderColor` (CSS color, default: `drawing.color`) — independent border color.
+- `data.textColor` (CSS color, default: `drawing.color`) — independent text color (e.g. dark border + white text).
+- `data.maxWidth` (number, optional) — wrap long lines at word boundaries to fit within this width in pixels. Text height grows to accommodate wrapped lines.
+- `data.showAnchorDot` (boolean, default `true`) — set `false` to hide the anchor dot unless the drawing is selected/hovered.
+
+### Added — Label drawing options
+- `data.showPrice` (boolean, default `false`) — prepend the formatted anchor price to the label text (e.g. `"42,150.50 — Support"`). Turns the label into a price-pointing annotation.
+
+### Changed
+- `DrawingData` interface: 7 new optional fields (showBackground, showBorder, borderColor, textColor, maxWidth, showAnchorDot, showPrice).
+- Bundle: 40885 → 41226 bytes gzipped (+341 bytes for the wrap algorithm, clipping, and new option handling).
+
 ## [1.5.4] - 2026-07-20
 
 ### Fixed — State Persistence

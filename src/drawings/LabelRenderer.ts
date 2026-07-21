@@ -19,7 +19,14 @@ export class LabelRenderer implements DrawingRenderer {
     const y = anchor.y;
 
     ctx.font = '11px system-ui';
-    const text = d.text || '';
+    let text = d.text || '';
+
+    // Optionally prepend the formatted price at the anchor
+    if (d.data?.showPrice === true) {
+      const priceStr = chart.priceFormatter.formatPrice(d.price);
+      text = text ? `${priceStr} — ${text}` : priceStr;
+    }
+
     const tw = ctx.measureText(text).width;
     ctx.fillStyle = hexToRgba(d.color, 0.15, chart.options.layout.textColor);
     ctx.fillRect(x - tw / 2 - 4, y - 8, tw + 8, 16);
