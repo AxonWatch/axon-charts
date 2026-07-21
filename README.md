@@ -6,15 +6,15 @@
   <img src="html/assets/images/axon_charts.png" alt="Axon Charts" width="600">
 </p>
 
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.5.4-green.svg)](package.json) [![Bundle Size](https://img.shields.io/badge/bundle%20size-39.9%20KB-brightgreen.svg)](dist/chart.js)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE) [![Version](https://img.shields.io/badge/version-1.5.5-green.svg)](package.json) [![Bundle Size](https://img.shields.io/badge/bundle%20size-40.3%20KB-brightgreen.svg)](dist/chart.js)
 
 ## Overview
 
 Axon Charts is a minimal-dependency candlestick charting library for modern web applications and AI agents. Built with a focus on:
 
-- **Performance** -- ~3ms first render, ~0.002ms tick updates, 39.9KB gzipped
+- **Performance** -- ~3ms first render, ~0.002ms tick updates, 40.3KB gzipped
 - **AI-First** -- Native LLM integration with structured context export
-- **Lightweight** -- Only 39.9KB gzipped (zero external dependencies)
+- **Lightweight** -- Only 40.3KB gzipped (zero external dependencies)
 - **Customizable** -- 94 configuration options across 14 categories
 - **Type-Safe** -- Full TypeScript support with zero tsc errors
 
@@ -256,7 +256,7 @@ interface Bar {
 | Crosshair draw | ~0.02ms |
 | Large dataset render (5000 bars) | ~1.4ms |
 | Series type render (500 bars) | ~0.3ms |
-| Bundle (gzipped) | 39.9KB |
+| Bundle (gzipped) | 40.3KB |
 | Memory (5000 bars) | <0.1MB |
 
 ## Browser Support
