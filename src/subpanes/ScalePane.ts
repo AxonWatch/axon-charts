@@ -138,15 +138,19 @@ export abstract class ScalePane implements SubPane {
     ctx.stroke();
 
     // Indicator label at the top-left of the sub-pane
-    // e.g. "RSI(14)" or "MACD(12,26,9)" — uses the tooltip label
-    // (minus the trailing colon) for consistency.
+    // e.g. "RSI(14)  56.7" — uses the tooltip label (minus colon) +
+    // the current (latest) value for at-a-glance reading.
     if (options.show !== false && this.getTooltipLabel) {
       const labelText = this.getTooltipLabel().replace(/:$/, '');
+      const latest = this.getLatestValue(chart);
+      const displayText = (latest != null && !isNaN(latest))
+        ? `${labelText}  ${this.formatValue(latest)}`
+        : labelText;
       ctx.font = `${chart.options.layout.fontSize ?? 12}px ${chart.options.layout.fontFamily ?? 'system-ui'}`;
       ctx.fillStyle = chart.options.layout.textColor ?? '#aaa';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillText(labelText, 8, subPaneTop + 2);
+      ctx.fillText(displayText, 8, subPaneTop + 2);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';
     }
@@ -287,17 +291,19 @@ export abstract class ScalePane implements SubPane {
     const color = this.getTooltipColor(bar);
     const label = this.getTooltipLabel();
     const rawValue = this.getTooltipValue(bar);
-    const value = rawValue != null ? this.formatValue(rawValue) : '0';
+    const value = rawValue != null ? this.formatValue(rawValue) : '—';
+    const text = `${label} ${value}`;
 
     ctx.font = chart.options.layout.fontSize + 'px ' + chart.options.layout.fontFamily;
     ctx.textBaseline = 'top';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
 
+    // Draw on the right side of the sub-pane (near the axis) to avoid
+    // overlapping the indicator name label on the left
+    const x = chart.state.w - chart.state.axisWidth - 8;
     ctx.fillStyle = chart.options.layout.textColor || '#aaa';
-    ctx.fillText(label, 10, tooltipY);
-    const labelWidth = ctx.measureText(label).width;
-    ctx.fillStyle = color;
-    ctx.fillText(value, 10 + labelWidth + 5, tooltipY);
+    ctx.fillText(text, x, tooltipY);
+    ctx.textAlign = 'left';
   }
 
   renderAxisLabel(ctx: CanvasRenderingContext2D, chart: IChart, barIndex: number, mouseY: number, subPaneTop: number, axisX: number): void {

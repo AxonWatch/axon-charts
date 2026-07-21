@@ -13,6 +13,7 @@ import { HollowRenderer } from '../series/HollowRenderer.js';
 import { hexToRgba } from '../utils/style.js';
 import { getDrawingRenderer } from '../drawings/registry.js';
 import type { Overlay } from '../overlays/Overlay.js';
+import { getOverlayTypeName } from '../overlays/registry.js';
 
 /**
  * Handles all canvas rendering logic for candles, grid, and UI elements
@@ -311,8 +312,8 @@ export class Renderer {
         if (overlay.getOptions()?.show === false) continue;
         const values = overlay.compute(this.chart);
         overlay.render(ctx, this.chart, values);
-        // Collect label for the post-render label bar
-        const label = this.getOverlayLabel(overlay);
+        // Collect label + current value for the post-render label bar
+        const label = this.getOverlayLabel(overlay, values);
         if (label) visibleOverlays.push(label);
       }
     }
@@ -338,18 +339,38 @@ export class Renderer {
   }
 
   /**
-   * Build a short label for an overlay, e.g. "SMA(20)" or "EMA(12)".
-   * Uses the overlay's constructor name + key option (period).
+   * Build a label for an overlay using its registry type name (not
+   * constructor.name, which gets minified to e.g. 'V4' in production
+   * builds). Includes the current (latest) value when available.
+   *
+   * Examples: "SMA(20)  42,150.5"  "BB(20,2)  42,155.0"  "VWAP  42,148.2"
    */
-  private getOverlayLabel(overlay: Overlay): string {
-    const name = overlay.constructor.name
-      .replace('Overlay', '')
-      .replace('BollingerBands', 'BB')
-      .replace('IchimokuCloud', 'Ichimoku')
-      .toUpperCase();
+  private getOverlayLabel(overlay: Overlay, values: number[] | null): string {
+    // Look up the registered type name (e.g. 'sma', 'ema', 'bb')
+    const typeName = getOverlayTypeName(overlay.constructor);
+    const name = (typeName ?? 'overlay').toUpperCase();
     const opts = overlay.getOptions() as any;
-    if (opts.period != null) return `${name}(${opts.period})`;
-    return name;
+
+    // Build the param suffix
+    let label: string;
+    if (name === 'BB') {
+      label = `BB(${opts.period ?? 20}, ${opts.numStdDev ?? 2})`;
+    } else if (name === 'ICHIMOKU') {
+      label = 'Ichimoku';
+    } else if (opts.period != null) {
+      label = `${name}(${opts.period})`;
+    } else {
+      label = name;
+    }
+
+    // Append the current value if available
+    if (values && values.length > 0) {
+      const latest = values[values.length - 1];
+      if (latest != null && !isNaN(latest)) {
+        label += `  ${this.chart.priceFormatter.formatPrice(latest)}`;
+      }
+    }
+    return label;
   }
 
   private drawCurrentPriceLine(ctx: CanvasRenderingContext2D): void {

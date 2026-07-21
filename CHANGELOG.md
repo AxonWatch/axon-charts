@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.6] - 2026-07-20
+
+### Fixed
+- **Overlay labels showed minified class names** (e.g. `V4(14)`, `U4(50)`) instead of proper indicator names — `constructor.name` gets renamed by esbuild's minifier in production builds. Now uses the overlay registry's type name (`'sma'`, `'ema'`, `'bb'`, `'vwap'`, `'ichimoku'`) which is stable across minification. Labels now correctly show `SMA(20)`, `EMA(12)`, `BB(20,2)`, `VWAP`, `Ichimoku`.
+- **Sub-pane crosshair tooltips all stacked on the first sub-pane** — all active sub-pane tooltips (RSI, Stoch, etc.) were drawn at the top of the first sub-pane, overlapping each other. Now each tooltip is drawn inside its own sub-pane, right-aligned (near the axis), so the indicator name label (left) and the hover-value tooltip (right) don't overlap.
+
+### Changed
+- **Overlay labels now show the current value** — e.g. `SMA(20)  42,150.5` instead of just `SMA(20)`. The latest computed value is appended using `priceFormatter.formatPrice`.
+- **Sub-pane labels now show the current value** — e.g. `RSI(14)  56.7` instead of just `RSI(14)`. The latest indicator value is appended using the pane's `formatValue` method.
+- **Sub-pane tooltips moved to the right side** of each sub-pane (right-aligned, near the axis) to avoid overlapping the indicator name label on the left. Shows the value at the hovered bar: `RSI(14): 54.1`.
+- Bundle: 41226 → 41313 bytes gzipped (+87 bytes).
+
 ## [1.5.5] - 2026-07-20
 
 ### Fixed
