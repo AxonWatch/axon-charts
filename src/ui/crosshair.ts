@@ -210,16 +210,17 @@ export class Crosshair {
       }
     }
 
-    // 5. Draw sub-pane tooltips (volume, etc.)
+    // 5. Draw sub-pane tooltips (volume, RSI, etc.)
+    // Each tooltip is drawn inside its own sub-pane (at the top-left
+    // of that pane), NOT stacked on the first sub-pane.
     if (this.chart.options.crosshair.showTooltip) {
       let currentTop = this.chart.state.chartBottom;
-      let tooltipY = this.chart.state.chartBottom + LAYOUT.TOOLTIP_MARGIN_Y;
 
       for (const pane of this.chart.getActiveSubPanes()) {
         const bar = data[barIndex];
         if (bar) {
-          pane.renderTooltip(this.overlayCtx, this.chart, bar, currentTop, tooltipY);
-          tooltipY += 15;
+          // Draw the tooltip at the top of THIS sub-pane, offset slightly
+          pane.renderTooltip(this.overlayCtx, this.chart, bar, currentTop, currentTop + 2);
         }
         currentTop += pane.computeHeight(this.chart.state, pane.getOptions());
       }
