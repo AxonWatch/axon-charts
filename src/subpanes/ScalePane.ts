@@ -164,14 +164,16 @@ export abstract class ScalePane implements SubPane {
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
 
-      // Draw label part in text color
+      // Draw label part in text color (offset 4px from the separator
+      // line for visual breathing room — same gap the chart's tooltip
+      // uses via TOOLTIP_MARGIN_Y)
       ctx.fillStyle = chart.options.layout.textColor ?? '#aaa';
-      ctx.fillText(`${labelText}:`, 8, subPaneTop + 2);
+      ctx.fillText(`${labelText}:`, 8, subPaneTop + 4);
       const labelWidth = ctx.measureText(`${labelText}:`).width;
 
       // Draw value part in indicator color
       ctx.fillStyle = valueColor;
-      ctx.fillText(displayValue, 8 + labelWidth + 4, subPaneTop + 2);
+      ctx.fillText(displayValue, 8 + labelWidth + 4, subPaneTop + 4);
 
       ctx.textAlign = 'left';
       ctx.textBaseline = 'alphabetic';

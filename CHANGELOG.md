@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.8] - 2026-07-20
+
+### Fixed
+- **Separator drag resized the wrong sub-pane** — when multiple sub-panes were stacked (e.g. RSI + Stochastic + Volume), dragging any separator always resized the FIRST sub-pane, not the one whose separator was grabbed. Root cause: `handleMouseDown` found which separator was hit but didn't store which pane it belonged to; `handleMouseMove` always used `getActiveSubPanes()[0]`. Fix: store the pane in `this.activePane` during mousedown (same field used for sub-pane axis drag), and use it in mousemove.
+- **Sub-pane label too close to the separator line** — labels were drawn at `subPaneTop + 2` (2px below the line). Now drawn at `subPaneTop + 4` for visual breathing room, matching the chart's tooltip margin convention.
+
+### Changed
+- **Distinct default colors for all 5 gray indicators** — RSI, Williams %R, CCI, MFI, and ATR all defaulted to `#9ca3af` (light gray), making them indistinguishable. Now each has a distinct default:
+  - RSI: `#a855f7` (purple)
+  - Williams %R: `#ec4899` (pink)
+  - CCI: `#06b6d4` (cyan)
+  - MFI: `#f97316` (orange)
+  - ATR: `#14b8a6` (teal)
+  
+  Colors are configurable via `chart.setOptions({ rsi: { color: '#ff0000' } })` or `chart.setIndicatorOptions('rsi', { color: '#ff0000' })` — the `color` option was already available but defaulted to gray.
+- Bundle: 41515 → 41566 bytes gzipped (+51 bytes).
+
 ## [1.5.7] - 2026-07-20
 
 ### Fixed

@@ -24,7 +24,7 @@ export class ATRSubPane extends ScalePane {
     firstVisibleIdx: number, endIdx: number, visibleMin: number, visibleRange: number, areaHeight: number, areaTop: number): void {
     const values = this.paneState.computedValues;
     if (!values) return;
-    ctx.strokeStyle = this.getOptions().color ?? '#9ca3af';
+    ctx.strokeStyle = this.getOptions().color ?? '#14b8a6';
     ctx.lineWidth = 1.5; ctx.beginPath();
     let started = false;
     for (let i = firstVisibleIdx; i < endIdx; i++) {
@@ -57,7 +57,7 @@ export class ATRSubPane extends ScalePane {
     return (maxVal > 0 ? maxVal : 1) / this.paneState.scale;
   }
   getMinVisible(_chart: IChart): number { return 0; }
-  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#9ca3af'; }
+  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#14b8a6'; }
   getTooltipLabel(): string { return `ATR(${this.getOptions().period ?? 14}):`; }
   getTooltipValue(bar: Bar): number | null {
     const values = this.paneState.computedValues;

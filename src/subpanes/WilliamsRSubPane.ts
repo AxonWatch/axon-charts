@@ -36,7 +36,7 @@ export class WilliamsRSubPane extends ScalePane {
       }
       ctx.globalAlpha = 1; ctx.setLineDash([]);
     }
-    ctx.strokeStyle = opts.color ?? '#9ca3af'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.strokeStyle = opts.color ?? '#ec4899'; ctx.lineWidth = 1.5; ctx.beginPath();
     let started = false;
     for (let i = firstVisibleIdx; i < endIdx; i++) {
       const v = values[i]; if (v == null || isNaN(v)) continue;
@@ -56,7 +56,7 @@ export class WilliamsRSubPane extends ScalePane {
   }
   getMaxVisible(_chart: IChart): number { return 0; }
   getMinVisible(_chart: IChart): number { return -100; }
-  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#9ca3af'; }
+  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#ec4899'; }
   getTooltipLabel(): string { return `Williams%R(${this.getOptions().period ?? 14}):`; }
   getTooltipValue(bar: Bar): number | null {
     const values = this.paneState.computedValues;

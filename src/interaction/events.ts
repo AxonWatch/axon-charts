@@ -508,6 +508,10 @@ export class EventManager {
       for (const pane of this.chart.getActiveSubPanes()) {
         if (Math.abs(mouseY - currentSepTop) < SEPARATOR_DRAG_THRESHOLD) {
           this.dragMode = 'separator';
+          // Store WHICH pane this separator belongs to — the pane
+          // BELOW the separator line (the one whose top edge = currentSepTop).
+          // Without this, the drag handler always resizes the first pane.
+          this.activePane = pane;
           foundSeparator = true;
           break;
         }
@@ -668,11 +672,13 @@ export class EventManager {
       const deltaY = mouseY - this.lastMouseY;
       this.activePane.handleDrag(this.chart, deltaY);
     } else if (this.dragMode === 'separator') {
-      // Dragging separator resizes the first active sub-pane
+      // Dragging separator resizes the pane whose separator was grabbed
+      // (stored in this.activePane during mousedown). Previously this
+      // always resized getActiveSubPanes()[0] — the first pane — which
+      // made it impossible to resize any other pane.
       const deltaY = mouseY - this.lastMouseY;
-      const firstPane = this.chart.getActiveSubPanes()[0];
-      if (firstPane) {
-        firstPane.handleSeparatorDrag(this.chart, deltaY, this.chart.state.h);
+      if (this.activePane) {
+        this.activePane.handleSeparatorDrag(this.chart, deltaY, this.chart.state.h);
       }
     } else if (this.dragMode === 'time') {
       // Guard: Check if drag-to-zoom is disabled

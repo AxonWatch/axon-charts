@@ -43,7 +43,7 @@ export class CCISubPane extends ScalePane {
       ctx.globalAlpha = 1; ctx.setLineDash([]);
     }
     // CCI line
-    ctx.strokeStyle = opts.color ?? '#9ca3af'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.strokeStyle = opts.color ?? '#06b6d4'; ctx.lineWidth = 1.5; ctx.beginPath();
     let started = false;
     for (let i = firstVisibleIdx; i < endIdx; i++) {
       const v = values[i]; if (v == null || isNaN(v)) continue;
@@ -76,7 +76,7 @@ export class CCISubPane extends ScalePane {
     return (maxAbs > 0 ? maxAbs : 200) / this.paneState.scale;
   }
   getMinVisible(chart: IChart): number { return -this.getMaxVisible(chart); }
-  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#9ca3af'; }
+  getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#06b6d4'; }
   getTooltipLabel(): string { return `CCI(${this.getOptions().period ?? 20}):`; }
   getTooltipValue(bar: Bar): number | null {
     const values = this.paneState.computedValues;
