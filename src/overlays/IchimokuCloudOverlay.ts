@@ -125,40 +125,37 @@ export class IchimokuCloudOverlay implements Overlay {
     const barsVisible = Math.ceil(chartAreaWidth / barWidth) + 2;
     const endIdx = Math.min(firstVisible + barsVisible, this.tenkan.length);
 
-    // Draw the cloud (Kumo) — filled region between Senkou A and B
+    // Draw the cloud (Kumo) — filled region between Senkou A and B.
+    // Segment at every A/B crossover ("Kumo twist") so each contiguous
+    // region is colored independently: green (A >= B) or red (A < B).
     if (opts.showCloud !== false) {
       const opacity = opts.cloudOpacity ?? 0.15;
-      ctx.beginPath();
-      let started = false;
-      // Span A forward
-      for (let i = firstVisible; i < endIdx; i++) {
-        const v = this.senkouA[i];
-        if (v == null || isNaN(v)) continue;
-        const x = indexToX(i, chart.state);
-        const y = priceToY(v, chart.state);
-        if (!started) { ctx.moveTo(x, y); started = true; }
-        else { ctx.lineTo(x, y); }
+      const greenColor = opts.spanAColor ?? '#10B981';
+      const redColor = opts.spanBColor ?? '#E11D48';
+
+      let segStart = -1;
+      let segBullish = false;
+
+      for (let i = firstVisible; i <= endIdx; i++) {
+        let hasData = false;
+        let bullish = false;
+        if (i < endIdx) {
+          const a = this.senkouA[i];
+          const b = this.senkouB[i];
+          if (!isNaN(a) && !isNaN(b)) {
+            hasData = true;
+            bullish = a >= b;
+          }
+        }
+        // Flush the current segment on crossover, gap, or end-of-range
+        if (!hasData || bullish !== segBullish) {
+          if (segStart >= 0 && i > segStart) {
+            this.fillCloudSegment(ctx, chart, segStart, i, segBullish ? greenColor : redColor, opacity);
+          }
+          segStart = hasData ? i : -1;
+          segBullish = bullish;
+        }
       }
-      // Span B backward
-      for (let i = endIdx - 1; i >= firstVisible; i--) {
-        const v = this.senkouB[i];
-        if (v == null || isNaN(v)) continue;
-        const x = indexToX(i, chart.state);
-        const y = priceToY(v, chart.state);
-        ctx.lineTo(x, y);
-      }
-      ctx.closePath();
-      // Cloud color: green when A > B, red when A < B
-      // We use a simple heuristic: check the midpoint of the visible range
-      const midIdx = Math.floor((firstVisible + endIdx) / 2);
-      const aMid = this.senkouA[midIdx];
-      const bMid = this.senkouB[midIdx];
-      const cloudBullish = !isNaN(aMid) && !isNaN(bMid) && aMid >= bMid;
-      ctx.fillStyle = this.hexToRgba(
-        cloudBullish ? (opts.spanAColor ?? '#10B981') : (opts.spanBColor ?? '#E11D48'),
-        opacity
-      );
-      ctx.fill();
     }
 
     // Draw the lines
@@ -199,6 +196,40 @@ export class IchimokuCloudOverlay implements Overlay {
       else { ctx.lineTo(x, y); }
     }
     ctx.stroke();
+  }
+
+  /**
+   * Fill a single contiguous cloud segment [startIdx, endIdx) between
+   * Senkou A (forward) and Senkou B (backward) with the given color.
+   */
+  private fillCloudSegment(
+    ctx: CanvasRenderingContext2D,
+    chart: IChart,
+    startIdx: number,
+    endIdx: number,
+    color: string,
+    opacity: number
+  ): void {
+    ctx.beginPath();
+    let started = false;
+    for (let i = startIdx; i < endIdx; i++) {
+      const v = this.senkouA[i];
+      if (v == null || isNaN(v)) continue;
+      const x = indexToX(i, chart.state);
+      const y = priceToY(v, chart.state);
+      if (!started) { ctx.moveTo(x, y); started = true; }
+      else { ctx.lineTo(x, y); }
+    }
+    for (let i = endIdx - 1; i >= startIdx; i--) {
+      const v = this.senkouB[i];
+      if (v == null || isNaN(v)) continue;
+      const x = indexToX(i, chart.state);
+      const y = priceToY(v, chart.state);
+      ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = this.hexToRgba(color, opacity);
+    ctx.fill();
   }
 
   private hexToRgba(hex: string, alpha: number): string {
