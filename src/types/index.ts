@@ -297,6 +297,31 @@ export interface ChartOptions {
     showThreshold?: boolean;  // default: true
   };
 
+  // === OBV Sub-Pane ===
+  obv?: {
+    show?: boolean;
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#eab308'
+  };
+
+  // === ROC Sub-Pane ===
+  roc?: {
+    show?: boolean;
+    period?: number;          // default: 12
+    heightPercent?: number;   // default: 0.15
+    color?: string;           // default: '#8b5cf6'
+  };
+
+  // === Awesome Oscillator Sub-Pane ===
+  awesomeOscillator?: {
+    show?: boolean;
+    fastPeriod?: number;      // default: 5
+    slowPeriod?: number;      // default: 34
+    heightPercent?: number;   // default: 0.15
+    histogramUpColor?: string;   // default: '#10B981'
+    histogramDownColor?: string; // default: '#E11D48'
+  };
+
   // === Attribution Logo ===
   attribution?: {
     /** Show the Axon.Watch attribution logo at bottom-left. Default: true */
