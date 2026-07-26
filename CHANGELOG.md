@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.0] - 2026-07-26
+
+### Added — Indicator math utilities
+- **6 new indicator math functions** exported from `utils/indicators.ts` (as `Indicators` namespace): `obv()`, `roc()`, `awesomeOscillator()`, `donchian()`, `superTrend()`, `parabolicSAR()`. All are pure functions taking `Bar[]` and returning aligned `number[]` (or multi-component objects for `donchian`, `superTrend`, `parabolicSAR`). These are the computation backbone for the new indicator classes below.
+
 ## [1.5.9] - 2026-07-26
 
 ### Fixed
