@@ -28,6 +28,9 @@ All 3 integrate via the standard `ScalePane` pattern: options in `ChartOptions`,
 - Updated `docs/SETTINGS.md` with OBV, ROC, and Awesome Oscillator option tables.
 - Updated `docs/API.md` overlay table with 4 new overlay classes.
 
+### Fixed
+- **`setOptions()` now triggers a re-render for indicator sub-panes** — previously, calling `chart.setOptions({ rsi: { show: true } })` (or any indicator: MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX, OBV, ROC, Awesome Oscillator) updated the option value but did NOT call `render()`, so the indicator didn't appear until the next independent render (pan, zoom, data tick). The right-click context menu toggles were affected. Only Volume had an explicit render handler. Now all 11 indicator sub-panes trigger `needsRender` + buffer recreation (when `show` changes) via a unified handler. `setIndicatorOptions()` was already unaffected (it calls `render()` directly).
+
 ## [1.5.9] - 2026-07-26
 
 ### Fixed
