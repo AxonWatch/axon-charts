@@ -1,5 +1,6 @@
 import type { IChart } from '../types/index.js';
 import { priceToY, indexToX, deriveVisibleStartIdx } from '../utils/projection.js';
+import { PriceFormatter } from '../utils/formatter.js';
 import { LineOverlay } from './LineOverlay.js';
 
 /**
@@ -44,22 +45,23 @@ export class VWAPOverlay extends LineOverlay {
 
     let cumPV = 0;  // cumulative price * volume
     let cumVol = 0; // cumulative volume
-    let lastDay: number | null = null;
+    let lastBarTime: number | null = null;
+    const tz = resetDaily ? chart.options.timeScale?.timezone : undefined;
 
     for (let i = 0; i < data.length; i++) {
       const bar = data[i];
       const vol = bar.volume ?? 0;
       const tp = (bar.high + bar.low + bar.close) / 3;  // typical price
 
-      // Reset at the start of a new calendar day
-      if (resetDaily) {
-        const day = Math.floor(bar.time / 86400000);  // ms per day
-        if (lastDay != null && day !== lastDay) {
-          cumPV = 0;
-          cumVol = 0;
-        }
-        lastDay = day;
+      // Reset at the start of a new calendar day, determined by the
+      // chart's configured timezone (timeScale.timezone). When no
+      // timezone is set, isDifferentDay falls back to browser-local.
+      if (resetDaily && lastBarTime != null &&
+          PriceFormatter.isDifferentDay(lastBarTime, bar.time, tz)) {
+        cumPV = 0;
+        cumVol = 0;
       }
+      lastBarTime = bar.time;
 
       cumPV += tp * vol;
       cumVol += vol;
