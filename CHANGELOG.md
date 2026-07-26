@@ -15,6 +15,13 @@ All notable changes to this project will be documented in this file.
 
 All 4 self-register in the overlay registry (type strings: `'wma'`, `'donchian'`, `'supertrend'`, `'psar'`) for `saveState()`/`loadState()` round-trip. Total overlay count: 5 → 9.
 
+### Added — Sub-pane indicators (3 new)
+- **OBV** (On-Balance Volume) — cumulative volume line (adds on up-close, subtracts on down-close). Auto-scaled, no fixed levels. `chart.setOptions({ obv: { show: true } })`. Default color `#eab308` (gold). Right-click menu toggle included.
+- **ROC** (Rate of Change) — percentage price change vs N bars ago, oscillator centered on zero with reference line. `chart.setOptions({ roc: { show: true, period: 12 } })`. Default color `#8b5cf6` (violet). Right-click menu toggle included.
+- **Awesome Oscillator (AO)** — histogram of `SMA(median,5) − SMA(median,34)`, green/red bars around a zero line (MACD-like rendering). `chart.setOptions({ awesomeOscillator: { show: true } })`. Right-click menu toggle included.
+
+All 3 integrate via the standard `ScalePane` pattern: options in `ChartOptions`, defaults in `DEFAULT_OPTIONS`, initialized in the `Chart` constructor, toggled via right-click context menu. Total sub-pane indicator count: 8 → 11.
+
 ## [1.5.9] - 2026-07-26
 
 ### Fixed

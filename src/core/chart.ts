@@ -27,6 +27,9 @@ import { CCISubPane } from '../subpanes/CCISubPane.js';
 import { MFISubPane } from '../subpanes/MFISubPane.js';
 import { ATRSubPane } from '../subpanes/ATRSubPane.js';
 import { ADXSubPane } from '../subpanes/ADXSubPane.js';
+import { OBVSubPane } from '../subpanes/OBVSubPane.js';
+import { ROCSubPane } from '../subpanes/ROCSubPane.js';
+import { AwesomeOscillatorSubPane } from '../subpanes/AwesomeOscillatorSubPane.js';
 import { Attribution } from '../ui/Attribution.js';
 import type { SubPane } from '../subpanes/SubPane.js';
 
@@ -208,6 +211,25 @@ const DEFAULT_OPTIONS = {
     minusDiColor: '#E11D48',
     threshold: 25,
     showThreshold: true
+  },
+  obv: {
+    show: false,
+    heightPercent: 0.15,
+    color: '#eab308'
+  },
+  roc: {
+    show: false,
+    period: 12,
+    heightPercent: 0.15,
+    color: '#8b5cf6'
+  },
+  awesomeOscillator: {
+    show: false,
+    fastPeriod: 5,
+    slowPeriod: 34,
+    heightPercent: 0.15,
+    histogramUpColor: '#10B981',
+    histogramDownColor: '#E11D48'
   }
 };
 
@@ -256,6 +278,9 @@ export class Chart {
   public mfiSubPane!: MFISubPane;
   public atrSubPane!: ATRSubPane;
   public adxSubPane!: ADXSubPane;
+  public obvSubPane!: OBVSubPane;
+  public rocSubPane!: ROCSubPane;
+  public awesomeOscillatorSubPane!: AwesomeOscillatorSubPane;
 
   // Chart state
   public state: {
@@ -398,6 +423,13 @@ export class Chart {
     this.addSubPane(this.atrSubPane);
     this.adxSubPane = new ADXSubPane(this);
     this.addSubPane(this.adxSubPane);
+
+    this.obvSubPane = new OBVSubPane(this);
+    this.addSubPane(this.obvSubPane);
+    this.rocSubPane = new ROCSubPane(this);
+    this.addSubPane(this.rocSubPane);
+    this.awesomeOscillatorSubPane = new AwesomeOscillatorSubPane(this);
+    this.addSubPane(this.awesomeOscillatorSubPane);
 
     this.startCountdownTimer();
 

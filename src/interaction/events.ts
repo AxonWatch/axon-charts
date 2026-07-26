@@ -176,7 +176,7 @@ export class EventManager {
 
     // Smart positioning: stay within viewport bounds
     const menuWidth = 200;
-    const approxMenuHeight = Math.max(210, (opts.menu.items?.length || 11) * 30 + 40);
+    const approxMenuHeight = Math.max(210, (opts.menu.items?.length || 14) * 30 + 40);
     let leftPos = e.clientX;
     let topPos = e.clientY;
     const winW = window.innerWidth;
@@ -222,6 +222,9 @@ export class EventManager {
       mfi: ['toggle', 'MFI', opts.mfi?.show ?? false, { mfi: { show: !(opts.mfi?.show ?? false) } as any }],
       atr: ['toggle', 'ATR', opts.atr?.show ?? false, { atr: { show: !(opts.atr?.show ?? false) } as any }],
       adx: ['toggle', 'ADX', opts.adx?.show ?? false, { adx: { show: !(opts.adx?.show ?? false) } as any }],
+      obv: ['toggle', 'OBV', opts.obv?.show ?? false, { obv: { show: !(opts.obv?.show ?? false) } as any }],
+      roc: ['toggle', 'ROC', opts.roc?.show ?? false, { roc: { show: !(opts.roc?.show ?? false) } as any }],
+      awesomeOscillator: ['toggle', 'Awesome Osc', opts.awesomeOscillator?.show ?? false, { awesomeOscillator: { show: !(opts.awesomeOscillator?.show ?? false) } as any }],
       crosshair: ['toggle', 'Crosshair', (opts.crosshair.mode ?? 'magnet') !== 'none', { crosshair: { mode: (opts.crosshair.mode ?? 'magnet') !== 'none' ? 'none' : 'magnet' } }],
       market: ['toggle', 'Market Header', opts.market.show ?? false, { market: { show: !(opts.market.show ?? false) } }],
       watermark: ['toggle', 'Watermark', opts.watermark.show ?? false, { watermark: { show: !(opts.watermark.show ?? false) } }],
@@ -237,7 +240,7 @@ export class EventManager {
     // Determine order: use items list if set, otherwise default order
     const orderedIds = Array.isArray(items) && items.length > 0
       ? items
-      : ['copy', 'save', 'divider1', 'grid', 'volume', 'rsi', 'macd', 'stochastic', 'williamsR', 'cci', 'mfi', 'atr', 'adx', 'divider2', 'crosshair', 'market', 'watermark', 'divider3', 'fit-content', 'reset-price', 'reverse', 'divider4', 'fullscreen'];
+      : ['copy', 'save', 'divider1', 'grid', 'volume', 'rsi', 'macd', 'stochastic', 'williamsR', 'cci', 'mfi', 'atr', 'adx', 'obv', 'roc', 'awesomeOscillator', 'divider2', 'crosshair', 'market', 'watermark', 'divider3', 'fit-content', 'reset-price', 'reverse', 'divider4', 'fullscreen'];
 
     const makeToggle = (text: string, checked: boolean, partial: Partial<import('../types/index.js').ChartOptions>) => {
       const el = document.createElement('div');
