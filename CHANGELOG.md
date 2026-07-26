@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - **Ichimoku cloud color now respects A/B crossovers (Kumo twist)** — the entire visible cloud was tinted green or red based on a single midpoint sample of Senkou Span A vs. B, so the color toggled incorrectly when the spans crossed within the visible range. Now the cloud is segmented at every crossover: each contiguous region where A ≥ B is filled green (bullish) and each region where A < B is filled red (bearish), matching standard Ichimoku rendering.
+- **VWAP daily reset now respects the configured timezone** — the reset boundary was hardcoded to UTC midnight (`Math.floor(bar.time / 86400000)`), splitting non-UTC trading sessions mid-session (e.g. a US equity session resetting at 7–8 PM EST). Now uses `PriceFormatter.isDifferentDay()` with the chart's `timeScale.timezone`, so the reset lands on the same calendar-day boundary the axis labels display. DST-correct via cached `Intl.DateTimeFormat`. When no timezone is set, falls back to browser-local.
 
 ## [1.5.8] - 2026-07-20
 
