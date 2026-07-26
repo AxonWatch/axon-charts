@@ -402,3 +402,237 @@ export function adx(
   }
   return { adx, plusDI, minusDI };
 }
+
+/**
+ * On-Balance Volume (OBV).
+ * Cumulative volume that adds when close > prevClose, subtracts when
+ * close < prevClose, and stays unchanged when close === prevClose.
+ * @returns number[] aligned with bars; first value is 0
+ */
+export function obv(bars: Bar[]): number[] {
+  const result = new Array(bars.length).fill(NaN);
+  if (bars.length === 0) return result;
+  result[0] = 0;
+  for (let i = 1; i < bars.length; i++) {
+    const vol = bars[i].volume ?? 0;
+    if (bars[i].close > bars[i - 1].close) {
+      result[i] = result[i - 1] + vol;
+    } else if (bars[i].close < bars[i - 1].close) {
+      result[i] = result[i - 1] - vol;
+    } else {
+      result[i] = result[i - 1];
+    }
+  }
+  return result;
+}
+
+/**
+ * Rate of Change (ROC).
+ * ROC = (close[i] - close[i - period]) / close[i - period] * 100
+ * @param period  Lookback window (default 12)
+ * @returns number[] aligned with bars; NaN for indices < period
+ */
+export function roc(bars: Bar[], period: number = 12): number[] {
+  const result = new Array(bars.length).fill(NaN);
+  for (let i = period; i < bars.length; i++) {
+    const prev = bars[i - period].close;
+    if (prev !== 0) {
+      result[i] = ((bars[i].close - prev) / prev) * 100;
+    }
+  }
+  return result;
+}
+
+/**
+ * Awesome Oscillator (AO).
+ * AO = SMA(median, fastPeriod) - SMA(median, slowPeriod)
+ * where median = (high + low) / 2.
+ * @param fastPeriod  Default 5
+ * @param slowPeriod  Default 34
+ * @returns number[] aligned with bars; NaN where not yet defined
+ */
+export function awesomeOscillator(
+  bars: Bar[],
+  fastPeriod: number = 5,
+  slowPeriod: number = 34
+): number[] {
+  const median = bars.map(b => (b.high + b.low) / 2);
+  const fast = sma(median, fastPeriod);
+  const slow = sma(median, slowPeriod);
+  return bars.map((_, i) =>
+    isNaN(fast[i]) || isNaN(slow[i]) ? NaN : fast[i] - slow[i]
+  );
+}
+
+/**
+ * Donchian Channel.
+ * Upper = highest high over period; Lower = lowest low over period;
+ * Middle = (upper + lower) / 2.
+ * @param period  Lookback window (default 20)
+ * @returns { upper, middle, lower } — each aligned with bars; NaN for indices < period - 1
+ */
+export function donchian(
+  bars: Bar[],
+  period: number = 20
+): { upper: number[]; middle: number[]; lower: number[] } {
+  const len = bars.length;
+  const upper = new Array(len).fill(NaN);
+  const middle = new Array(len).fill(NaN);
+  const lower = new Array(len).fill(NaN);
+  for (let i = period - 1; i < len; i++) {
+    let highest = -Infinity, lowest = Infinity;
+    for (let j = 0; j < period; j++) {
+      const b = bars[i - j];
+      if (b.high > highest) highest = b.high;
+      if (b.low < lowest) lowest = b.low;
+    }
+    upper[i] = highest;
+    lower[i] = lowest;
+    middle[i] = (highest + lowest) / 2;
+  }
+  return { upper, middle, lower };
+}
+
+/**
+ * SuperTrend.
+ * ATR-based trend-following overlay. The line sits below price during
+ * an uptrend (bullish/green) and above price during a downtrend
+ * (bearish/red), flipping when price closes beyond the band.
+ *
+ * @param period      ATR lookback (default 10)
+ * @param multiplier  ATR multiplier for band width (default 3)
+ * @returns { values, direction } — values is the SuperTrend line;
+ *          direction is 1 (uptrend) or -1 (downtrend). NaN before ATR warmup.
+ */
+export function superTrend(
+  bars: Bar[],
+  period: number = 10,
+  multiplier: number = 3
+): { values: number[]; direction: number[] } {
+  const len = bars.length;
+  const values = new Array(len).fill(NaN);
+  const direction = new Array(len).fill(0);
+  const atrArr = atr(bars, period);
+
+  let prevFinalUpper = NaN;
+  let prevFinalLower = NaN;
+  let prevST = NaN;
+
+  for (let i = 0; i < len; i++) {
+    if (isNaN(atrArr[i])) continue;
+    const hl2 = (bars[i].high + bars[i].low) / 2;
+    const basicUpper = hl2 + multiplier * atrArr[i];
+    const basicLower = hl2 - multiplier * atrArr[i];
+
+    // Final upper band: only moves down (or resets up after being breached)
+    const finalUpper = (isNaN(prevFinalUpper) || basicUpper < prevFinalUpper || (i > 0 && bars[i - 1].close > prevFinalUpper))
+      ? basicUpper : prevFinalUpper;
+    // Final lower band: only moves up (or resets down after being breached)
+    const finalLower = (isNaN(prevFinalLower) || basicLower > prevFinalLower || (i > 0 && bars[i - 1].close < prevFinalLower))
+      ? basicLower : prevFinalLower;
+
+    if (isNaN(prevST)) {
+      // Seed: pick the band closer to the close
+      const isUp = bars[i].close >= hl2;
+      values[i] = isUp ? finalLower : finalUpper;
+      direction[i] = isUp ? 1 : -1;
+    } else if (prevST === prevFinalUpper) {
+      // Was downtrend (ST at upper band)
+      if (bars[i].close <= finalUpper) {
+        values[i] = finalUpper;
+        direction[i] = -1;
+      } else {
+        values[i] = finalLower;
+        direction[i] = 1;
+      }
+    } else {
+      // Was uptrend (ST at lower band)
+      if (bars[i].close >= finalLower) {
+        values[i] = finalLower;
+        direction[i] = 1;
+      } else {
+        values[i] = finalUpper;
+        direction[i] = -1;
+      }
+    }
+
+    prevFinalUpper = finalUpper;
+    prevFinalLower = finalLower;
+    prevST = values[i];
+  }
+
+  return { values, direction };
+}
+
+/**
+ * Parabolic SAR (Stop and Reverse).
+ * Places dots below price during an uptrend and above during a downtrend.
+ * The Acceleration Factor (AF) starts at `step` and increments by `step`
+ * on each new extreme, up to `maxStep`.
+ *
+ * @param step     AF increment (default 0.02)
+ * @param maxStep  AF cap (default 0.2)
+ * @returns { values, direction } — values is the SAR dot position;
+ *          direction is 1 (uptrend, dot below) or -1 (downtrend, dot above).
+ */
+export function parabolicSAR(
+  bars: Bar[],
+  step: number = 0.02,
+  maxStep: number = 0.2
+): { values: number[]; direction: number[] } {
+  const len = bars.length;
+  const values = new Array(len).fill(NaN);
+  const direction = new Array(len).fill(0);
+  if (len < 2) return { values, direction };
+
+  let trend = 1;
+  let af = step;
+  let ep = bars[0].high;
+  values[0] = bars[0].low;
+  direction[0] = 1;
+
+  for (let i = 1; i < len; i++) {
+    let sar = values[i - 1] + af * (ep - values[i - 1]);
+
+    if (trend === 1) {
+      // Cap SAR to no higher than the prior two bars' lows
+      sar = Math.min(sar, bars[i - 1].low);
+      if (i >= 2) sar = Math.min(sar, bars[i - 2].low);
+
+      if (bars[i].low < sar) {
+        // Reverse to downtrend
+        trend = -1;
+        sar = ep;
+        ep = bars[i].low;
+        af = step;
+      } else {
+        if (bars[i].high > ep) {
+          ep = bars[i].high;
+          af = Math.min(af + step, maxStep);
+        }
+      }
+    } else {
+      // Cap SAR to no lower than the prior two bars' highs
+      sar = Math.max(sar, bars[i - 1].high);
+      if (i >= 2) sar = Math.max(sar, bars[i - 2].high);
+
+      if (bars[i].high > sar) {
+        // Reverse to uptrend
+        trend = 1;
+        sar = ep;
+        ep = bars[i].high;
+        af = step;
+      } else {
+        if (bars[i].low < ep) {
+          ep = bars[i].low;
+          af = Math.min(af + step, maxStep);
+        }
+      }
+    }
+
+    values[i] = sar;
+    direction[i] = trend;
+  }
+
+  return { values, direction };
+}
