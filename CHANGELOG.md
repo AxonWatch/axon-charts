@@ -22,6 +22,12 @@ All 4 self-register in the overlay registry (type strings: `'wma'`, `'donchian'`
 
 All 3 integrate via the standard `ScalePane` pattern: options in `ChartOptions`, defaults in `DEFAULT_OPTIONS`, initialized in the `Chart` constructor, toggled via right-click context menu. Total sub-pane indicator count: 8 → 11.
 
+### Changed — Documentation
+- **Clarified `scrollToTime()` vs `scrollToLatest()` in API docs and JSDoc** — `scrollToTime(timestamp, 'right')` is now documented as a *geometric* right-align (bar flush at the edge, no `rightOffset` gap, auto-scroll unchanged). `scrollToLatest()` is documented as a *live-edge* operation (positions the last bar with the configured gap AND re-enables auto-scroll). The distinction was previously implicit and caused confusion.
+- Updated `README.md` indicator counts (11 sub-pane, 9 overlay, 19 math functions).
+- Updated `docs/SETTINGS.md` with OBV, ROC, and Awesome Oscillator option tables.
+- Updated `docs/API.md` overlay table with 4 new overlay classes.
+
 ## [1.5.9] - 2026-07-26
 
 ### Fixed

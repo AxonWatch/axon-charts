@@ -97,13 +97,21 @@ export class TimeScaleAPI {
   }
 
   /**
-   * Scroll to a specific timestamp
-   * @param timestamp - Target timestamp to scroll to
-   * @param position - Where to position the bar: 'left', 'center', 'right' (default: 'right')
-   * @throws Error if timestamp is not found
+   * Scroll to a specific timestamp.
    *
-   * Positions the bar with the given timestamp at the specified location.
-   * Default is 'right' which aligns with the standard behavior (latest bar at right edge).
+   * Positions the bar with the given timestamp at the specified screen
+   * location. This is a GEOMETRIC alignment — the target bar is placed
+   * at the chosen edge, NOT at the live-edge position with the configured
+   * `timeScale.rightOffset` gap.
+   *
+   * For live-edge behavior (last bar positioned with the rightOffset gap
+   * AND auto-scroll re-enabled), use `chart.scrollToLatest()` instead.
+   *
+   * @param timestamp - Target timestamp to scroll to
+   * @param position - Where to position the bar geometrically:
+   *   'left' (bar at x=0), 'center' (bar at chart center), or
+   *   'right' (bar flush at the right edge). Default: 'right'.
+   * @throws Error if timestamp is not found in data
    */
   scrollToTime(timestamp: number, position: 'left' | 'center' | 'right' = 'right'): void {
     const data = this.chart.dataManager.data;

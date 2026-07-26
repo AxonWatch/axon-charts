@@ -32,10 +32,10 @@ Axon Charts is a minimal-dependency candlestick charting library for modern web 
 - Percentage mode with 0% reference line and smart formatting
 
 ### Indicators
-- **8 sub-pane indicators**: RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX
-- **5 overlay indicators**: SMA, EMA, Bollinger Bands, VWAP, Ichimoku Cloud
+- **11 sub-pane indicators**: RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX, OBV, ROC, Awesome Oscillator
+- **9 overlay indicators**: SMA, EMA, WMA, Bollinger Bands, VWAP, Ichimoku Cloud, Donchian Channel, SuperTrend, Parabolic SAR
 - Overlay plugin system (`chart.addOverlay()`, `registerOverlayType()`)
-- 13 indicator math functions exported as `Indicators` namespace
+- 19 indicator math functions exported as `Indicators` namespace
 - On-chart indicator labels + right-click toggle menu
 - Runtime editing via `chart.setIndicatorOptions()`
 

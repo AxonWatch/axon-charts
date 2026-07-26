@@ -161,7 +161,9 @@ Returns a structured JSON object with current viewport state, visible bars, pric
 ```typescript
 chart.scrollToLatest(): void
 ```
-Snaps the viewport to show the latest candle at the right edge. Delegates to `eventManager.scrollToLatest()`.
+Snaps the viewport to show the latest candle at the right edge with the configured `timeScale.rightOffset` gap, using the current zoom level (barWidth is NOT recalculated). Also **re-enables auto-scroll** so the chart follows new bars as they arrive. Delegates to `eventManager.scrollToLatest()`.
+
+> **`scrollToLatest()` vs `scrollToTime()`:** `scrollToLatest()` is a *live-edge* operation — it positions the last bar with the trading gap AND re-engages auto-follow. `timeScale().scrollToTime(timestamp, 'right')` is a *geometric* operation — it places any bar flush at the right edge with no gap and does not change auto-scroll state. Use the former to return to live trading; use the latter for historical navigation.
 
 ```typescript
 chart.isAutoScrolling(): boolean
@@ -183,7 +185,7 @@ Execute a command for LLM-driven chart control. Supported command types:
 | Command | Parameters | Description |
 |---------|-----------|-------------|
 | `setVisibleRange` | `from: number, to: number` | Set visible time range |
-| `scrollToTime` | `time: number` | Scroll to a specific timestamp (right-aligned) |
+| `scrollToTime` | `time: number` | Scroll to a timestamp (geometric right-align, no gap) |
 | `zoomIn` | `factor?: number` (default: 1.5) | Zoom in on time scale |
 | `zoomOut` | `factor?: number` (default: 1.5) | Zoom out on time scale |
 | `fitContent` | *(none)* | Fit all data in view |
@@ -763,7 +765,7 @@ chart.registerOverlayType(type: string, ctor: new (opts?: any) => Overlay): void
 ```
 Manage overlay indicators drawn on the main chart on top of candles, sharing the main chart's price scale. Overlays are re-rendered every frame, including on `updateLastBarFast()` ticks.
 
-`registerOverlayType()` allows external code to register custom overlay types for serialization. Built-in overlays (SMA, EMA, BB, VWAP, Ichimoku) self-register at module load.
+`registerOverlayType()` allows external code to register custom overlay types for serialization. Built-in overlays (SMA, EMA, WMA, BB, VWAP, Ichimoku, Donchian, SuperTrend, Parabolic SAR) self-register at module load.
 
 **Built-in overlay classes** (all exported from the package):
 
@@ -771,9 +773,13 @@ Manage overlay indicators drawn on the main chart on top of candles, sharing the
 |-------|------|-------------|
 | `SMAOverlay` | `'sma'` | Simple Moving Average line |
 | `EMAOverlay` | `'ema'` | Exponential Moving Average line |
+| `WMAOverlay` | `'wma'` | Weighted (linear) Moving Average line |
 | `BollingerBandsOverlay` | `'bb'` | 3 lines + filled band region |
 | `VWAPOverlay` | `'vwap'` | Volume Weighted Average Price (daily reset) |
 | `IchimokuCloudOverlay` | `'ichimoku'` | 5 components + filled cloud (Kumo) |
+| `DonchianChannelOverlay` | `'donchian'` | Highest-high / lowest-low channel (3 lines) |
+| `SuperTrendOverlay` | `'supertrend'` | ATR-based trend line (green/red flip) |
+| `ParabolicSAROverlay` | `'psar'` | Stop and Reverse dots above/below price |
 
 **Example — adding overlays:**
 
@@ -996,10 +1002,12 @@ chart.timeScale().zoomOut(factor?: number, x?: number): void
 ```typescript
 chart.timeScale().scrollToTime(timestamp: number, position?: 'left' | 'center' | 'right'): void
 ```
-- `'right'` (default): Places bar at right edge
+- `'right'` (default): Places bar flush at the right edge (geometric align — no `rightOffset` gap)
 - `'center'`: Centers the bar in viewport
 - `'left'`: Places bar at left edge
 - Throws if timestamp not found in data.
+
+> **Note:** `scrollToTime` is a geometric positioning call. To position the latest bar at the live edge WITH the configured gap and auto-scroll, use `chart.scrollToLatest()` instead.
 
 #### Coordinate Mapping
 

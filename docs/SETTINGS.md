@@ -174,6 +174,40 @@ Complete configuration reference for all chart options. All options are optional
 
 ---
 
+## OBV (3 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the On-Balance Volume sub-pane. |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#eab308'` | OBV line color (gold). |
+
+---
+
+## ROC (4 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Rate of Change sub-pane. |
+| `period` | `number` | `12` | Lookback period in bars. |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#8b5cf6'` | ROC line color (violet). |
+
+---
+
+## Awesome Oscillator (6 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Awesome Oscillator sub-pane. |
+| `fastPeriod` | `number` | `5` | Fast SMA period (median price). |
+| `slowPeriod` | `number` | `34` | Slow SMA period (median price). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `histogramUpColor` | `string` | `'#10B981'` | Positive histogram bar color. |
+| `histogramDownColor` | `string` | `'#E11D48'` | Negative histogram bar color. |
+
+---
+
 ## Menu (2 options)
 
 | Option | Type | Default | Description |

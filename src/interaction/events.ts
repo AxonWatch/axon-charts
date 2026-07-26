@@ -860,6 +860,19 @@ export class EventManager {
     return this.autoScrollEnabled;
   }
 
+  /**
+   * Scroll to the latest bar (live edge).
+   *
+   * Positions the last bar at the right edge of the chart with the
+   * configured `timeScale.rightOffset` gap, using the current zoom level
+   * (barWidth is NOT recalculated). Also RE-ENABLES auto-scroll so the
+   * chart follows new bars as they arrive.
+   *
+   * To view the latest bar WITHOUT enabling auto-follow, use
+   * `timeScale().scrollToTime(lastBar.time, 'right')` for pure geometric
+   * positioning, or disable auto-scroll afterwards via
+   * `setOptions({ behavior: { autoScroll: false } })`.
+   */
   public scrollToLatest(): void {
     const { w, barWidth, rightGap, axisWidth } = this.chart.state;
     if (this.chart.dataManager.length === 0) return;
