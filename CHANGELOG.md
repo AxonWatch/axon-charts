@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - **Eliminated O(n) `indexOf` in sub-pane tooltip lookups** — all 8 indicator sub-panes used `data.indexOf(bar)` inside `getTooltipValue` to find the bar's index, called on every crosshair move and every render via `getHoveredValue`. At 5000 bars across 8 panes this was up to ~2.4M array comparisons/sec. `getTooltipValue` now accepts an optional `barIndex` parameter; the two active call sites (`getHoveredValue` and `detectPrecisionFromData`) already had the index and now pass it directly, skipping the linear scan entirely.
 - **Ichimoku leading cloud (Senkou Span A/B) now projects into the right gap** — forward-shifted Span A/B values were dropped when `shiftedIdx >= data.length`, truncating the leading cloud (Kumo) at the last bar and removing one of the indicator's core features (future support/resistance projection). Now the senkou arrays are sized to `data.length + displacement` so forward-shifted values survive, and the cloud + span lines render into the reserved right-gap space (`timeScale.rightOffset`). For the full 26-bar default projection, set `rightOffset` to at least `displacement × barSpacing` (default: 286px). No axis-engine changes — the existing `indexToX` math already maps future indices into the gap.
 
+### Changed
+- Bundle: 41566 → 41712 bytes gzipped (+146 bytes).
+
 ## [1.5.8] - 2026-07-20
 
 ### Fixed
