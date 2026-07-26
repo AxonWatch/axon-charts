@@ -89,7 +89,7 @@ export class VolumeSubPane extends ScalePane {
     return isUp ? (options.upColor || '#10B981') : (options.downColor || '#E11D48');
   }
 
-  getTooltipValue(bar: Bar): number | null {
+  getTooltipValue(bar: Bar, _barIndex?: number): number | null {
     return bar.volume ?? null;
   }
 

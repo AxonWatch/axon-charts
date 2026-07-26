@@ -78,10 +78,10 @@ export class CCISubPane extends ScalePane {
   getMinVisible(chart: IChart): number { return -this.getMaxVisible(chart); }
   getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#06b6d4'; }
   getTooltipLabel(): string { return `CCI(${this.getOptions().period ?? 20}):`; }
-  getTooltipValue(bar: Bar): number | null {
+  getTooltipValue(bar: Bar, barIndex?: number): number | null {
     const values = this.paneState.computedValues;
     if (!values) return null;
-    const idx = this.chart.state.data.indexOf(bar);
+    const idx = barIndex ?? this.chart.state.data.indexOf(bar);
     if (idx < 0) return null;
     const v = values[idx];
     return (v != null && !isNaN(v)) ? v : null;

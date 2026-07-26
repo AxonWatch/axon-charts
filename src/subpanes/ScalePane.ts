@@ -97,8 +97,10 @@ export abstract class ScalePane implements SubPane {
   abstract getTooltipColor(bar: Bar): string;
   /** Tooltip label prefix (e.g. "Volume:" or "RSI:") */
   abstract getTooltipLabel(): string;
-  /** Value to display in tooltip (e.g. bar.volume or computed RSI) */
-  abstract getTooltipValue(bar: Bar): number | null;
+  /** Value to display in tooltip (e.g. bar.volume or computed RSI).
+   *  When the caller already knows the bar index, pass it to avoid an
+   *  O(n) indexOf lookup on every crosshair move. */
+  abstract getTooltipValue(bar: Bar, barIndex?: number): number | null;
 
   // ── Shared implementations ─────────────────────────────────
 
@@ -396,7 +398,7 @@ export abstract class ScalePane implements SubPane {
     const sampleSize = Math.min(100, data.length);
     for (let i = 0; i < sampleSize; i++) {
       const bar = data[i];
-      const val = this.getValueAtBar(bar);
+      const val = this.getValueAtBar(bar, i);
       if (val != null) {
         const str = val.toString();
         const idx = str.indexOf('.');
@@ -410,8 +412,8 @@ export abstract class ScalePane implements SubPane {
    * Extract the pane's value from a bar.
    * Override if the value isn't bar.volume (e.g. RSI computes from bar).
    */
-  protected getValueAtBar(bar: Bar): number | undefined {
-    return this.getTooltipValue(bar) ?? undefined;
+  protected getValueAtBar(bar: Bar, barIndex?: number): number | undefined {
+    return this.getTooltipValue(bar, barIndex) ?? undefined;
   }
 
   /**
@@ -429,7 +431,7 @@ export abstract class ScalePane implements SubPane {
       if (barIndex < 0 || barIndex >= chart.state.data.length) return null;
       const bar = chart.state.data[barIndex];
       if (!bar) return null;
-      const value = this.getTooltipValue(bar);
+      const value = this.getTooltipValue(bar, barIndex);
       if (value == null || isNaN(value)) return null;
       return { value, color: this.getTooltipColor(bar) };
     } catch {

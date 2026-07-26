@@ -59,10 +59,10 @@ export class ATRSubPane extends ScalePane {
   getMinVisible(_chart: IChart): number { return 0; }
   getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#14b8a6'; }
   getTooltipLabel(): string { return `ATR(${this.getOptions().period ?? 14}):`; }
-  getTooltipValue(bar: Bar): number | null {
+  getTooltipValue(bar: Bar, barIndex?: number): number | null {
     const values = this.paneState.computedValues;
     if (!values) return null;
-    const idx = this.chart.state.data.indexOf(bar);
+    const idx = barIndex ?? this.chart.state.data.indexOf(bar);
     if (idx < 0) return null;
     const v = values[idx];
     return (v != null && !isNaN(v)) ? v : null;
