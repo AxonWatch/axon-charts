@@ -4,6 +4,10 @@ import { EMAOverlay } from './EMAOverlay.js';
 import { BollingerBandsOverlay } from './BollingerBandsOverlay.js';
 import { VWAPOverlay } from './VWAPOverlay.js';
 import { IchimokuCloudOverlay } from './IchimokuCloudOverlay.js';
+import { WMAOverlay } from './WMAOverlay.js';
+import { DonchianChannelOverlay } from './DonchianChannelOverlay.js';
+import { SuperTrendOverlay } from './SuperTrendOverlay.js';
+import { ParabolicSAROverlay } from './ParabolicSAROverlay.js';
 
 /**
  * Central registry of overlay type → constructor.
@@ -66,3 +70,7 @@ registerOverlayType('ema', EMAOverlay);
 registerOverlayType('bb', BollingerBandsOverlay);
 registerOverlayType('vwap', VWAPOverlay);
 registerOverlayType('ichimoku', IchimokuCloudOverlay);
+registerOverlayType('wma', WMAOverlay);
+registerOverlayType('donchian', DonchianChannelOverlay);
+registerOverlayType('supertrend', SuperTrendOverlay);
+registerOverlayType('psar', ParabolicSAROverlay);

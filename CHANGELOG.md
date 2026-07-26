@@ -7,6 +7,14 @@ All notable changes to this project will be documented in this file.
 ### Added — Indicator math utilities
 - **6 new indicator math functions** exported from `utils/indicators.ts` (as `Indicators` namespace): `obv()`, `roc()`, `awesomeOscillator()`, `donchian()`, `superTrend()`, `parabolicSAR()`. All are pure functions taking `Bar[]` and returning aligned `number[]` (or multi-component objects for `donchian`, `superTrend`, `parabolicSAR`). These are the computation backbone for the new indicator classes below.
 
+### Added — Overlay indicators (4 new)
+- **WMA** (Weighted Moving Average) — linear-weighted MA overlay; the `wma()` math already existed but had no overlay class. `chart.addOverlay(new WMAOverlay({ period: 20 }))`. Default color `#8b5cf6`.
+- **Donchian Channel** — highest-high / lowest-low / midpoint channel (3 lines). `chart.addOverlay(new DonchianChannelOverlay({ period: 20 }))`. Default color `#6366f1`.
+- **SuperTrend** — ATR-based trend line that flips green (uptrend) / red (downtrend). Popular in crypto trading. `chart.addOverlay(new SuperTrendOverlay({ period: 10, multiplier: 3 }))`.
+- **Parabolic SAR** — Wilder's Stop and Reverse dots above/below price. `chart.addOverlay(new ParabolicSAROverlay({ step: 0.02, maxStep: 0.2 }))`.
+
+All 4 self-register in the overlay registry (type strings: `'wma'`, `'donchian'`, `'supertrend'`, `'psar'`) for `saveState()`/`loadState()` round-trip. Total overlay count: 5 → 9.
+
 ## [1.5.9] - 2026-07-26
 
 ### Fixed
