@@ -62,10 +62,14 @@ export class IchimokuCloudOverlay implements Overlay {
     const displacement = this.opts.displacement ?? 26;
 
     const len = data.length;
+    // Senkou Span A/B project `displacement` bars into the future (the
+    // leading cloud / Kumo). Extend their arrays past data.length so the
+    // forward-shifted values survive and render into the right gap.
+    const projLen = len + displacement;
     this.tenkan = new Array(len).fill(NaN);
     this.kijun = new Array(len).fill(NaN);
-    this.senkouA = new Array(len).fill(NaN);
-    this.senkouB = new Array(len).fill(NaN);
+    this.senkouA = new Array(projLen).fill(NaN);
+    this.senkouB = new Array(projLen).fill(NaN);
     this.chikou = new Array(len).fill(NaN);
 
     // Tenkan-sen and Kijun-sen (midpoint of highest high + lowest low)
@@ -82,12 +86,12 @@ export class IchimokuCloudOverlay implements Overlay {
       const spanARaw = (!isNaN(tenkanVal) && !isNaN(kijunVal)) ? (tenkanVal + kijunVal) / 2 : NaN;
       const spanBRaw = this.midpoint(data, i, senkouBPeriod);
 
-      // Shift forward: the value at bar i is drawn at bar i + displacement
-      const shiftedIdx = i + displacement;
-      if (shiftedIdx < len) {
-        this.senkouA[shiftedIdx] = spanARaw;
-        this.senkouB[shiftedIdx] = spanBRaw;
-      }
+      // Shift forward: the value computed at bar i is drawn at bar i + displacement.
+      // Values that project past the last bar render into the right gap
+      // (timeScale.rightOffset). For the full leading cloud, set rightOffset
+      // to at least displacement * barSpacing (default 26 * 11 = 286px).
+      this.senkouA[i + displacement] = spanARaw;
+      this.senkouB[i + displacement] = spanBRaw;
     }
 
     // Chikou Span = close shifted backward by displacement
@@ -124,6 +128,9 @@ export class IchimokuCloudOverlay implements Overlay {
     const firstVisible = deriveVisibleStartIdx(chart.state, this.tenkan.length);
     const barsVisible = Math.ceil(chartAreaWidth / barWidth) + 2;
     const endIdx = Math.min(firstVisible + barsVisible, this.tenkan.length);
+    // The leading cloud (Senkou A/B) extends past data.length into the
+    // right gap — use its own length for the cloud and span-line ranges.
+    const cloudEndIdx = Math.min(firstVisible + barsVisible, this.senkouA.length);
 
     // Draw the cloud (Kumo) — filled region between Senkou A and B.
     // Segment at every A/B crossover ("Kumo twist") so each contiguous
@@ -136,10 +143,10 @@ export class IchimokuCloudOverlay implements Overlay {
       let segStart = -1;
       let segBullish = false;
 
-      for (let i = firstVisible; i <= endIdx; i++) {
+      for (let i = firstVisible; i <= cloudEndIdx; i++) {
         let hasData = false;
         let bullish = false;
-        if (i < endIdx) {
+        if (i < cloudEndIdx) {
           const a = this.senkouA[i];
           const b = this.senkouB[i];
           if (!isNaN(a) && !isNaN(b)) {
@@ -160,10 +167,10 @@ export class IchimokuCloudOverlay implements Overlay {
 
     // Draw the lines
     ctx.setLineDash([]);
-    // Senkou Span A (green)
-    this.drawLine(ctx, chart, this.senkouA, firstVisible, endIdx, opts.spanAColor ?? '#10B981', 1);
-    // Senkou Span B (red)
-    this.drawLine(ctx, chart, this.senkouB, firstVisible, endIdx, opts.spanBColor ?? '#E11D48', 1);
+    // Senkou Span A (green) — extends into the projected region
+    this.drawLine(ctx, chart, this.senkouA, firstVisible, cloudEndIdx, opts.spanAColor ?? '#10B981', 1);
+    // Senkou Span B (red) — extends into the projected region
+    this.drawLine(ctx, chart, this.senkouB, firstVisible, cloudEndIdx, opts.spanBColor ?? '#E11D48', 1);
     // Tenkan-sen (blue)
     this.drawLine(ctx, chart, this.tenkan, firstVisible, endIdx, opts.tenkanColor ?? '#3b82f6', 1.5);
     // Kijun-sen (red)
