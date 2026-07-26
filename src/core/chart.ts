@@ -1239,6 +1239,22 @@ export class Chart {
       needsRender = true;
     }
 
+    // === INDICATOR SUB-PANES ===
+    // Any indicator option change (show/hide, color, period, height) requires
+    // a re-render. Showing/hiding a sub-pane changes chartBottom, so the candle
+    // buffer must be recreated when the pane becomes visible.
+    const indicatorKeys = ['rsi', 'macd', 'stochastic', 'williamsR', 'cci', 'mfi', 'atr', 'adx', 'obv', 'roc', 'awesomeOscillator'];
+    for (const key of indicatorKeys) {
+      const partial = (normalizedPartial as any)[key];
+      if (partial) {
+        if (partial.show !== undefined || (this.options as any)[key]?.show) {
+          this.renderer.createBuffer();
+        }
+        needsRender = true;
+        break;
+      }
+    }
+
     // === ATTRIBUTION LOGO ===
     if (normalizedPartial.attribution) {
       this.attribution.update();
