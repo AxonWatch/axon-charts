@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.9] - 2026-07-26
+
+### Fixed
+- **Ichimoku cloud color now respects A/B crossovers (Kumo twist)** — the entire visible cloud was tinted green or red based on a single midpoint sample of Senkou Span A vs. B, so the color toggled incorrectly when the spans crossed within the visible range. Now the cloud is segmented at every crossover: each contiguous region where A ≥ B is filled green (bullish) and each region where A < B is filled red (bearish), matching standard Ichimoku rendering.
+
 ## [1.5.8] - 2026-07-20
 
 ### Fixed
