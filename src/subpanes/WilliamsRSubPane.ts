@@ -58,10 +58,10 @@ export class WilliamsRSubPane extends ScalePane {
   getMinVisible(_chart: IChart): number { return -100; }
   getTooltipColor(_bar: Bar): string { return this.getOptions().color ?? '#ec4899'; }
   getTooltipLabel(): string { return `Williams%R(${this.getOptions().period ?? 14}):`; }
-  getTooltipValue(bar: Bar): number | null {
+  getTooltipValue(bar: Bar, barIndex?: number): number | null {
     const values = this.paneState.computedValues;
     if (!values) return null;
-    const idx = this.chart.state.data.indexOf(bar);
+    const idx = barIndex ?? this.chart.state.data.indexOf(bar);
     if (idx < 0) return null;
     const v = values[idx];
     return (v != null && !isNaN(v)) ? v : null;

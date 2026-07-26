@@ -147,10 +147,10 @@ export class StochasticSubPane extends ScalePane {
     return `Stoch(${opts.kPeriod ?? 14},${opts.dPeriod ?? 3},${opts.smoothK ?? 3}):`;
   }
 
-  getTooltipValue(bar: Bar): number | null {
+  getTooltipValue(bar: Bar, barIndex?: number): number | null {
     const values = this.paneState.computedValues;
     if (!values) return null;
-    const idx = this.chart.state.data.indexOf(bar);
+    const idx = barIndex ?? this.chart.state.data.indexOf(bar);
     if (idx < 0) return null;
     const v = values[idx];
     return (v != null && !isNaN(v)) ? v : null;
