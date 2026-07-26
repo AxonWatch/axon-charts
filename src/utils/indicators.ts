@@ -218,10 +218,26 @@ export function stochastic(
     const range = highest - lowest;
     rawK[i] = range === 0 ? 50 : (bars[i].close - lowest) / range * 100;
   }
-  // Smooth %K if smoothK > 1 (slow stochastic)
-  const k = smoothK > 1
-    ? sma(rawK.map(v => isNaN(v) ? 0 : v), smoothK).map((v, i) => isNaN(rawK[i]) ? NaN : v)
-    : rawK;
+  // Smooth %K if smoothK > 1 (slow stochastic).
+  // Require a full window of valid raw %K values before emitting a
+  // smoothed value — do NOT zero-pad NaN entries (which would pull the
+  // first smoothK-1 values toward zero during warmup).
+  let k: number[];
+  if (smoothK > 1) {
+    k = new Array(bars.length).fill(NaN);
+    for (let i = smoothK - 1; i < bars.length; i++) {
+      let sum = 0;
+      let allValid = true;
+      for (let j = 0; j < smoothK; j++) {
+        const v = rawK[i - j];
+        if (isNaN(v)) { allValid = false; break; }
+        sum += v;
+      }
+      if (allValid) k[i] = sum / smoothK;
+    }
+  } else {
+    k = rawK;
+  }
   // %D = SMA of %K
   const d = new Array(bars.length).fill(NaN);
   for (let i = 0; i < bars.length; i++) {
