@@ -45,6 +45,10 @@ export class SuperTrendOverlay implements Overlay {
 
   getOptions() { return this.opts; }
 
+  getComponents(): Record<string, number[]> {
+    return { direction: this.direction };
+  }
+
   compute(chart: IChart): number[] | null {
     const { data } = chart.state;
     if (data.length === 0) return null;

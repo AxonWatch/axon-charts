@@ -1009,6 +1009,7 @@ export class Chart {
         scales: { pricePerPixel, timePerBar, barWidth }
       },
       state: { id: this.axonId, version: LIB_VERSION, totalBars: data.length, isAutoScrolling: this.isAutoScrolling(),
+        seriesType: this.options.series?.type ?? 'candlestick',
         market: {
           baseAsset: this.options.market?.baseAsset || null,
           quoteAsset: this.options.market?.quoteAsset || null,
@@ -1022,22 +1023,34 @@ export class Chart {
       result.visibleBars = visibleBars;
       result.latestBar = data[data.length - 1];
 
+      // Helper: slice a full-length array to the visible range
+      const sliceComponent = (arr: number[]): { values: (number | null)[]; latestValue: number | null } => ({
+        values: arr.slice(startIdx, endIdx + 1).map(v => (v != null && !isNaN(v)) ? v : null),
+        latestValue: (() => { const lv = arr[arr.length - 1]; return (lv != null && !isNaN(lv)) ? lv : null; })()
+      });
+
       // Auto-expose all active sub-panes (with computed values for the visible range)
       const subPanes: Record<string, any> = {};
       for (const pane of this.getActiveSubPanes()) {
         const ctxData = pane.getContextData();
-        // Include computed values for the visible range if available
-        // (RSISubPane, MACDSubPane, etc. cache them in paneState.computedValues)
         const scalePane = pane as any;
+        // Include computed values for the visible range if available
         if (scalePane.paneState?.computedValues) {
           const values = scalePane.paneState.computedValues as number[];
           ctxData.values = values.slice(startIdx, endIdx + 1).map(v =>
             (v != null && !isNaN(v)) ? v : null
           );
-          // Include the latest value explicitly for convenience
           const latestVal = values[values.length - 1];
           if (latestVal != null && !isNaN(latestVal)) {
             ctxData.latestValue = latestVal;
+          }
+        }
+        // Expose secondary components for multi-component indicators
+        // (MACD signal/histogram, Stochastic %D, ADX +DI/-DI)
+        const extraComps = scalePane.getSecondaryComponents?.() ?? {};
+        for (const [name, arr] of Object.entries(extraComps)) {
+          if (Array.isArray(arr) && (arr as number[]).length > 0) {
+            ctxData[name] = sliceComponent(arr as number[]);
           }
         }
         subPanes[pane.id] = ctxData;
@@ -1071,7 +1084,7 @@ export class Chart {
           const values = overlay.compute(this);
           const entry: Record<string, any> = {
             id: overlay.id,
-            type: overlay.constructor.name,
+            type: getOverlayTypeName(overlay.constructor) ?? overlay.constructor.name,
             options: { ...opts }
           };
           if (values) {
@@ -1081,6 +1094,14 @@ export class Chart {
             const latestVal = values[values.length - 1];
             if (latestVal != null && !isNaN(latestVal)) {
               entry.latestValue = latestVal;
+            }
+          }
+          // Expose secondary components for multi-component overlays
+          // (BB upper/lower, Ichimoku kijun/senkouA/senkouB/chikou, SuperTrend/PSAR direction)
+          const extraComps = overlay.getComponents?.() ?? {};
+          for (const [name, arr] of Object.entries(extraComps)) {
+            if (Array.isArray(arr) && (arr as number[]).length > 0) {
+              entry[name] = sliceComponent(arr as number[]);
             }
           }
           overlayData[overlay.id] = entry;

@@ -179,6 +179,14 @@ export class MACDSubPane extends ScalePane {
     return this.getOptions().macdColor ?? '#3b82f6';
   }
 
+  getSecondaryComponents(): Record<string, number[]> {
+    if (!this.macdValues) return {};
+    return {
+      signal: this.macdValues.signal,
+      histogram: this.macdValues.histogram
+    };
+  }
+
   getTooltipLabel(): string {
     const opts = this.getOptions();
     return `MACD(${opts.fastPeriod ?? 12},${opts.slowPeriod ?? 26},${opts.signalPeriod ?? 9}):`;

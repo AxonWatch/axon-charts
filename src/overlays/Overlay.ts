@@ -53,4 +53,12 @@ export interface Overlay {
    * Called each render to check if the overlay is visible.
    */
   getOptions(): { show?: boolean; [key: string]: any };
+
+  /**
+   * Return secondary component arrays for multi-component overlays
+   * (e.g. Bollinger's upper/lower, Ichimoku's kijun/senkouA/senkouB/chikou,
+   * SuperTrend/PSAR's direction). Used by getContext() to expose ALL
+   * overlay values to LLMs. Returns {} by default.
+   */
+  getComponents?(): Record<string, number[]>;
 }

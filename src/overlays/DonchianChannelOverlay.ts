@@ -45,6 +45,10 @@ export class DonchianChannelOverlay implements Overlay {
 
   getOptions() { return this.opts; }
 
+  getComponents(): Record<string, number[]> {
+    return { upper: this.upper, lower: this.lower };
+  }
+
   compute(chart: IChart): number[] | null {
     const { data } = chart.state;
     if (data.length === 0) return null;
