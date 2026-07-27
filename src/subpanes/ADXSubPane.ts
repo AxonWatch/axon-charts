@@ -73,6 +73,14 @@ export class ADXSubPane extends ScalePane {
   getMaxVisible(_chart: IChart): number { return 100; }
   getMinVisible(_chart: IChart): number { return 0; }
   getTooltipColor(_bar: Bar): string { return this.getOptions().adxColor ?? '#3b82f6'; }
+
+  getSecondaryComponents(): Record<string, number[]> {
+    if (!this.plusDiValues) return {};
+    return {
+      plusDI: this.plusDiValues,
+      minusDI: this.minusDiValues!
+    };
+  }
   getTooltipLabel(): string { return `ADX(${this.getOptions().period ?? 14}):`; }
   getTooltipValue(bar: Bar, barIndex?: number): number | null {
     const values = this.paneState.computedValues;

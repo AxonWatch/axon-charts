@@ -45,6 +45,10 @@ export class BollingerBandsOverlay implements Overlay {
 
   getOptions() { return this.opts; }
 
+  getComponents(): Record<string, number[]> {
+    return { upper: this.upper, lower: this.lower };
+  }
+
   compute(chart: IChart): number[] | null {
     // Return the middle band as the primary value (used by the base
     // contract). The render method reads the upper/lower from private

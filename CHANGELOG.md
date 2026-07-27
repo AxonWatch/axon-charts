@@ -30,6 +30,19 @@ All 3 integrate via the standard `ScalePane` pattern: options in `ChartOptions`,
 
 ### Fixed
 - **`setOptions()` now triggers a re-render for indicator sub-panes** — previously, calling `chart.setOptions({ rsi: { show: true } })` (or any indicator: MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX, OBV, ROC, Awesome Oscillator) updated the option value but did NOT call `render()`, so the indicator didn't appear until the next independent render (pan, zoom, data tick). The right-click context menu toggles were affected. Only Volume had an explicit render handler. Now all 11 indicator sub-panes trigger `needsRender` + buffer recreation (when `show` changes) via a unified handler. `setIndicatorOptions()` was already unaffected (it calls `render()` directly).
+- **`getContext()` now exposes ALL indicator components** — multi-component indicators previously exposed only their primary line, hiding secondary components:
+  - MACD: now exposes `signal` + `histogram` (was: MACD line only)
+  - Stochastic: now exposes `d` (was: %K only)
+  - ADX: now exposes `plusDI` + `minusDI` (was: ADX only)
+  - Bollinger Bands: now exposes `upper` + `lower` (was: middle band only)
+  - Ichimoku: now exposes `kijun`, `senkouA`, `senkouB`, `chikou` (was: tenkan only)
+  - Donchian Channel: now exposes `upper` + `lower` (was: middle only)
+  - SuperTrend: now exposes `direction` (1=uptrend, −1=downtrend) (was: values only)
+  - Parabolic SAR: now exposes `direction` (was: values only)
+  Each secondary component is a `{ values: number[], latestValue: number }` sub-object, sliced to the visible range.
+- **Overlay `type` field in context now uses stable registry names** — `overlay.constructor.name` was used for the `type` field, which shows minified names (e.g. `"V4"`) in production builds. Now uses `getOverlayTypeName()` from the registry (stable strings like `'bb'`, `'ichimoku'`, `'supertrend'`).
+- **`seriesType` now exposed in context** — the chart's current visualization mode (`'candlestick'`, `'line'`, `'area'`, `'bar'`, `'heiken-ashi'`, `'hollow'`) is now included in `state.seriesType`.
+- **Volume sub-pane now includes `latestValue` in context** — Volume was the only sub-pane without a `latestValue` in its context entry (it doesn't use `computedValues`). Now includes `latestValue` from the last bar's volume.
 
 ## [1.5.9] - 2026-07-26
 

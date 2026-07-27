@@ -96,4 +96,13 @@ export class VolumeSubPane extends ScalePane {
   getTooltipLabel(): string {
     return 'Volume:';
   }
+
+  getContextData(): Record<string, any> {
+    const base = super.getContextData();
+    const { data } = this.chart.state;
+    if (data.length > 0) {
+      base.latestValue = data[data.length - 1].volume ?? null;
+    }
+    return base;
+  }
 }

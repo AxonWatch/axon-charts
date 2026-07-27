@@ -45,6 +45,15 @@ export class IchimokuCloudOverlay implements Overlay {
 
   getOptions() { return this.opts; }
 
+  getComponents(): Record<string, number[]> {
+    return {
+      kijun: this.kijun,
+      senkouA: this.senkouA,
+      senkouB: this.senkouB,
+      chikou: this.chikou
+    };
+  }
+
   // Private fields for the 5 components, populated in compute()
   private tenkan: number[] = [];
   private kijun: number[] = [];

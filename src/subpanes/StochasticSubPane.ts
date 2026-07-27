@@ -142,6 +142,11 @@ export class StochasticSubPane extends ScalePane {
     return this.getOptions().kColor ?? '#3b82f6';
   }
 
+  getSecondaryComponents(): Record<string, number[]> {
+    if (!this.dValues) return {};
+    return { d: this.dValues };
+  }
+
   getTooltipLabel(): string {
     const opts = this.getOptions();
     return `Stoch(${opts.kPeriod ?? 14},${opts.dPeriod ?? 3},${opts.smoothK ?? 3}):`;

@@ -102,6 +102,16 @@ export abstract class ScalePane implements SubPane {
    *  O(n) indexOf lookup on every crosshair move. */
   abstract getTooltipValue(bar: Bar, barIndex?: number): number | null;
 
+  /**
+   * Return secondary component arrays for multi-component indicators
+   * (e.g. MACD's signal/histogram, Stochastic's %D, ADX's +DI/-DI).
+   * Used by getContext() to expose ALL indicator values to LLMs.
+   * Override in multi-component sub-panes. Returns {} by default.
+   */
+  getSecondaryComponents(): Record<string, number[]> {
+    return {};
+  }
+
   // ── Shared implementations ─────────────────────────────────
 
   computeHeight(state: ChartState, options: any): number {
