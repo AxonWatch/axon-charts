@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [1.6.0] - 2026-07-26
 
+### Changed
+- Bundle: 41712 → 45259 bytes gzipped (+3547 bytes) for 7 new indicators, the derived-metrics module, and all context exposure fixes. TypeScript declarations (`.d.ts`) are additionally shipped but cost zero runtime bytes.
+
 ### Added — Derived metrics for LLM context (opt-in)
 - **`context.derived: true`** — new boolean option. When enabled, `getContext()` returns a `derived` block with pre-computed metrics that LLMs cannot reliably derive from raw arrays (normalized ratios, signed momentum scalars, visible-window statistics). Default `false` — zero impact on existing consumers. Requires `exposeData !== false`.
 - **`derived.windowStats`** — visible-window summary (~10 numbers): `changePct`, `changeAbs`, `high`, `highIndex`, `low`, `lowIndex` (0-based index into `visibleBars`), `rangePct`, `volatilityPct` (population stdev of per-bar returns ×100), `avgVolume`, `positionInRange` (0 = at window low, 1 = at window high).
