@@ -3,14 +3,15 @@
   "version": "1.6.0",
   "description": "A fast, lightweight candlestick chart library optimized for AI-driven applications and LLM integration",
   "type": "module",
-  "main": "dist/chart.js",
+  "main": "dist/chart.cjs",
   "module": "dist/chart.esm.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/chart.esm.js",
-      "require": "./dist/chart.js",
-      "default": "./dist/chart.js"
+      "require": "./dist/chart.cjs",
+      "default": "./dist/chart.cjs"
     },
     "./*": "./*"
   },
