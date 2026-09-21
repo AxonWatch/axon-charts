@@ -27,7 +27,7 @@ html/             -- GitHub Pages hosted files (demos, examples, docs viewer)
 
 ## Pull Request Process
 
-1. Work on the `develop` branch
+1. Work on `main` (a feature branch off `main` for larger changes)
 2. Ensure `npm run build` succeeds with no errors
 3. Verify `html/demo.html` shows no console errors
 4. Update docs if your change affects the public API or options
@@ -36,7 +36,7 @@ html/             -- GitHub Pages hosted files (demos, examples, docs viewer)
 
 - TypeScript, ES2020 target, ES module format
 - No external runtime dependencies
-- Keep bundle size minimal (currently ~25.4KB gzipped)
+- Keep bundle size minimal (see the bundle-size badge in README for the current figure)
 - All canvas rendering uses sub-pixel precision (no `Math.round` in coordinate calculations)
 - New options must have validation in `src/utils/validation.ts`
 - New public API additions must be declared in the `IChart` interface in `src/types/index.ts`

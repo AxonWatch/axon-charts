@@ -217,11 +217,12 @@ Complete configuration reference for all chart options. All options are optional
 
 ---
 
-## Context / LLM (3 options)
+## Context / LLM (4 options)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `exposeData` | `boolean` | `false` | Include visible bar data in `chart.getContext()`. |
+| `derived` | `boolean` | `false` | Include pre-computed derived metrics (windowStats + indicator scalars) in `chart.getContext()`. Requires `exposeData !== false`. |
 | `discoverable` | `boolean` | `true` | Register chart in `window.__AXON_CHARTS__` for AI agent discovery. |
 | `id` | `string` | `'auto'` | Custom chart ID for the registry. Auto-generated if empty. |
 
