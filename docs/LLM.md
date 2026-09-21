@@ -38,20 +38,35 @@ Returns everything an LLM needs to reason about the current chart state:
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
   "state": {
-    "id": "ax-a1b2c3", "version": "1.5.9", "totalBars": 5000, "isAutoScrolling": true,
+    "id": "ax-a1b2c3", "version": "1.6.0", "totalBars": 5000, "isAutoScrolling": true,
+    "seriesType": "candlestick",
     "market": { "baseAsset": "BTC", "quoteAsset": "USDT", "timeframe": "1m", "source": "Binance" }
   },
   "visibleBars": [ /* OHLCV bars visible on screen */ ],
   "latestBar": { "time": ..., "open": ..., "high": ..., "low": ..., "close": ..., "volume": ... },
   "subPanes": {
-    "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0 },
+    "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0, "latestValue": 18500 },
     "rsi": {
       "show": true, "heightPercent": 0.15, "scale": 1, "offset": 0,
       "values": [52.3, 54.1, 56.7, ...],  // RSI values for visible bars (null where not yet defined)
       "latestValue": 56.7
     },
     "macd": {
-      "show": true, "values": [0.523, 0.518, ...], "latestValue": 0.518
+      "show": true,
+      "values": [0.523, 0.518, ...], "latestValue": 0.518,
+      "signal": { "values": [0.510, 0.512, ...], "latestValue": 0.512 },
+      "histogram": { "values": [0.013, 0.006, ...], "latestValue": 0.006 }
+    },
+    "stochastic": {
+      "show": true,
+      "values": [ /* %K values */ ], "latestValue": 71.2,
+      "d": { "values": [ /* %D values */ ], "latestValue": 65.4 }
+    },
+    "adx": {
+      "show": true,
+      "values": [ /* ADX values */ ], "latestValue": 28.1,
+      "plusDI": { "values": [...], "latestValue": 31.2 },
+      "minusDI": { "values": [...], "latestValue": 18.4 }
     }
   },
   "drawings": [
@@ -70,26 +85,39 @@ Returns everything an LLM needs to reason about the current chart state:
   ],
   "overlays": {
     "sma-20": {
-      "id": "sma-20", "type": "SMAOverlay",
+      "id": "sma-20", "type": "sma",
       "options": { "period": 20, "color": "#3b82f6" },
       "values": [42150, 42155, 42160, ...],
       "latestValue": 42160
     },
-    "ema-12": {
-      "id": "ema-12", "type": "EMAOverlay",
-      "options": { "period": 12, "color": "#f59e0b" },
-      "values": [42148, 42152, ...],
-      "latestValue": 42152
-    },
     "bb-20-2": {
-      "id": "bb-20-2", "type": "BollingerBandsOverlay",
+      "id": "bb-20-2", "type": "bb",
       "options": { "period": 20, "numStdDev": 2, "color": "#3b82f6" },
-      "values": [42150, 42155, ...],
-      "latestValue": 42155
+      "values": [42150, 42155, ...],       // middle band
+      "latestValue": 42155,
+      "upper": { "values": [43200, 43150, ...], "latestValue": 43150 },
+      "lower": { "values": [41100, 41150, ...], "latestValue": 41150 }
+    },
+    "supertrend-10-3": {
+      "id": "supertrend-10-3", "type": "supertrend",
+      "options": { "period": 10, "multiplier": 3 },
+      "values": [42100, 42050, ...], "latestValue": 42050,
+      "direction": { "values": [1, 1, 1, -1, -1, ...], "latestValue": -1 }
+    },
+    "ichimoku": {
+      "id": "ichimoku", "type": "ichimoku",
+      "options": { "tenkanPeriod": 9, "kijunPeriod": 26 },
+      "values": [ /* tenkan-sen */ ], "latestValue": 42200,
+      "kijun":   { "values": [...], "latestValue": 42150 },
+      "senkouA": { "values": [...], "latestValue": 42300 },
+      "senkouB": { "values": [...], "latestValue": 41800 },
+      "chikou":  { "values": [...], "latestValue": 42050 }
     }
   }
 }
 ```
+
+**Type strings are stable registry names** (`'sma'`, `'ema'`, `'wma'`, `'bb'`, `'vwap'`, `'ichimoku'`, `'donchian'`, `'supertrend'`, `'psar'`) — not minified class names, so they are reliable in production builds.
 
 **What the LLM can determine:**
 - All visible OHLC candles with numeric values
@@ -97,13 +125,52 @@ Returns everything an LLM needs to reason about the current chart state:
 - The time window (from/to timestamps)
 - Total dataset size vs visible window
 - Whether the chart is auto-scrolling
+- What visualization mode is active (`state.seriesType`)
 - The current (latest) candle with volume
 - All active sub-panes with their current scale/offset
-- **Sub-pane indicator values** (RSI, MACD, Stochastic, etc.) for the visible bars + latest value
+- **Sub-pane indicator values** — ALL components (RSI, MACD line + signal + histogram, Stochastic %K + %D, ADX + +DI/−DI, Williams %R, CCI, MFI, ATR, OBV, ROC, AO) for the visible bars + latest value
 - **All drawings** (positions, trendlines, boxes, etc.) with their anchors, colors, and type-specific data (side, qty, SL/TP, etc.)
-- **All overlay indicators** (SMA, EMA, Bollinger Bands, VWAP, Ichimoku) with their computed values for the visible bars + latest value
+- **All overlay indicators** (SMA, EMA, WMA, Bollinger Bands, VWAP, Ichimoku, Donchian, SuperTrend, Parabolic SAR) with their computed values for the visible bars + latest value — including multi-component overlays (BB upper/lower, Ichimoku all 5 lines, SuperTrend/PSAR trend direction)
 
-**Note:** `context.exposeData` controls whether visible bars, latest bar, and sub-panes are returned. When `false` (default), only viewport metadata is returned — reduces token cost for agents that only need spatial reasoning.
+**Note:** `context.exposeData` controls whether visible bars, latest bar, sub-panes, drawings, and overlays are returned. When `false` (default), only viewport metadata is returned — reduces token cost for agents that only need spatial reasoning.
+
+### getContext() with `context.derived: true` — Pre-computed Metrics
+
+Enable `context: { exposeData: true, derived: true }` and `getContext()` adds a **`derived` block**: pre-computed scalars LLMs cannot reliably derive from raw arrays (arithmetic on long number arrays is error-prone), plus visible-window summary statistics. Numbers only — no textual interpretation; the consuming application does bucketing/interpretation.
+
+```javascript
+{
+  "derived": {
+    "windowStats": {                       // always present (computed from visibleBars)
+      "changePct": 3.2,                    // (lastClose − firstClose) / firstClose × 100
+      "changeAbs": 1340.5,
+      "high": 43950, "highIndex": 62,      // 0-based index INTO visibleBars
+      "low": 41800, "lowIndex": 8,
+      "rangePct": 5.1,                     // (high − low) / midpoint × 100
+      "volatilityPct": 0.82,               // stdev of per-bar returns × 100
+      "avgVolume": 18500,
+      "positionInRange": 0.82              // (lastClose − low) / (high − low); 0 = at low, 1 = at high
+    },
+    "indicators": {                        // only metrics for ACTIVE indicators
+      "percentB": 0.82,                    // (close − lower) / (upper − lower); >1 = breakout
+      "bandwidth": 0.0498,                 // (upper − lower) / middle; small = squeeze
+      "priceVsSMA": 1.24,                  // (close − SMA) / SMA × 100 — per active MA overlay
+      "priceVsEMA": 0.97,
+      "priceVsVWAP": 1.1,
+      "macdHistogramTrend": 1,             // 1 = rising, 0 = flat, −1 = falling
+      "rsiDistanceFromMid": 6.7,           // RSI − 50 (signed momentum; you apply thresholds)
+      "stochKMinusD": 5.8,                 // %K − %D (cross signal)
+      "closeVsATR": 0.35                   // last bar's move in ATR units
+    }
+  }
+}
+```
+
+**Design rules** (why these and not others):
+- Normalized ratios over absolute values (`percentB`, not "band distance in USD")
+- Window scalars over per-bar fields (token efficiency)
+- Computed only for indicators that are active — nothing for inactive indicators
+- No textual interpretations, no predictive signals, no hardcoded threshold buckets — expose the number, let the consumer interpret
 
 ### getData() / getBars() — Full Data Access
 
