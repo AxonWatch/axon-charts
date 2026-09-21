@@ -18,7 +18,10 @@ a#aw-attribution {
   border-radius: 16px;
   overflow: hidden;
   max-width: 32px;
-  transition: max-width 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: max-width 0.35s cubic-bezier(0.23, 1, 0.32, 1), opacity 0.2s ease;
+}
+a#aw-attribution.aw-hidden {
+  display: none;
 }
 a#aw-attribution:hover {
   max-width: 200px;
@@ -63,7 +66,17 @@ a#aw-attribution:hover .logo-rest {
  *
  * Injected as a DOM overlay above all canvas layers via z-index.
  * Zero per-frame performance cost — uses CSS transitions only.
+ *
+ * Narrow-container handling: the badge is hidden via the `aw-hidden`
+ * class when the container is too narrow to host it without escaping
+ * or overlapping the price-axis strip. Hover expansion is clamped to
+ * the available container width via max-width: calc(100% - Xpx) so it
+ * never spills outside the chart on any container size.
  */
+const MIN_BADGE_WIDTH = 40;   // collapsed badge: 32px content + 2x2px border + buffer
+const HOVER_WIDTH = 200;      // expanded hover width
+const SAFE_LEFT_OFFSET = 45;  // matches left offset — hover must fit within (width - left)
+
 export class Attribution {
   private chart: IChart;
   private element: HTMLAnchorElement | null = null;
@@ -121,5 +134,19 @@ export class Attribution {
     this.element.appendChild(rest);
 
     this.chart.container.appendChild(this.element);
+    this.applyVisibility();
+  }
+
+  /**
+   * Hide the badge when the container is too narrow to host it without
+   * escaping the container bounds. The collapsed badge occupies
+   * [left, left + badgeWidth]; it is hidden when that would overflow.
+   * Called on mount and on every chart resize.
+   */
+  public applyVisibility(): void {
+    if (!this.element) return;
+    const containerWidth = this.chart.container.clientWidth || 0;
+    const visible = containerWidth >= SAFE_LEFT_OFFSET + MIN_BADGE_WIDTH;
+    this.element.classList.toggle('aw-hidden', !visible);
   }
 }

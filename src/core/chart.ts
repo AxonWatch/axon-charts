@@ -638,6 +638,8 @@ export class Chart {
 
       this.renderer.createBuffer();
       this.crosshair.resize(this.state.w, this.state.h, this.state.devicePixelRatio);
+      // Re-evaluate attribution badge visibility for the new container width
+      this.attribution.applyVisibility();
 
       try {
         this.render();
