@@ -9,6 +9,7 @@ import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calc
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { migrateSnapshot } from '../utils/migrate.js';
+import { percentB, bandwidth, priceVsMA, macdHistogramTrend, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats } from '../utils/derived.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
@@ -1109,6 +1110,90 @@ export class Chart {
         if (Object.keys(overlayData).length > 0) {
           result.overlays = overlayData;
         }
+      }
+
+      // === Derived metrics (opt-in: context.derived === true) ===
+      // Pre-computed scalars LLMs cannot reliably derive themselves:
+      // normalized ratios for each ACTIVE indicator + visible-window stats.
+      if (this.options.context?.derived === true) {
+        const derived: Record<string, any> = {
+          windowStats: windowStats(visibleBars)
+        };
+
+        const indicators: Record<string, any> = {};
+        const lastBar = data[data.length - 1];
+        const prevBar = data[data.length - 2];
+
+        // Overlays (Bollinger, MA deviations, VWAP)
+        for (const overlay of overlays) {
+          const opts = overlay.getOptions();
+          if (opts?.show === false) continue;
+          const typeName = getOverlayTypeName(overlay.constructor);
+          if (typeName === 'bb') {
+            const comps = overlay.getComponents?.() ?? {};
+            const upper = comps.upper?.[comps.upper.length - 1];
+            const lower = comps.lower?.[comps.lower.length - 1];
+            const middle = (overlay as any).middle?.[(overlay as any).middle.length - 1];
+            if (upper != null && lower != null) {
+              indicators.percentB = percentB(lastBar?.close, upper, lower);
+              indicators.bandwidth = bandwidth(upper, lower, middle);
+            }
+          } else if (typeName === 'sma' || typeName === 'ema' || typeName === 'wma') {
+            const values = overlay.compute(this);
+            const ma = values?.[values.length - 1];
+            const maVal = (ma != null && !isNaN(ma)) ? ma : null;
+            if (maVal != null) {
+              indicators[`priceVs${typeName.toUpperCase()}`] = priceVsMA(lastBar?.close, maVal);
+            }
+          } else if (typeName === 'vwap') {
+            const values = overlay.compute(this);
+            const vwap = values?.[values.length - 1];
+            const vwapVal = (vwap != null && !isNaN(vwap)) ? vwap : null;
+            if (vwapVal != null) {
+              indicators.priceVsVWAP = priceVsMA(lastBar?.close, vwapVal);
+            }
+          }
+        }
+
+        // Sub-panes (RSI, MACD, Stochastic, ATR)
+        const subPaneMap: Record<string, any> = {};
+        for (const pane of this.getActiveSubPanes()) {
+          subPaneMap[(pane as any).id] = pane as any;
+        }
+
+        const rsiValues = (subPaneMap['rsi'] as any)?.paneState?.computedValues;
+        if (rsiValues) {
+          const rsi = rsiValues[rsiValues.length - 1];
+          if (rsi != null && !isNaN(rsi)) indicators.rsiDistanceFromMid = rsiDistanceFromMid(rsi);
+        }
+
+        const macdPane = subPaneMap['macd'] as any;
+        if (macdPane?.macdValues) {
+          const hist = macdPane.macdValues.histogram.slice(startIdx, endIdx + 1).map((v: number) => (v != null && !isNaN(v)) ? v : null);
+          indicators.macdHistogramTrend = macdHistogramTrend(hist as any);
+        }
+
+        const stochPane = subPaneMap['stochastic'] as any;
+        const kValues = stochPane?.paneState?.computedValues;
+        const dValues = stochPane?.getSecondaryComponents?.().d;
+        if (kValues && dValues) {
+          const k = kValues[kValues.length - 1];
+          const d = dValues[dValues.length - 1];
+          if (k != null && d != null) indicators.stochKMinusD = stochKMinusD(k, d);
+        }
+
+        const atrValues = (subPaneMap['atr'] as any)?.paneState?.computedValues;
+        if (atrValues && prevBar) {
+          const atr = atrValues[atrValues.length - 1];
+          if (atr != null && !isNaN(atr)) {
+            indicators.closeVsATR = closeVsATR(lastBar?.close, prevBar.close, atr);
+          }
+        }
+
+        if (Object.keys(indicators).length > 0) {
+          derived.indicators = indicators;
+        }
+        result.derived = derived;
       }
     }
 

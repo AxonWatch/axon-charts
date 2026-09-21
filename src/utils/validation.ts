@@ -424,6 +424,9 @@ function validateContext(context: any, path: string = 'context'): void {
   if (context.exposeData !== undefined && typeof context.exposeData !== 'boolean') {
     throw new ValidationError(`${path}.exposeData`, 'exposeData must be a boolean', context.exposeData);
   }
+  if (context.derived !== undefined && typeof context.derived !== 'boolean') {
+    throw new ValidationError(`${path}.derived`, 'derived must be a boolean', context.derived);
+  }
 }
 
 function validateVolume(volume: any, path: string = "volume"): void {
