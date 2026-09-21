@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
 - **`src/utils/derived.ts`** — new pure-functions module (`percentB`, `bandwidth`, `priceVsMA`, `macdHistogramTrend`, `rsiDistanceFromMid`, `stochKMinusD`, `closeVsATR`, `windowStats`), exported via `Indicators`-adjacent `import { ... } from 'axon-charts'`-style use in `getContext()`. Numbers only — no textual interpretation ("downtrend", "overbought") by design; the consuming application buckets/interprets.
 - `context.derived` validated as boolean in `src/utils/validation.ts`.
 
+### Fixed — Attribution badge on narrow containers
+- **Attribution logo now hides itself on too-narrow containers** — the badge was absolutely positioned with hardcoded offsets (`left: 45px`) and zero width awareness: on containers narrower than ~81px it partially or fully escaped the container (at 30px width it rendered entirely outside, over adjacent page DOM; at 50px it overlapped the price-axis strip). Now a width check on mount + every resize adds an `aw-hidden` class below the safe threshold (`45px` offset + `40px` badge width), so the badge never escapes.
+- **Hover expansion clamped to container width** — hover expanded the badge to a fixed `max-width: 200px`, which on a 50–100px chart covered the whole chart and spilled into neighboring DOM. Now transitions `opacity` (0.2s) and the expanded state is clamped via the same visibility logic; the badge is simply not shown where hover expansion would overflow.
+
 ### Added — Indicator math utilities
 - **6 new indicator math functions** exported from `utils/indicators.ts` (as `Indicators` namespace): `obv()`, `roc()`, `awesomeOscillator()`, `donchian()`, `superTrend()`, `parabolicSAR()`. All are pure functions taking `Bar[]` and returning aligned `number[]` (or multi-component objects for `donchian`, `superTrend`, `parabolicSAR`). These are the computation backbone for the new indicator classes below.
 
