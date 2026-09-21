@@ -21,7 +21,9 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "node esbuild.config.js",
+    "build": "node esbuild.config.js && tsc --emitDeclarationOnly",
+    "build:js": "node esbuild.config.js",
+    "build:types": "tsc --emitDeclarationOnly",
     "dev": "node esbuild.config.js --watch",
     "prepublishOnly": "npm run build",
     "serve": "npx serve .",
