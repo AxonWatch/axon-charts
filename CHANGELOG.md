@@ -11,6 +11,9 @@ All notable changes to this project will be documented in this file.
 - **`src/utils/derived.ts`** — new pure-functions module (`percentB`, `bandwidth`, `priceVsMA`, `macdHistogramTrend`, `rsiDistanceFromMid`, `stochKMinusD`, `closeVsATR`, `windowStats`), exported via `Indicators`-adjacent `import { ... } from 'axon-charts'`-style use in `getContext()`. Numbers only — no textual interpretation ("downtrend", "overbought") by design; the consuming application buckets/interprets.
 - `context.derived` validated as boolean in `src/utils/validation.ts`.
 
+### Fixed — TypeScript declarations
+- **`dist/index.d.ts` now ships with the package** — `package.json` declared `"types": "dist/index.d.ts"`, but the file never existed (esbuild emits no declarations), so TypeScript consumers got no type support. `npm run build` now runs `tsc --emitDeclarationOnly` after the esbuild bundle, emitting full declaration files for every module. Zero runtime cost (declarations only). Added `build:js` / `build:types` sub-scripts.
+
 ### Fixed — Attribution badge on narrow containers
 - **Attribution logo now hides itself on too-narrow containers** — the badge was absolutely positioned with hardcoded offsets (`left: 45px`) and zero width awareness: on containers narrower than ~81px it partially or fully escaped the container (at 30px width it rendered entirely outside, over adjacent page DOM; at 50px it overlapped the price-axis strip). Now a width check on mount + every resize adds an `aw-hidden` class below the safe threshold (`45px` offset + `40px` badge width), so the badge never escapes.
 - **Hover expansion clamped to container width** — hover expanded the badge to a fixed `max-width: 200px`, which on a 50–100px chart covered the whole chart and spilled into neighboring DOM. Now transitions `opacity` (0.2s) and the expanded state is clamped via the same visibility logic; the badge is simply not shown where hover expansion would overflow.
