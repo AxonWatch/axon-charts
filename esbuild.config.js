@@ -43,6 +43,14 @@ const builds = [
     ...baseOptions,
     format: 'esm',
     outfile: 'dist/chart.esm.js',
+  },
+  // CommonJS build (require() — package.json "exports" require condition).
+  // No globalName: esbuild assigns to module.exports instead of a global.
+  // .cjs extension is required — the package is "type": "module".
+  {
+    ...baseOptions,
+    format: 'cjs',
+    outfile: 'dist/chart.cjs',
   }
 ];
 

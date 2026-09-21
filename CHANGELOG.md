@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.1] - 2026-07-26
+
+### Fixed — TypeScript types unreachable through `exports`
+- **TypeScript consumers could not resolve the package's types** — `package.json`'s `exports` map had no `types` condition, and modern module resolution (`bundler`, `node16`, `nodenext` — what modern consumers use) resolves types ONLY through conditions inside `exports`; the top-level `"types": "dist/index.d.ts"` field is ignored when `exports` exists. Result: `error TS7016: Could not find a declaration file for module 'axon-charts'` under `strict`, despite the 150 `.d.ts` files shipping in the tarball since 1.6.0. Fix: added `"types": "./dist/index.d.ts"` as the first condition of the `"."` export. Verified against the live tarball with consumer simulations under `--moduleResolution bundler` and `node16`.
+
+### Fixed — CommonJS `require()` returned an empty object
+- **`"require"` condition pointed at the IIFE build** — `dist/chart.js` is `format: 'iife'` (assigns a browser global, never touches `module.exports`), so a CommonJS consumer got `{}` silently. Additionally, under the package's `"type": "module"`, a `.js` CJS file would be parsed as ESM by Node regardless. Fix: `esbuild.config.js` now emits a true CommonJS bundle as `dist/chart.cjs` (no `globalName` → esbuild assigns `module.exports`; `.cjs` extension required under `"type": "module"`), wired into `"require"` and `"default"` conditions + top-level `main`. Verified at runtime: `require('axon-charts')` returns the full exports object (`createChart`, `Chart`, `Indicators`, …).
+- Browser bundles unchanged: `dist/chart.js` (IIFE) and `dist/chart.esm.js` are byte-identical in content to 1.6.0 — the `.cjs` build is an additional tarball-only artifact (~45KB packed) never loaded by browsers.
+
 ## [1.6.0] - 2026-07-26
 
 ### Changed
