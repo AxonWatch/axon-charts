@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [1.6.0] - 2026-07-26
 
+### Added — Derived metrics for LLM context (opt-in)
+- **`context.derived: true`** — new boolean option. When enabled, `getContext()` returns a `derived` block with pre-computed metrics that LLMs cannot reliably derive from raw arrays (normalized ratios, signed momentum scalars, visible-window statistics). Default `false` — zero impact on existing consumers. Requires `exposeData !== false`.
+- **`derived.windowStats`** — visible-window summary (~10 numbers): `changePct`, `changeAbs`, `high`, `highIndex`, `low`, `lowIndex` (0-based index into `visibleBars`), `rangePct`, `volatilityPct` (population stdev of per-bar returns ×100), `avgVolume`, `positionInRange` (0 = at window low, 1 = at window high).
+- **`derived.indicators`** — scalars computed only for ACTIVE indicators: `percentB` + `bandwidth` (BB overlay), `priceVsSMA` / `priceVsEMA` / `priceVsWMA` (per active MA overlay), `priceVsVWAP`, `macdHistogramTrend` (1/0/−1: histogram rising/flat/falling), `rsiDistanceFromMid` (RSI − 50), `stochKMinusD`, `closeVsATR` (last-bar move in ATR units).
+- **`src/utils/derived.ts`** — new pure-functions module (`percentB`, `bandwidth`, `priceVsMA`, `macdHistogramTrend`, `rsiDistanceFromMid`, `stochKMinusD`, `closeVsATR`, `windowStats`), exported via `Indicators`-adjacent `import { ... } from 'axon-charts'`-style use in `getContext()`. Numbers only — no textual interpretation ("downtrend", "overbought") by design; the consuming application buckets/interprets.
+- `context.derived` validated as boolean in `src/utils/validation.ts`.
+
 ### Added — Indicator math utilities
 - **6 new indicator math functions** exported from `utils/indicators.ts` (as `Indicators` namespace): `obv()`, `roc()`, `awesomeOscillator()`, `donchian()`, `superTrend()`, `parabolicSAR()`. All are pure functions taking `Bar[]` and returning aligned `number[]` (or multi-component objects for `donchian`, `superTrend`, `parabolicSAR`). These are the computation backbone for the new indicator classes below.
 

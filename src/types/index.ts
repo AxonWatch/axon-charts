@@ -156,6 +156,12 @@ export interface ChartOptions {
     /** Controls whether getContext() returns visible bars, latest bar, and sub-panes.
      *  false (default): only viewport metadata. true: full trading data exposure. */
     exposeData?: boolean;
+    /** Include pre-computed derived metrics in getContext() output (a `derived` block):
+     *  normalized scalars (percentB, bandwidth, priceVsMA, MACD histogram trend, etc.)
+     *  for each ACTIVE indicator, plus visible-window summary statistics.
+     *  Designed for LLM consumption — saves tokens and eliminates unreliable arithmetic.
+     *  Requires exposeData !== false. Default: false. */
+    derived?: boolean;
     /** Controls whether the chart registers in the global window.__AXON_CHARTS__ registry.
      *  When true, AI agents with the Axon Charts skill can discover and interact with this chart.
      *  Set to false for stealth mode (agents won't know this is an Axon Charts chart). */
