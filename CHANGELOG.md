@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.3] - 2026-07-26
+
+### Fixed — Calendar-anchored time axis
+- **Time-axis labels are now anchored to real calendar boundaries** — previously boundaries were snapped to epoch multiples of `step × interval`, so day-change (date) labels appeared near-but-not-at local midnight, and in empty regions (no bars visible — panned beyond the data) the day-rollover detection compared against a synthetic previous-time hop (`t − step × interval`), which misfired on most boundaries and produced dense interleaved date/time label merges on heavily zoomed-out/empty charts. Now a single unified rule applies everywhere (in-data and empty regions):
+  - **Intraday cadence** (bars < 1 day): steps are chosen from a set that divides the 24h day (1/2/3/5/10/15/30 min; 1/2/3/4/6/8/12 h) so **local 00:00 is always a boundary** — the date label prints exactly at the midnight boundary, followed by `03:00`, `06:00`, etc. Day-change detection compares chained drawn boundaries (DST-safe; local midnight via cached `Intl` formatters, browser-local when `timeScale.timezone` is unset).
+  - **Daily/weekly/monthly cadence** (bars ≥ 1 day): steps become whole days (1/2/7/14) then calendar months (1/2/3/6/12) — labels show the **month name at each month start, the year at year changes, and day numbers between**.
+- **Bar-cadence is gap-proof** — the grid cadence was derived from `data[1].time − data[0].time`, which corrupted the entire virtual grid when the first two bars straddled a data gap. Now estimated as the median of successive deltas over a small head sample.
+- **Label overlap suppression is width-aware** — labels were spaced with a fixed 40px minimum regardless of glyph width, letting wide date strings merge on narrow spacing. Labels now skip when the drawn string would collide with the previous one.
+- New module `src/utils/calticks.ts` (calendar step chooser, tz-aware boundary iteration, robust interval). Timezone helpers added to `PriceFormatter` (`zonedDayStartMs`, `getZonedMonthKey`, `getZonedYear`, `formatMonthShort`, `formatDayNumber`).
+- Behavior for the default in-data view is visually equivalent to before (times at ~80px cadence, date at day change); the fix targets empty/virtual regions and non-divisor step alignments. Verified via fake-DOM harness across intraday/empty/gap/daily/monthly scenarios.
+
+### Changed
+- Bundle: 45289 → 46200 bytes gzipped (+911 bytes).
+
 ## [1.6.2] - 2026-07-26
 
 ### Fixed — `timeScale.minBarSpacing` now fully honored

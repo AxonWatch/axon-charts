@@ -206,6 +206,112 @@ export class PriceFormatter {
 
   private static dateFormatCache = new Map<string, Intl.DateTimeFormat>();
 
+  private static wallPartsCache = new Map<string, Intl.DateTimeFormat>();
+  private static monthKeyCache = new Map<string, Intl.DateTimeFormat>();
+  private static yearKeyCache = new Map<string, Intl.DateTimeFormat>();
+  private static monthShortCache = new Map<string, Intl.DateTimeFormat>();
+  private static dayNumCache = new Map<string, Intl.DateTimeFormat>();
+
+  /**
+   * Wall-clock parts (local to `timezone`, browser-local when undefined)
+   * for an instant. Cached formatter per timezone.
+   */
+  static getWallParts(ts: number, timezone?: string): {
+    year: number; month: number; day: number; hour: number; minute: number; second: number;
+  } {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    if (!tz) {
+      const d = new Date(ts);
+      return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate(), hour: d.getHours(), minute: d.getMinutes(), second: d.getSeconds() };
+    }
+    let fmt = PriceFormatter.wallPartsCache.get(tz);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+      });
+      PriceFormatter.wallPartsCache.set(tz, fmt);
+    }
+    const map: Record<string, string> = {};
+    for (const p of fmt.formatToParts(new Date(ts))) map[p.type] = p.value;
+    return {
+      year: +map.year, month: +map.month, day: +map.day,
+      hour: +map.hour, minute: +map.minute, second: +map.second
+    };
+  }
+
+  /**
+   * Epoch-ms of local 00:00 (midnight) of the calendar day containing `ts`,
+   * in `timezone` (browser-local when undefined). Used to snap time-axis
+   * boundaries to calendar days.
+   */
+  static zonedDayStartMs(ts: number, timezone?: string): number {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    if (!tz) {
+      const d = new Date(ts);
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    }
+    const p = PriceFormatter.getWallParts(ts, tz);
+    // Wall-clock offset at this instant: wall time read as UTC minus actual UTC
+    const wallUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+    const offset = wallUTC - ts;
+    const localMs = ts + offset;
+    const dayLocal = Math.floor(localMs / 86400000) * 86400000;
+    return dayLocal - offset;
+  }
+
+  /** Calendar month identity ('yyyy-mm') of an instant in `timezone`. */
+  static getZonedMonthKey(ts: number, timezone?: string): string {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    const d = new Date(ts);
+    if (!tz) return `${d.getFullYear()}-${d.getMonth()}`;
+    let fmt = PriceFormatter.monthKeyCache.get(tz);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en', { timeZone: tz, year: 'numeric', month: '2-digit' });
+      PriceFormatter.monthKeyCache.set(tz, fmt);
+    }
+    return fmt.format(d);
+  }
+
+  /** Calendar year of an instant in `timezone` (numeric, as string). */
+  static getZonedYear(ts: number, timezone?: string): string {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    const d = new Date(ts);
+    if (!tz) return `${d.getFullYear()}`;
+    let fmt = PriceFormatter.yearKeyCache.get(tz);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en', { timeZone: tz, year: 'numeric' });
+      PriceFormatter.yearKeyCache.set(tz, fmt);
+    }
+    return fmt.format(d);
+  }
+
+  /** Short month name ('Jan'..'Dec') of an instant in `timezone`. */
+  static formatMonthShort(ts: number, timezone?: string): string {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    const d = new Date(ts);
+    if (!tz) return d.toLocaleDateString('en', { month: 'short' });
+    let fmt = PriceFormatter.monthShortCache.get(tz);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en', { timeZone: tz, month: 'short' });
+      PriceFormatter.monthShortCache.set(tz, fmt);
+    }
+    return fmt.format(d);
+  }
+
+  /** Day-of-month number ('05') of an instant in `timezone`. */
+  static formatDayNumber(ts: number, timezone?: string): string {
+    const tz = PriceFormatter.isValidTimezone(timezone) ? timezone : undefined;
+    const d = new Date(ts);
+    if (!tz) return String(d.getDate()).padStart(2, '0');
+    let fmt = PriceFormatter.dayNumCache.get(tz);
+    if (!fmt) {
+      fmt = new Intl.DateTimeFormat('en', { timeZone: tz, day: '2-digit' });
+      PriceFormatter.dayNumCache.set(tz, fmt);
+    }
+    return fmt.format(d);
+  }
+
   static isDifferentDay(ts1: number, ts2: number, timezone?: string): boolean {
     const d1 = new Date(ts1);
     const d2 = new Date(ts2);

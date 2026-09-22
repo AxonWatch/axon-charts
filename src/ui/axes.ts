@@ -1,6 +1,7 @@
-import { niceTicks, calculateTimeStep } from '../utils/math.js';
+import { niceTicks } from '../utils/math.js';
 import { LAYOUT } from '../core/layout.js';
 import { PriceFormatter } from '../utils/formatter.js';
+import { chooseCalendarStep, calendarBoundaries, robustBarInterval } from '../utils/calticks.js';
 import { priceToY, yToPrice, deriveVisibleStartIdx, indexToX, xToIndex } from '../utils/projection.js';
 import { IChart } from '../types/index.js';
 
@@ -101,11 +102,12 @@ export class Axes {
     const { w, h, barWidth, data, offsetX, axisWidth, bottomMargin } = this.chart.state;
     if (data.length === 0) return;
 
-    // 1. Calculate base interval and step
-    const interval = data.length > 1 ? data[1].time - data[0].time : LAYOUT.DEFAULT_TIME_INTERVAL;
-    const step = calculateTimeStep(barWidth);
-    const stepIndices = Math.max(1, step || 1);
     const chartWidth = w - axisWidth;
+
+    // Robust cadence: median of successive deltas over a small sample, so a
+    // data gap between the first two bars cannot poison the whole grid.
+    const interval = robustBarInterval(data, LAYOUT.DEFAULT_TIME_INTERVAL);
+    const isDailyPlus = interval >= 86400000;
 
     // 4. Styles
     const vertOptions = this.chart.options.grid.vertLines || {};
@@ -123,99 +125,91 @@ export class Axes {
       ctx.setLineDash([]);
     }
 
-    // 5. Compute virtual time range for full-width time-anchored grid & labels
-    //    Uses virtual time extending past/before data bounds so the grid covers the
-    //    entire chart width, including empty zones before bar 0 and after the last bar.
-    const stepMs = stepIndices * interval;
+    // 5. Virtual time range for full-width coverage (incl. empty zones)
     const firstGridIdx = Math.ceil((-offsetX - 100) / barWidth);
     const lastGridIdx = Math.floor((chartWidth - offsetX + 100) / barWidth);
     const firstVirtualTime = data[0].time + (firstGridIdx * interval);
     const lastVirtualTime = data[0].time + (lastGridIdx * interval);
 
-    // Round to nearest stepMs boundary (ceil so first line is at or after the left edge)
-    const firstBoundary = Math.ceil(firstVirtualTime / stepMs) * stepMs;
+    // 6. Calendar-anchored step: boundaries land on local midnight (intraday)
+    //    or local month starts (daily/weekly/monthly cadence).
+    const tz = PriceFormatter.isValidTimezone(this.chart.options.timeScale.timezone)
+      ? this.chart.options.timeScale.timezone : undefined;
+    const step = chooseCalendarStep(interval, barWidth, LAYOUT.TIME_LABEL_TARGET_PIXELS);
 
-    // 6. PASS 1: Vertical grid lines — time-anchored, full chart width
-    //    Snaps to rounded time boundaries (e.g. 12:00, 12:15, 12:30) that shift
-    //    naturally as the user pans — same behavior as the time axis labels.
-    if (drawVertLines) {
-      for (let t = firstBoundary; t <= lastVirtualTime; t += stepMs) {
-        const virtualIndex = (t - data[0].time) / interval;
-        const x = indexToX(virtualIndex, this.chart.state);
-        if (x < -100 || x > chartWidth + 100) continue;
-        if (x >= 0 && x <= chartWidth) {
+    const labelY = h - bottomMargin / 2;
+    const MIN_LABEL_SPACING = 40;
+    let lastLabelX = -Infinity;
+    let lastLabelRight = -Infinity;
+
+    // 7. Single walk over calendar boundaries: grid lines at every boundary,
+    //    labels at boundaries that survive spacing/overlap suppression.
+    let prevBoundaryTime: number | null = null;
+    for (const t of calendarBoundaries(firstVirtualTime, lastVirtualTime, step, tz)) {
+      const x = indexToX((t - data[0].time) / interval, this.chart.state);
+      if (x < -100 || x > chartWidth + 100) { prevBoundaryTime = t; continue; }
+      if (x >= 0 && x <= chartWidth) {
+        if (drawVertLines) {
           ctx.beginPath();
           ctx.moveTo(x, 0);
           ctx.lineTo(x, h - bottomMargin);
           ctx.stroke();
         }
+        if (x - lastLabelX >= MIN_LABEL_SPACING) {
+          const label = this.formatBoundaryLabel(t, prevBoundaryTime, interval, isDailyPlus);
+          const halfW = ctx.measureText(label).width / 2;
+          if (x - halfW > lastLabelRight + 2) {
+            ctx.fillText(label, x, labelY);
+            lastLabelX = x;
+            lastLabelRight = x + halfW;
+          }
+        }
       }
-    }
-
-    // 7. PASS 2: Time labels — at the same time-anchored positions as grid lines
-    //    Labels stay aligned with grid lines because both use the same time boundaries.
-    const labelY = h - bottomMargin / 2;
-    const tz = PriceFormatter.isValidTimezone(this.chart.options.timeScale.timezone)
-      ? this.chart.options.timeScale.timezone : undefined;
-    let lastLabelX = -Infinity;
-    const MIN_LABEL_SPACING = 40;
-
-    // Track previous time for day-change detection across data gaps
-    for (let t = firstBoundary; t <= lastVirtualTime; t += stepMs) {
-      // Find the nearest bar for actual timestamp (for label formatting accuracy)
-      // Inside data bounds: uses the bar's time. Past/future: uses virtual time.
-      const index = Math.round((t - data[0].time) / interval);
-      const bar = data[index];
-      const labelTime = bar?.time ?? t;
-
-      // Use t (the time boundary) for X position — guarantees alignment with grid lines
-      const x = indexToX((t - data[0].time) / interval, this.chart.state);
-      if (x < -100 || x > chartWidth + 100) continue;
-      if (x >= 0 && x <= chartWidth && (x - lastLabelX >= MIN_LABEL_SPACING)) {
-        const label = this.formatTimeLabel(labelTime, index, stepIndices, interval);
-        ctx.fillText(label, x, labelY);
-        lastLabelX = x;
-      }
+      prevBoundaryTime = t;
     }
 
     ctx.textAlign = 'left';
   }
 
   /**
-   * Format time label with date rollover
+   * Format a boundary label.
+   *
+   * Intraday cadence (< 1 day bars): time label normally; full date when this
+   * boundary is the first drawn on a new calendar day (local midnight with
+   * calendar-divisor steps — 00:00 always shows the date).
+   *
+   * Daily/weekly/monthly cadence (>= 1 day): month name at the first boundary
+   * of each month, year at the year change, day number otherwise.
    */
-  private formatTimeLabel(time: number, index: number, step: number, interval: number): string {
+  private formatBoundaryLabel(t: number, prevBoundary: number | null, interval: number, isDailyPlus: boolean): string {
     const ts = this.chart.options.timeScale;
-    const data = this.chart.dataManager.data;
     const tz = PriceFormatter.isValidTimezone(ts.timezone) ? ts.timezone : undefined;
 
-    // Use actual previous bar's timestamp for date-rollover detection.
-    // For virtual indices past/future data bounds (from time-anchored grid),
-    // data[index-1] is undefined, so ?. produces undefined, and the fallback
-    // time - (step * interval) provides a reasonable virtual prevTime.
-    const prevTime = index > 0 && index < data.length ? data[index - 1]?.time : time - (step * interval);
-
-    // Check if we should show date (first bar or day change)
-    const isNewDay = PriceFormatter.isDifferentDay(time, prevTime, tz);
-
-    // If timeVisible is false, always show date
+    // timeVisible = false → the axis shows only dates (existing behavior)
     if (!ts.timeVisible) {
-      return PriceFormatter.formatDate(time, tz, ts.dateFormat, false);
+      return PriceFormatter.formatDate(t, tz, ts.dateFormat, false);
     }
 
-    if (isNewDay) {
-      return PriceFormatter.formatDate(time, tz, ts.dateFormat, false);
-    } else {
-      const date = new Date(time);
-      let formatter: Intl.DateTimeFormat;
-      const baseOpts: Intl.DateTimeFormatOptions = { hour12: false, timeZone: tz };
-      if (ts.secondsVisible) {
-        formatter = new Intl.DateTimeFormat([], { ...baseOpts, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      } else {
-        formatter = new Intl.DateTimeFormat([], { ...baseOpts, hour: '2-digit', minute: '2-digit' });
+    if (isDailyPlus) {
+      const monthChanged = prevBoundary == null || PriceFormatter.getZonedMonthKey(t, tz) !== PriceFormatter.getZonedMonthKey(prevBoundary, tz);
+      if (monthChanged) {
+        const yearChanged = prevBoundary != null && PriceFormatter.getZonedYear(t, tz) !== PriceFormatter.getZonedYear(prevBoundary, tz);
+        if (yearChanged) {
+          return PriceFormatter.getZonedYear(t, tz);
+        }
+        return PriceFormatter.formatMonthShort(t, tz);
       }
-      return formatter.format(date);
+      return PriceFormatter.formatDayNumber(t, tz);
     }
+
+    const dayChanged = prevBoundary == null || PriceFormatter.isDifferentDay(t, prevBoundary, tz);
+    if (dayChanged) {
+      return PriceFormatter.formatDate(t, tz, ts.dateFormat, false);
+    }
+    const p = PriceFormatter.getWallParts(t, tz);
+    return ts.secondsVisible
+      ? `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}:${String(p.second).padStart(2, '0')}`
+      : `${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`;
   }
 
   /**
