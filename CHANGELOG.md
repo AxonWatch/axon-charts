@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.2] - 2026-07-26
+
+### Fixed — `timeScale.minBarSpacing` now fully honored
+- **Mouse/touch zoom interactions now respect the configured `minBarSpacing`** — the option defined the deepest zoom-out level, but the wheel, drag-zoom, and pinch handlers enforced a hardcoded 4px floor regardless of the setting. Now all three interaction paths read `timeScale.minBarSpacing`, consistent with the `zoomIn`/`zoomOut`/`fitContent`/`setVisibleRange` APIs which already honored it. Default remains 4 (no behavior change for existing users).
+- **Validation floor lowered to 0.5** — setting `minBarSpacing` below 4 previously threw a `ValidationError`, making the documented range unreachable. Now values down to 0.5 are accepted. At such small bar spacings candles render as 1px columns (graceful degradation — verified across candlestick, volume/histogram sub-panes, and line-based indicators).
+
+### Changed
+- Bundle: 45265 → 45289 bytes gzipped (+24 bytes).
+
 ## [1.6.1] - 2026-07-26
 
 ### Fixed — TypeScript types unreachable through `exports`

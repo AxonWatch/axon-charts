@@ -437,9 +437,10 @@ export class EventManager {
     const isTimeAxis = mouseY > h - bottomMargin;
     const oldWidth = this.chart.state.barWidth;
     const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
+    const minBarWidth = this.chart.options.timeScale.minBarSpacing ?? LAYOUT.MIN_BAR_WIDTH;
     const newWidth = oldWidth * factor;
 
-    if (newWidth < LAYOUT.MIN_BAR_WIDTH || newWidth > maxBarWidth) return;
+    if (newWidth < minBarWidth || newWidth > maxBarWidth) return;
 
     // Use raw unclamped index so zoom stays smooth when mouse is in empty gap.
     // For naturalOffset: keep pixel under mouse fixed (raw index - smooth across gaps).
@@ -689,11 +690,12 @@ export class EventManager {
 
             const deltaX = mouseX - this.lastMouseX;
       const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
+      const minBarWidth = this.chart.options.timeScale.minBarSpacing ?? LAYOUT.MIN_BAR_WIDTH;
       // Linear additive: symmetric zoom in/out, instant direction reversal
       const dragSpeed = 0.15;
       const newWidth = this.chart.state.barWidth - deltaX * dragSpeed;
 
-      if (newWidth >= LAYOUT.MIN_BAR_WIDTH && newWidth <= maxBarWidth) {
+      if (newWidth >= minBarWidth && newWidth <= maxBarWidth) {
         const lastIdx = this.chart.dataManager.length - 1;
         const anchorX = indexToX(lastIdx, this.chart.state);
         this.chart.state.barWidth = newWidth;
@@ -796,9 +798,10 @@ export class EventManager {
       const { w, axisWidth, rightGap } = this.chart.state;
       const chartAreaWidth = w - axisWidth;
       const maxBarWidth = Math.min(1000, Math.floor(chartAreaWidth / LAYOUT.MAX_ZOOM_DIVISOR));
+      const minBarWidth = this.chart.options.timeScale.minBarSpacing ?? LAYOUT.MIN_BAR_WIDTH;
       const newWidth = this.chart.state.barWidth * factor;
 
-      if (newWidth >= LAYOUT.MIN_BAR_WIDTH && newWidth <= maxBarWidth) {
+      if (newWidth >= minBarWidth && newWidth <= maxBarWidth) {
         const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
         const rect = this.chart.mainCanvas.getBoundingClientRect();
         const screenX = centerX - rect.left;

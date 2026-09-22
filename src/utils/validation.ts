@@ -318,7 +318,7 @@ function validateTimeScale(timeScale: any, path: string = 'timeScale'): void {
   }
 
   if (timeScale.minBarSpacing !== undefined) {
-    validateBarSpacing(timeScale.minBarSpacing, `${path}.minBarSpacing`, 4);
+    validateBarSpacing(timeScale.minBarSpacing, `${path}.minBarSpacing`, 0.5);
   }
 
   if (timeScale.maxBarSpacing !== undefined) {
