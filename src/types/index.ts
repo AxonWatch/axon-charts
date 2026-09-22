@@ -88,6 +88,10 @@ export interface ChartOptions {
     timezone?: string;
     rightOffset?: number;
     barSpacing?: number;
+    /** Minimum bar spacing in pixels — the deepest zoom-out level.
+     *  Default: 4. Configurable down to 0.5 (bars render as 1px columns
+     *  below ~1px). Honored by wheel, drag-zoom, pinch, and the
+     *  zoomIn/zoomOut/fitContent/setVisibleRange APIs. */
     minBarSpacing?: number;
     maxBarSpacing?: number;
   };

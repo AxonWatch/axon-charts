@@ -90,7 +90,7 @@ Complete configuration reference for all chart options. All options are optional
 | `timezone` | `string` | — | IANA timezone name (e.g. 'America/New_York'). Empty = browser local. |
 | `rightOffset` | `number` | `80` | Empty space on the right side in pixels. |
 | `barSpacing` | `number` | `11` | Pixels per bar (zoom level). Range: minBarSpacing–maxBarSpacing. |
-| `minBarSpacing` | `number` | `4` | Minimum bar spacing (zoom-in boundary). |
+| `minBarSpacing` | `number` | `4` | Minimum bar spacing in pixels — deepest zoom-out level. Range: 0.5–1000. Honored by wheel, drag-zoom, pinch, and zoom APIs. |
 | `maxBarSpacing` | `number` | `1000` | Maximum bar spacing (zoom-out boundary). |
 
 ---

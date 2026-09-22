@@ -1153,7 +1153,7 @@ interface ChartOptions {
     timezone?: string;                 // IANA timezone (omitted = local)
     rightOffset?: number;              // default: 80
     barSpacing?: number;               // default: 11
-    minBarSpacing?: number;            // default: 4
+    minBarSpacing?: number;            // default: 4 (configurable down to 0.5 — deepest zoom-out)
     maxBarSpacing?: number;            // default: 1000
   };
 
