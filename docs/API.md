@@ -179,7 +179,12 @@ chart.scrollToLatest(): void
 ```
 Snaps the viewport to show the latest candle at the right edge with the configured `timeScale.rightOffset` gap, using the current zoom level (barWidth is NOT recalculated). Also **re-enables auto-scroll** so the chart follows new bars as they arrive. Delegates to `eventManager.scrollToLatest()`.
 
-> **`scrollToLatest()` vs `scrollToTime()`:** `scrollToLatest()` is a *live-edge* operation — it positions the last bar with the trading gap AND re-engages auto-follow. `timeScale().scrollToTime(timestamp, 'right')` is a *geometric* operation — it places any bar flush at the right edge with no gap and does not change auto-scroll state. Use the former to return to live trading; use the latter for historical navigation.
+```typescript
+chart.viewLatest(): void
+```
+View the latest bar **without changing any state** (pure positioning): same placement as `scrollToLatest()` (live edge + gap, current zoom preserved) but the auto-scroll/follow state is NOT modified — if live-following was off, it stays off. Use when a programmatic caller (state restore, agent tooling) wants to *display* the latest bar without altering follow behavior.
+
+> **`scrollToLatest()` vs `viewLatest()` vs `scrollToTime()`:** `scrollToLatest()` positions the last bar with the trading gap AND re-engages auto-follow. `viewLatest()` performs the identical placement but leaves the follow state untouched. `timeScale().scrollToTime(timestamp, 'right')` is a *geometric* operation — any bar flush at the right edge with no gap and no state change. Use the first to return to live trading; `viewLatest` to look at the newest bar; `scrollToTime` for historical navigation.
 
 ```typescript
 chart.isAutoScrolling(): boolean
@@ -205,6 +210,7 @@ Execute a command for LLM-driven chart control. Supported command types:
 | `zoomIn` | `factor?: number` (default: 1.5) | Zoom in on time scale |
 | `zoomOut` | `factor?: number` (default: 1.5) | Zoom out on time scale |
 | `fitContent` | *(none)* | Fit all data in view |
+| `viewLatest` | *(none)* | View the newest bar (gap-respecting; does NOT change follow state) |
 | `setPriceScale` | `mode: 'linear' \| 'logarithmic' \| 'percentage'` | Switch price scale mode |
 | `setCrosshair` | `mode: 'normal' \| 'magnet' \| 'none'` | Set crosshair mode |
 | `setSubPane` | `id: string, show: boolean` | Toggle sub-pane visibility |
@@ -1328,6 +1334,7 @@ type ChartCommand =
   | { type: 'zoomIn'; factor?: number }
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
+  | { type: 'viewLatest' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
   | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
   | { type: 'setSubPane'; id: string; show: boolean }

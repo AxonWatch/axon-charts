@@ -426,6 +426,7 @@ export type ChartCommand =
   | { type: 'zoomIn'; factor?: number }
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
+  | { type: 'viewLatest' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
   | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
   | { type: 'setSubPane'; id: string; show: boolean }
@@ -646,6 +647,8 @@ export interface IChart {
   prependData(bars: Bar[]): void;
   isAutoScrolling(): boolean;
   scrollToLatest(): void;
+  /** View the latest bar WITHOUT changing follow state (pure positioning) */
+  viewLatest(): void;
   triggerVisibleRangeChange(): void;
   /** Drawing API — add/remove/list persistent chart drawings */
   addDrawing(drawing: Drawing): void;

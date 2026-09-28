@@ -1646,6 +1646,17 @@ export class Chart {
   public scrollToLatest(): void { this.eventManager.scrollToLatest(); }
 
   /**
+   * View the latest bar WITHOUT changing any state (pure positioning).
+   *
+   * Same placement as scrollToLatest() (last bar at the live edge with the
+   * configured rightOffset gap, current zoom preserved) but the live-follow
+   * state is NOT modified. See docs/API.md for the full trio:
+   * viewLatest (view only) / scrollToLatest (view + re-enables follow) /
+   * timeScale().scrollToTime (geometric, no gap).
+   */
+  public viewLatest(): void { this.eventManager.viewLatest(); }
+
+  /**
    * Get all chart data (returns a copy)
    */
   public getData(): Bar[] {
@@ -1699,6 +1710,9 @@ export class Chart {
         break;
       case 'fitContent':
         this.timeScale().fitContent();
+        break;
+      case 'viewLatest':
+        this.viewLatest();
         break;
       case 'setPriceScale':
         this.priceScale().setMode(command.mode);

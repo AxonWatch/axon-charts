@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.6.4] - 2026-07-26
+
+### Added
+- **`chart.viewLatest()` + `execute({ type: 'viewLatest' })`** — pure positioning call: places the latest bar at the live edge (same placement as `scrollToLatest()`: `rightOffset` gap respected, current zoom preserved) but **does not modify the live-follow state**. `scrollToLatest()` still re-enables auto-follow (unchanged behavior); `viewLatest()` is the state-neutral equivalent for programmatic callers (state restore, agent tooling) that want to *display* the newest bar without changing follow behavior. Fully additive; runtime +30 bytes.
+
+### Changed — Documentation accuracy sweep
+- Corrected all pre-1.6.0 stale claims against the actual v1.6.3 state: bundle size (40.3KB/25.4KB → **46.2KB**) across README (intro ×2 + performance table), `html/index.html` stat cards, `html/docs.html` (feature chip, settings subtitle, benchmark table, size breakdowns), `html/bench.html`; option counts ("94 across 14" → **164 across 25**); `docs/API.md` indicator counts ("8 built-in sub-pane" → **11** + OBV/ROC/AO rows, "5 built-in overlays" → **9**); `docs/SETTINGS.md` now documents **all 11 indicator sub-panes** (added the 8 previously-missing option tables: RSI/MACD/Stochastic/Williams %R/CCI/MFI/ATR/ADX) with a corrected counting note; `getContext()` schema in `docs/API.md` rewritten to mirror `docs/LLM.md` (`seriesType`, secondary components, stable overlay type names, `context.derived` block + option row); `CONTRIBUTING.md` count updated.
+- All counts verified against source: bundle = 46,200 gz; options = 164 documented settable fields across 25 categories + init-only `devicePixelRatio`; indicators = 11 sub-pane + 9 overlay.
+- The "11 chart configurations running live" claim in README was re-verified against `html/examples.html` (11 entries in its example registry) — accurate, no change.
+
 ## [1.6.3] - 2026-07-26
 
 ### Fixed — Calendar-anchored time axis
