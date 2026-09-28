@@ -207,6 +207,7 @@ chart.execute({ type: 'setReverse', reverse: true });
 // Viewport
 chart.execute({ type: 'scrollToTime', time: timestamp });
 chart.execute({ type: 'fitContent' });
+chart.execute({ type: 'viewLatest' });   // show the newest bar WITHOUT re-engaging live-follow
 chart.execute({ type: 'zoomIn', factor: 1.5 });
 chart.execute({ type: 'setVisibleRange', from: 1704067200000, to: 1704153600000 });
 
@@ -223,11 +224,22 @@ type ChartCommand =
   | { type: 'zoomIn'; factor?: number }
   | { type: 'zoomOut'; factor?: number }
   | { type: 'fitContent' }
+  | { type: 'viewLatest' }
   | { type: 'setPriceScale'; mode: 'linear' | 'logarithmic' | 'percentage' }
   | { type: 'setCrosshair'; mode: 'normal' | 'magnet' | 'none' }
   | { type: 'setSubPane'; id: string; show: boolean }
   | { type: 'setReverse'; reverse: boolean };
 ```
+
+**Command semantics — which "go to latest bar" to use:**
+
+| Command / call | Placement | Changes follow state? |
+|---|---|---|
+| `viewLatest` / `chart.viewLatest()` | latest bar, with the configured `rightOffset` gap | **No** — pure positioning |
+| `scrollToLatest()` (direct method) | latest bar, with gap | **Yes** — re-enables live-follow |
+| `scrollToTime` | any bar flush at right edge (no gap) | No |
+
+Agents should prefer `viewLatest` for "show me the newest bar" — it never changes the chart's follow behavior.
 
 ### Direct API Access
 

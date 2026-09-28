@@ -871,16 +871,33 @@ export class EventManager {
    * (barWidth is NOT recalculated). Also RE-ENABLES auto-scroll so the
    * chart follows new bars as they arrive.
    *
-   * To view the latest bar WITHOUT enabling auto-follow, use
-   * `timeScale().scrollToTime(lastBar.time, 'right')` for pure geometric
-   * positioning, or disable auto-scroll afterwards via
-   * `setOptions({ behavior: { autoScroll: false } })`.
+   * To view the latest bar WITHOUT touching the follow state, use
+   * `chart.viewLatest()` (pure positioning, no auto-scroll change).
    */
   public scrollToLatest(): void {
     const { w, barWidth, rightGap, axisWidth } = this.chart.state;
     if (this.chart.dataManager.length === 0) return;
     this.chart.state.offsetX = calculateRightEdgeOffset(this.chart.dataManager.length, barWidth, w, rightGap, axisWidth);
     this.autoScrollEnabled = true;
+    this.chart.render();
+    this.chart.triggerVisibleRangeChange();
+  }
+
+  /**
+   * View the latest bar WITHOUT changing any state (pure positioning).
+   *
+   * Same placement as scrollToLatest(): last bar at the right edge with the
+   * configured `timeScale.rightOffset` gap, current zoom preserved. Unlike
+   * scrollToLatest(), the live-follow state (autoScrollEnabled) is NOT
+   * modified — if live-following was off, it stays off; if on, it stays on.
+   *
+   * Use when a programmatic caller (state restore, agent tooling) wants to
+   * *display* the latest bar without altering the chart's follow behavior.
+   */
+  public viewLatest(): void {
+    const { w, barWidth, rightGap, axisWidth } = this.chart.state;
+    if (this.chart.dataManager.length === 0) return;
+    this.chart.state.offsetX = calculateRightEdgeOffset(this.chart.dataManager.length, barWidth, w, rightGap, axisWidth);
     this.chart.render();
     this.chart.triggerVisibleRangeChange();
   }
