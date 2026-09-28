@@ -156,6 +156,14 @@ Returns a structured JSON object with current viewport state, visible bars, pric
     // multi-component overlays expose `upper`/`lower` (BB, Donchian),
     // kijun/senkouA/senkouB/chikou (Ichimoku), direction (SuperTrend, PSAR).
     // ... other active sub-pane indicators
+    // effectiveHeightPercent = pane height AFTER the sub-pane-budget
+    // auto-fit (may be < heightPercent when the stack exceeds budget).
+  },
+  subPaneBudget: {  // only with active sub-panes; fractions of the USABLE
+                    // height (full height minus reserved top/bottom margins)
+    requestedTotal: 0.86,   // Σ configured heights
+    maxTotal: 0.45,         // subPane.maxTotalHeightPercent
+    mainChartPercent: 0.55  // candle area share guaranteed >= 1 - maxTotal
   },
   drawings: Drawing[],  // all drawings (positions, trendlines, boxes, etc.)
   overlays: {           // keyed by overlay id; type = stable registry name
@@ -1179,6 +1187,13 @@ interface ChartOptions {
     maxBarSpacing?: number;            // default: 1000
   };
 
+  subPane?: {
+    maxTotalHeightPercent?: number;    // default: 0.45; ceiling for the COMBINED sub-pane
+                                       // heights (fraction of usable chart height).
+                                       // Over-budget stacks shrink proportionally;
+                                       // the main candle area keeps >= (1 - budget).
+  };
+
   // === Crosshair ===
   crosshair?: {
     mode?: 'normal' | 'magnet' | 'none';  // default: 'magnet'
@@ -1233,7 +1248,12 @@ interface ChartOptions {
   // === LLM Context ===
   context?: {
     exposeData?: boolean;              // default: false (metadata only)
-    derived?: boolean;                 // default: false; adds the derived metrics block (percentB, windowStats etc.)
+    derived?: boolean | { perBar?: string[] };
+                                       // boolean: derived scalars block (default false)
+                                       // object: granular form — perBar attaches fields
+                                       // inline to visibleBars entries
+                                       // `exposeData:false + derived:true` = SUMMARY
+                                       // snapshot: scalars + budget, no bar arrays
     discoverable?: boolean;            // default: true (AI agent registry)
     id?: string;                       // default: auto-generated 'ax-xxxxxx'
   };
