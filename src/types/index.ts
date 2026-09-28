@@ -164,8 +164,17 @@ export interface ChartOptions {
      *  normalized scalars (percentB, bandwidth, priceVsMA, MACD histogram trend, etc.)
      *  for each ACTIVE indicator, plus visible-window summary statistics.
      *  Designed for LLM consumption — saves tokens and eliminates unreliable arithmetic.
-     *  Requires exposeData !== false. Default: false. */
-    derived?: boolean;
+     *  Requires exposeData !== false. Default: false.
+     *
+     *  Object form enables granular opt-ins:
+     *  - `perBar: string[]` — per-bar fields attached inline to each
+     *    `visibleBars[]` entry (dataset itself NEVER mutated — a clone is
+     *    returned). Available fields: 'returnPct', 'bodyRatio', 'trueRange',
+     *    'delta', 'body', 'upperWick', 'lowerWick'.
+     *    `true` (shorthand) = scalars only, no per-bar fields. */
+    derived?: boolean | {
+      perBar?: string[];
+    };
     /** Controls whether the chart registers in the global window.__AXON_CHARTS__ registry.
      *  When true, AI agents with the Axon Charts skill can discover and interact with this chart.
      *  Set to false for stealth mode (agents won't know this is an Axon Charts chart). */

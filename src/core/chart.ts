@@ -9,7 +9,7 @@ import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calc
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { migrateSnapshot } from '../utils/migrate.js';
-import { percentB, bandwidth, priceVsMA, macdHistogramTrend, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats } from '../utils/derived.js';
+import { percentB, bandwidth, priceVsMA, macdHistogramTrend, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats, returnPct, bodyRatio, wicks } from '../utils/derived.js';
 import { getSubPaneStack, subPaneStackTotal, subPaneStackRequested } from '../utils/subPaneLayout.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
@@ -1030,7 +1030,42 @@ export class Chart {
 
     // Conditionally expose data — reduces token cost for AI agents that only need metadata
     if (this.options.context?.exposeData !== false) {
-      result.visibleBars = visibleBars;
+      // Tier 3 per-bar derived fields: when opted in, attach them INLINE on
+      // a CLONE of the visible slice (the dataset objects are never mutated).
+      const derivedCfg = this.options.context?.derived;
+      const perBarFields = (typeof derivedCfg === 'object' && derivedCfg !== null && Array.isArray((derivedCfg as any).perBar))
+        ? (derivedCfg as { perBar: string[] }).perBar : [];
+      if (perBarFields.includes('returnPct') || perBarFields.includes('bodyRatio') || perBarFields.includes('trueRange')
+        || perBarFields.includes('delta') || perBarFields.includes('body')
+        || perBarFields.includes('upperWick') || perBarFields.includes('lowerWick')) {
+        const prevBar = startIdx > 0 ? data[startIdx - 1] : null;
+        result.visibleBars = visibleBars.map((b, i) => {
+          const prev = i === 0 ? prevBar : visibleBars[i - 1];
+          const clone: Record<string, unknown> = { ...b };
+          for (const f of perBarFields) {
+            switch (f) {
+              case 'returnPct': clone.returnPct = prev ? returnPct(b.close, prev.close) : null; break;
+              case 'delta': clone.delta = prev ? b.close - prev.close : null; break;
+              case 'body': clone.body = b.close - b.open; break;
+              case 'bodyRatio': clone.bodyRatio = bodyRatio(b.open, b.high, b.low, b.close); break;
+              case 'trueRange': {
+                if (!prev) { clone.trueRange = b.high - b.low; break; }
+                const tr1 = b.high - b.low, tr2 = Math.abs(b.high - prev.close), tr3 = Math.abs(b.low - prev.close);
+                clone.trueRange = Math.max(tr1, tr2, tr3);
+                break;
+              }
+              case 'upperWick': case 'lowerWick': {
+                const wk = wicks(b.open, b.high, b.low, b.close);
+                if (f === 'upperWick') clone.upperWick = wk.upperWick; else clone.lowerWick = wk.lowerWick;
+                break;
+              }
+            }
+          }
+          return clone as unknown as typeof b;
+        });
+      } else {
+        result.visibleBars = visibleBars;
+      }
       result.latestBar = data[data.length - 1];
 
       // Helper: slice a full-length array to the visible range
@@ -1140,10 +1175,11 @@ export class Chart {
         }
       }
 
-      // === Derived metrics (opt-in: context.derived === true) ===
-      // Pre-computed scalars LLMs cannot reliably derive themselves:
-      // normalized ratios for each ACTIVE indicator + visible-window stats.
-      if (this.options.context?.derived === true) {
+      // === Derived metrics (opt-in: context.derived === true or { perBar }) ===
+      // Tier 1+2 scalars: normalized ratios for each ACTIVE indicator +
+      // visible-window stats. (perBar-only object form still gets scalars —
+      // they are the cheapest, most reused block.)
+      if (this.options.context?.derived === true || typeof this.options.context?.derived === 'object') {
         const derived: Record<string, any> = {
           windowStats: windowStats(visibleBars)
         };

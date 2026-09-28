@@ -101,6 +101,40 @@ export function closeVsATR(close: number, prevClose: number, atr: number): numbe
   return Math.abs(close - prevClose) / atr;
 }
 
+// ── Tier 3: per-bar derived fields (opt-in via context.derived.perBar) ──
+
+/**
+ * Per-bar return: (close − prevClose) / prevClose × 100.
+ * Normalized per-bar move — asset- and timeframe-agnostic.
+ */
+export function returnPct(close: number, prevClose: number): number | null {
+  if (close == null || prevClose == null || isNaN(close) || isNaN(prevClose) || prevClose === 0) return null;
+  return ((close - prevClose) / prevClose) * 100;
+}
+
+/**
+ * Candle body ratio: (close − open) / (high − low).
+ * 0 = doji (body is nothing), +1 = bullish marubozu, −1 = bearish marubozu.
+ * Null when the bar has zero range (high === low).
+ */
+export function bodyRatio(open: number, high: number, low: number, close: number): number | null {
+  if (open == null || high == null || low == null || close == null) return null;
+  if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) return null;
+  const range = high - low;
+  if (range === 0) return null;
+  return (close - open) / range;
+}
+
+/**
+ * Candle wick sizes (rejection legs): distance from body edges to extremes.
+ * upperWick = high − max(open, close); lowerWick = min(open, close) − low.
+ */
+export function wicks(open: number, high: number, low: number, close: number): { upperWick: number; lowerWick: number } {
+  const top = Math.max(open, close);
+  const bottom = Math.min(open, close);
+  return { upperWick: high - top, lowerWick: bottom - low };
+}
+
 /**
  * Summary statistics over the visible window.
  * Collapses the whole visible range into ~10 numbers the LLM cannot

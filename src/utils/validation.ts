@@ -422,6 +422,9 @@ function validateData(data: any, path: string = 'data'): void {
   }
 }
 
+/** Allowed per-bar derived field names (context.derived.perBar). */
+const PER_BAR_FIELDS = new Set(['returnPct', 'bodyRatio', 'trueRange', 'delta', 'body', 'upperWick', 'lowerWick']);
+
 function validateContext(context: any, path: string = 'context'): void {
   if (typeof context !== 'object' || context === null) {
     throw new ValidationError(path, 'Context must be an object', context);
@@ -429,8 +432,24 @@ function validateContext(context: any, path: string = 'context'): void {
   if (context.exposeData !== undefined && typeof context.exposeData !== 'boolean') {
     throw new ValidationError(`${path}.exposeData`, 'exposeData must be a boolean', context.exposeData);
   }
-  if (context.derived !== undefined && typeof context.derived !== 'boolean') {
-    throw new ValidationError(`${path}.derived`, 'derived must be a boolean', context.derived);
+  if (context.derived !== undefined) {
+    if (typeof context.derived === 'boolean') return;
+    if (typeof context.derived === 'object' && context.derived !== null && !Array.isArray(context.derived)) {
+      const d = context.derived;
+      if (d.perBar !== undefined) {
+        if (!Array.isArray(d.perBar) || d.perBar.some((f: any) => typeof f !== 'string' || !PER_BAR_FIELDS.has(f))) {
+          throw new ValidationError(`${path}.derived.perBar`, 'perBar must be an array of field names from: returnPct, bodyRatio, trueRange, delta, body, upperWick, lowerWick', d.perBar);
+        }
+      }
+      const allowed = ['perBar'];
+      for (const k of Object.keys(d)) {
+        if (!allowed.includes(k)) {
+          throw new ValidationError(`${path}.derived.${k}`, `Unknown derived option "${k}" — allowed: ${allowed.join(', ')}`, d);
+        }
+      }
+      return;
+    }
+    throw new ValidationError(`${path}.derived`, 'derived must be a boolean or an object { perBar?: string[] }', context.derived);
   }
 }
 

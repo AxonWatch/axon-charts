@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 - Validated behavior via fake-DOM harness: 4 panes (0.70 requested of usable) → effective sum within budget, `mainChartPercent` 0.554 ≥ 0.55; 2 panes crossing budget shrink by the same factor (0.9125) preserving relative weights; `maxTotalHeightPercent: 0.6` honored (main → 0.40); 0.9 rejected by validation.
 - Bundle: 46230 → 46624 bytes gzipped (+394 bytes).
 
+### Added — Tier 3: per-bar derived fields (opt-in)
+- **`context.derived` now accepts an object form** alongside boolean: `derived: { perBar: string[] }` attaches per-bar fields **inline** to each returned `visibleBars[]` entry (dataset objects are NEVER mutated — a clone is returned). Whitelisted fields: `returnPct` (normalized per-bar return, null where no dataset-prev), `bodyRatio` (−1..+1 doji→marubozu, null on zero range), `trueRange` (Wilder), plus `delta`, `body`, `upperWick`, `lowerWick`. `perBar: []` is valid (adds nothing); the `derived: true` shorthand is unchanged (scalars only, no per-bar fields). All forms receive the scalars block.
+- 3 new pure functions in `utils/derived.ts`: `returnPct()`, `bodyRatio()`, `wicks()`. Bundle: 46624 → 47260 bytes gzipped (+636 bytes).
+- Validation updated: object form must be `{ perBar?: string[] }` — unknown keys/non-string members rejected with explicit field-name guidance. Args previously `ValidationError`-only boolean gate now union-typed in `ChartOptions.context`.
+- Verified via harness: fields computed correctly across `visibleBars` boundaries (first-visible bar reads `data[startIdx-1]` for prevClose), empty `perBar` no-ops cleanly, boolean form (1.6.x behavior) unchanged, all three invalid-shape rejections fire.
+
 ## [1.6.4] - 2026-09-28
 
 ### Added
