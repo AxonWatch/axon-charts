@@ -45,7 +45,7 @@ Returns everything an LLM needs to reason about the current chart state:
   "visibleBars": [ /* OHLCV bars visible on screen */ ],
   "latestBar": { "time": ..., "open": ..., "high": ..., "low": ..., "close": ..., "volume": ... },
   "subPanes": {
-    "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0, "latestValue": 18500 },
+    "volume": { "show": true, "heightPercent": 0.2, "scale": 1, "offset": 0, "latestValue": 18500, "effectiveHeightPercent": 0.23 },
     "rsi": {
       "show": true, "heightPercent": 0.15, "scale": 1, "offset": 0,
       "values": [52.3, 54.1, 56.7, ...],  // RSI values for visible bars (null where not yet defined)
@@ -69,6 +69,18 @@ Returns everything an LLM needs to reason about the current chart state:
       "minusDI": { "values": [...], "latestValue": 18.4 }
     }
   },
+  "subPaneBudget": {                    // sub-pane height constraint (layout)
+    "requestedTotal": 0.86,             // Σ configured heights — fraction of the USABLE chart height
+    "maxTotal": 0.45,                   // `subPane.maxTotalHeightPercent` ceiling
+    "mainChartPercent": 0.55            // candle area share (guaranteed >= 1 - maxTotal)
+  },
+  // effectiveHeightPercent (per pane) = actual drawn height as a fraction of
+  // full chart height AFTER the budget auto-fit; can be < heightPercent when
+  // the stack exceeds `subPane.maxTotalHeightPercent` — all panes shrink
+  // proportionally, the candle area always keeps at least (1 - maxTotal).
+  // Agents: check `subPaneBudget` after enabling indicators — if the pane
+  // stack is over budget it was scaled down automatically (no action needed;
+  // lowering configured heightPercent values gives panes more relative room).
   "drawings": [
     {
       "id": "pos-1", "type": "position", "color": "#3b82f6",
@@ -134,9 +146,22 @@ Returns everything an LLM needs to reason about the current chart state:
 
 **Note:** `context.exposeData` controls whether visible bars, latest bar, sub-panes, drawings, and overlays are returned. When `false` (default), only viewport metadata is returned — reduces token cost for agents that only need spatial reasoning.
 
-### getContext() with `context.derived: true` — Pre-computed Metrics
+### getContext() with `context.derived` — Pre-computed Metrics
 
 Enable `context: { exposeData: true, derived: true }` and `getContext()` adds a **`derived` block**: pre-computed scalars LLMs cannot reliably derive from raw arrays (arithmetic on long number arrays is error-prone), plus visible-window summary statistics. Numbers only — no textual interpretation; the consuming application does bucketing/interpretation.
+
+**Object form — per-bar derived fields:** `derived: { perBar: ['returnPct', 'bodyRatio', 'trueRange', ...] }` attaches the named fields INLINE to each `visibleBars[]` entry (the dataset itself is never mutated — a clone is returned). Available fields:
+
+| Field | Formula | Why |
+|---|---|---|
+| `returnPct` | (close − prevClose) / prevClose × 100 | Normalized per-bar move; null where a dataset-prev is absent |
+| `bodyRatio` | (close − open) / (high − low) | −1 (bearish marubozu) ↔ +1 (bullish marubozu), 0 = doji; null on zero range |
+| `trueRange` | max(H−L, \|H−prevC\|, \|L−prevC\|) | Per-bar volatility |
+| `delta` | close − prevClose | Absolute per-bar change |
+| `body` | close − open | Signed candle body |
+| `upperWick` / `lowerWick` | high − max(O,C) / min(O,C) − low | Rejection legs |
+
+`perBar: []` is valid (no fields added); `derived: true` (boolean shorthand) never adds per-bar fields. All forms still get the scalars block.
 
 ```javascript
 {
@@ -151,6 +176,11 @@ Enable `context: { exposeData: true, derived: true }` and `getContext()` adds a 
       "avgVolume": 18500,
       "positionInRange": 0.82              // (lastClose − low) / (high − low); 0 = at low, 1 = at high
     },
+    "windowPivots": {                      // classic P/R1/R2/S1/S2 math anchored to the
+      "p": 42875.0, "r1": 44025.0,         // VISIBLE window itself (no session inference):
+      "r2": 45100.0, "s1": 41725.0,        // P = (winHigh + winLow + winOpen) / 3,
+      "s2": 40650.0                        // R1 = 2P − winLow, S1 = 2P − winHigh, ...
+    },
     "indicators": {                        // only metrics for ACTIVE indicators
       "percentB": 0.82,                    // (close − lower) / (upper − lower); >1 = breakout
       "bandwidth": 0.0498,                 // (upper − lower) / middle; small = squeeze
@@ -158,9 +188,15 @@ Enable `context: { exposeData: true, derived: true }` and `getContext()` adds a 
       "priceVsEMA": 0.97,
       "priceVsVWAP": 1.1,
       "macdHistogramTrend": 1,             // 1 = rising, 0 = flat, −1 = falling
+      "macdCrossedSignal": -1,             // +1 = bullish cross, −1 = bearish, 0 = none in last 5 bars
       "rsiDistanceFromMid": 6.7,           // RSI − 50 (signed momentum; you apply thresholds)
       "stochKMinusD": 5.8,                 // %K − %D (cross signal)
-      "closeVsATR": 0.35                   // last bar's move in ATR units
+      "closeVsATR": 0.35,                  // last bar's move in ATR units
+      "donchianPosition": 0.75,            // 0 = at channel low, 1 = at channel high (Donchian active)
+      "cloudPosition": 0.909,              // price position within the Ichimoku Kumo (0..1; null at zero-height)
+      "cloudColor": 1,                     // 1 = Span A above Span B (bullish cloud), −1 = bearish, 0 = zero-height
+      "superTrendTrend": 1,                // 1 = uptrend, −1 = downtrend (SuperTrend active)
+      "psarTrend": -1                      // 1 = SAR below price (uptrend), −1 = above (downtrend)
     }
   }
 }
