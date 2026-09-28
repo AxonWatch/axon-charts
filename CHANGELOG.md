@@ -31,6 +31,9 @@ All notable changes to this project will be documented in this file.
   - `exposeData: false, derived: false` (default) → viewport metadata only, unchanged
 - Regressions guarded: combination C (metadata-only) remains exactly `state + viewport`; full-mode output byte-structure unchanged. Ideal for cheap agent polling and escalation flows (read summary → fetch full dump only when the scalars flag something).
 
+### Changed
+- Bundle: 46230 → **47699 bytes gzipped** (+1469 bytes, +3.2%) for the whole 1.7.0 batch: the sub-pane layout budget (394), Tier 3 per-bar derived (636), Tier 4 + MACD cross signal (306), and summary mode (98). Everything remains opt-in — default rendering is byte-for-byte equivalent to 1.6.4 for single-pane/under-budget layouts.
+
 ## [1.6.4] - 2026-09-28
 
 ### Added
