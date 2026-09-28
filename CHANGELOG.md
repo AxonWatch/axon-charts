@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.0] - 2026-09-28
+
+### Added — Sub-pane layout budget (keeps the main chart readable)
+- **`subPane.maxTotalHeightPercent`** (default **0.45**, validated 0.2–0.8) — ceiling for the COMBINED height of all active sub-panes as a fraction of the usable chart height. Previously each pane kept its full configured `heightPercent` no matter how many were active (an LLM enabling RSI + MACD + ATR got 3×15% = 45% of the chart, squeezing the candle area further with every pane). Now when the active stack would exceed the budget, **all pane heights shrink proportionally** so the main candle area always keeps at least (1 − budget) — 55% by default — no matter how many panes get enabled or by whom (LLM `setOptions`/`execute`, right-click menu, separator drag all covered by one enforcement point).
+- **Configured values are preserved** — only rendering is scaled ("requested vs effective"): `getOptions()` still returns the user's `heightPercent`; `getContext()` adds per-pane `effectiveHeightPercent` (post-budget actual) plus a `subPaneBudget: { requestedTotal, maxTotal, mainChartPercent }` summary so agents can SEE the constraint instead of guessing.
+- Budget basis = the usable chart height (full height minus reserved top/bottom axis margins); ≤ 2 panes at default heights render exactly as before (budget normally only engages from the 4th pane on).
+- Architecture: new shared layout helper `utils/subPaneLayout.ts` (`getSubPaneStack`) — the single source of truth for pane tops/heights, adopted by `chart.render()` AND all five `events.ts` interaction walks (wheel-zoom zones, separator drag hit-testing, axis drag, dblclick reset, hover) so hit-testing always matches drawn geometry.
+- Validated behavior via fake-DOM harness: 4 panes (0.70 requested of usable) → effective sum within budget, `mainChartPercent` 0.554 ≥ 0.55; 2 panes crossing budget shrink by the same factor (0.9125) preserving relative weights; `maxTotalHeightPercent: 0.6` honored (main → 0.40); 0.9 rejected by validation.
+- Bundle: 46230 → 46624 bytes gzipped (+394 bytes).
+
 ## [1.6.4] - 2026-09-28
 
 ### Added

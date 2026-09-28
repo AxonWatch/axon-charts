@@ -332,6 +332,18 @@ export interface ChartOptions {
     histogramDownColor?: string; // default: '#E11D48'
   };
 
+  // === Sub-Pane Layout Budget ===
+  subPane?: {
+    /** Ceiling for the COMBINED height of all active sub-panes, as a fraction
+     *  of total chart height (0.2–0.8). When the stack of visible panes
+     *  (volume, RSI, MACD, …) would exceed this budget, all pane heights are
+     *  scaled down proportionally so the main candle area always keeps at
+     *  least (1 − budget) of the chart height. Configured `heightPercent`
+     *  values are preserved in options — only rendering is scaled.
+     *  Default: 0.45 (main chart keeps >= 55%). */
+    maxTotalHeightPercent?: number;
+  };
+
   // === Attribution Logo ===
   attribution?: {
     /** Show the Axon.Watch attribution logo at bottom-left. Default: true */

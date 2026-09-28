@@ -10,6 +10,7 @@ import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { migrateSnapshot } from '../utils/migrate.js';
 import { percentB, bandwidth, priceVsMA, macdHistogramTrend, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats } from '../utils/derived.js';
+import { getSubPaneStack, subPaneStackTotal, subPaneStackRequested } from '../utils/subPaneLayout.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
 import { CrosshairAPI } from '../api/crosshair.js';
@@ -122,6 +123,9 @@ const DEFAULT_OPTIONS = {
     opacity: 0.07,
     show: false,
     rotate: false
+  },
+  subPane: {
+    maxTotalHeightPercent: 0.45
   },
   attribution: {
     show: true
@@ -269,6 +273,10 @@ export class Chart {
 
   // Sub-panes (indicators, volume, etc.)
   private subPanes: Map<string, SubPane> = new Map();
+
+  /** Effective sub-pane layout for the last render (budget-fitted).
+   *  Shared with events.ts hit-testing via getSubPaneStack recomputation. */
+  private _subPaneLayout: import('../utils/subPaneLayout.js').PaneLayout[] = [];
   private _subPaneShow: Map<string, boolean> = new Map();
   public volumeSubPane!: VolumeSubPane;
   public rsiSubPane!: RSISubPane;
@@ -798,12 +806,13 @@ export class Chart {
     if (this._destroyed) return;
     this.state.data = this.dataManager.data;
 
-    // === NEW: Generic sub-pane geometry ===
-    let totalHeight = 0;
-    for (const pane of this.getActiveSubPanes()) {
-      const paneHeight = pane.computeHeight(this.state, pane.getOptions());
-      totalHeight += paneHeight;
-    }
+    // === Sub-pane geometry with total-height budget ===
+    // Single layout pass shared with events.ts hit-testing (getSubPaneStack):
+    // effective stack total can shrink below the requested sum when the
+    // combined pane heights would exceed subPane.maxTotalHeightPercent —
+    // the main candle area keeps at least (1 - budget) of chart height.
+    this._subPaneLayout = getSubPaneStack(this);
+    const totalHeight = subPaneStackTotal(this._subPaneLayout);
     this.state.subPaneHeight = totalHeight;
     this.state.chartBottom = this.state.h - this.state.bottomMargin - totalHeight;
 
@@ -818,11 +827,9 @@ export class Chart {
     this.renderer.drawBackground(this.bgCtx, true);
     this.renderer.drawViewport(this.mainCtx);
 
-    // === NEW: Render all active sub-panes ===
-    let currentTop = this.state.chartBottom;
-    for (const pane of this.getActiveSubPanes()) {
-      pane.render(this.bgCtx, this, currentTop);
-      currentTop += pane.computeHeight(this.state, pane.getOptions());
+    // === Render all active sub-panes at their budget-fitted positions ===
+    for (const layout of this._subPaneLayout) {
+      layout.pane.render(this.bgCtx, this, this.state.chartBottom + layout.top);
     }
 
     this.crosshair.draw();
@@ -1034,8 +1041,21 @@ export class Chart {
 
       // Auto-expose all active sub-panes (with computed values for the visible range)
       const subPanes: Record<string, any> = {};
-      for (const pane of this.getActiveSubPanes()) {
+      // Budget-fitted layout once — effectiveHeightPercent per pane + budget summary.
+      // Budget/main-chart percentages are relative to the USABLE height
+      // (full height minus reserved top/bottom axis margins).
+      const paneStack = getSubPaneStack(this);
+      const budgetMax = this.options.subPane?.maxTotalHeightPercent ?? 0.45;
+      const usableH = Math.max(1, this.state.h - this.state.topMargin - this.state.bottomMargin);
+      const mainChartPercent = (this.state.chartBottom - this.state.topMargin) / usableH;
+      for (const layout of paneStack) {
+        const pane = layout.pane;
         const ctxData = pane.getContextData();
+        // EFFECTIVE height after the sub-pane budget (may be < configured
+        // heightPercent when the active stack exceeds the budget)
+        if (this.state.h > 0) {
+          ctxData.effectiveHeightPercent = layout.height / this.state.h;
+        }
         const scalePane = pane as any;
         // Include computed values for the visible range if available
         if (scalePane.paneState?.computedValues) {
@@ -1060,6 +1080,12 @@ export class Chart {
       }
       if (Object.keys(subPanes).length > 0) {
         result.subPanes = subPanes;
+        // Layout budget summary — lets agents SEE the constraint
+        result.subPaneBudget = {
+          requestedTotal: subPaneStackRequested(this) / usableH,
+          maxTotal: budgetMax,
+          mainChartPercent
+        };
       }
 
       // Expose drawings (positions, trendlines, boxes, etc.)
