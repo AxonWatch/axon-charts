@@ -138,22 +138,38 @@ Returns a structured JSON object with current viewport state, visible bars, pric
     version: '1.6.3',
     totalBars: 150,
     isAutoScrolling: true,
+    seriesType: 'candlestick',
     market: { baseAsset: 'BTC', quoteAsset: 'USDT', timeframe: '1m', source: 'Binance' }
   },
   // Only if context.exposeData !== false:
   visibleBars: Bar[],
   latestBar: Bar,
   subPanes: {
-    volume: { show, heightPercent, scale, offset },
+    volume: { show, heightPercent, scale, offset, latestValue },
     rsi: { show, heightPercent, scale, offset, values: number[], latestValue: number },
-    macd: { show, values: number[], latestValue: number },
+    macd: {
+      show, values: number[], latestValue,               // MACD line
+      signal: { values: number[], latestValue },
+      histogram: { values: number[], latestValue }
+    },
+    // stochastic exposes `d`; adx exposes `plusDI`/`minusDI`;
+    // multi-component overlays expose `upper`/`lower` (BB, Donchian),
+    // kijun/senkouA/senkouB/chikou (Ichimoku), direction (SuperTrend, PSAR).
     // ... other active sub-pane indicators
   },
   drawings: Drawing[],  // all drawings (positions, trendlines, boxes, etc.)
-  overlays: {           // keyed by overlay id
-    'sma-20': { id, type, options, values: number[], latestValue },
-    'ema-50': { ... },
+  overlays: {           // keyed by overlay id; type = stable registry name
+    'sma-20': { id, type: 'sma', options, values: number[], latestValue },
+    'bb-20-2': { id, type: 'bb', ..., upper: { values, latestValue }, lower: { values, latestValue } },
     // ... other active overlays
+  },
+  // Only if context.derived === true (requires exposeData):
+  derived: {
+    windowStats: { changePct, changeAbs, high, highIndex, low, lowIndex,
+                   rangePct, volatilityPct, avgVolume, positionInRange },
+    indicators: { percentB, bandwidth, priceVsSMA, priceVsEMA,
+                  priceVsVWAP, macdHistogramTrend, rsiDistanceFromMid,
+                  stochKMinusD, closeVsATR }   // only for ACTIVE indicators
   }
 }
 ```
@@ -1211,6 +1227,7 @@ interface ChartOptions {
   // === LLM Context ===
   context?: {
     exposeData?: boolean;              // default: false (metadata only)
+    derived?: boolean;                 // default: false; adds the derived metrics block (percentB, windowStats etc.)
     discoverable?: boolean;            // default: true (AI agent registry)
     id?: string;                       // default: auto-generated 'ax-xxxxxx'
   };
@@ -1621,7 +1638,7 @@ chart.setOptions({
 
 ## Sub-Pane Indicators
 
-Axon Charts includes 8 built-in sub-pane indicators (oscillators displayed in separate panes below the main chart). All extend the `ScalePane` base class and share the same interaction model (zoom, pan, separator drag, tooltip, current-value line).
+Axon Charts includes 11 built-in sub-pane indicators (oscillators displayed in separate panes below the main chart). All extend the `ScalePane` base class and share the same interaction model (zoom, pan, separator drag, tooltip, current-value line).
 
 ### Available Indicators
 
@@ -1635,6 +1652,9 @@ Axon Charts includes 8 built-in sub-pane indicators (oscillators displayed in se
 | MFI | `mfi` | 0-100 | Money Flow Index (uses volume) |
 | ATR | `atr` | 0+ | Average True Range (absolute values) |
 | ADX | `adx` | 0-100 | ADX + +DI / -DI (Directional Movement System) |
+| OBV | `obv` | ±auto | On-Balance Volume (cumulative, uses volume) |
+| ROC | `roc` | ±auto | Rate of Change percentage (around 0) |
+| Awesome Oscillator | `awesomeOscillator` | ±auto | SMA(median,5) − SMA(median,34) histogram |
 
 ### Configuration
 
@@ -1674,7 +1694,7 @@ chart.onIndicatorClick = (id, type) => {
 
 ### Right-Click Context Menu
 
-The right-click context menu includes toggle entries for all 8 sub-pane indicators (RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX), alongside the existing Volume, Grid, Crosshair, Market, and Watermark toggles.
+The right-click context menu includes toggle entries for all 11 sub-pane indicators (RSI, MACD, Stochastic, Williams %R, CCI, MFI, ATR, ADX, OBV, ROC, Awesome Oscillator), alongside the existing Volume, Grid, Crosshair, Market, and Watermark toggles.
 
 ### Options Reference
 
@@ -1713,7 +1733,7 @@ All `heightPercent` values default to 0.15 (15% of chart height) and are clamped
 
 ## Overlay Indicators
 
-Axon Charts includes 5 built-in overlay indicators (drawn on the main chart on top of candles, sharing the main price scale). All implement the `Overlay` interface.
+Axon Charts includes 9 built-in overlay indicators (drawn on the main chart on top of candles, sharing the main price scale). All implement the `Overlay` interface.
 
 ### Available Overlays
 
@@ -1721,20 +1741,32 @@ Axon Charts includes 5 built-in overlay indicators (drawn on the main chart on t
 |-------|---------------|-------------|
 | `SMAOverlay` | `'sma'` | Simple Moving Average line |
 | `EMAOverlay` | `'ema'` | Exponential Moving Average line |
+| `WMAOverlay` | `'wma'` | Weighted (linear) Moving Average line |
 | `BollingerBandsOverlay` | `'bb'` | 3 lines (mid/upper/lower) + filled band |
 | `VWAPOverlay` | `'vwap'` | Volume Weighted Average Price (daily reset) |
 | `IchimokuCloudOverlay` | `'ichimoku'` | 5 components + filled cloud (Kumo) |
+| `DonchianChannelOverlay` | `'donchian'` | Highest-high / lowest-low channel (3 lines) |
+| `SuperTrendOverlay` | `'supertrend'` | ATR-based trend line (green/red flip) |
+| `ParabolicSAROverlay` | `'psar'` | Stop and Reverse dots above/below price |
 
 ### Usage
 
 ```typescript
-import { SMAOverlay, EMAOverlay, BollingerBandsOverlay, VWAPOverlay, IchimokuCloudOverlay } from 'axon-charts';
+import {
+  SMAOverlay, EMAOverlay, WMAOverlay, BollingerBandsOverlay,
+  VWAPOverlay, IchimokuCloudOverlay, DonchianChannelOverlay,
+  SuperTrendOverlay, ParabolicSAROverlay
+} from 'axon-charts';
 
 chart.addOverlay(new SMAOverlay({ period: 20, color: '#3b82f6' }));
 chart.addOverlay(new EMAOverlay({ period: 12, color: '#f59e0b' }));
+chart.addOverlay(new WMAOverlay({ period: 50 }));
 chart.addOverlay(new BollingerBandsOverlay({ period: 20, numStdDev: 2 }));
 chart.addOverlay(new VWAPOverlay({ resetDaily: true }));
 chart.addOverlay(new IchimokuCloudOverlay());
+chart.addOverlay(new DonchianChannelOverlay({ period: 20 }));
+chart.addOverlay(new SuperTrendOverlay({ period: 10, multiplier: 3 }));
+chart.addOverlay(new ParabolicSAROverlay());
 
 // Remove by id
 chart.removeOverlay('sma-20');

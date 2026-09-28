@@ -12,10 +12,10 @@
 
 Axon Charts is a minimal-dependency candlestick charting library for modern web applications and AI agents. Built with a focus on:
 
-- **Performance** -- ~3ms first render, ~0.002ms tick updates, 40.3KB gzipped
-- **AI-First** -- Native LLM integration with structured context export
-- **Lightweight** -- Only 40.3KB gzipped (zero external dependencies)
-- **Customizable** -- 94 configuration options across 14 categories
+- **Performance** -- ~4ms first render, ~0.002ms tick updates, 46.2KB gzipped
+- **AI-First** -- Native LLM integration with structured context export and opt-in derived metrics
+- **Lightweight** -- Only 46.2KB gzipped (zero external dependencies)
+- **Customizable** -- 164 configuration options across 25 categories
 - **Type-Safe** -- Full TypeScript support with zero tsc errors
 
 ## Features
@@ -71,7 +71,7 @@ Axon Charts is a minimal-dependency candlestick charting library for modern web 
 
 ### Developer Experience
 - 3 component APIs (priceScale, timeScale, crosshair)
-- Comprehensive configuration system (94 options across 14 categories)
+- Comprehensive configuration system (164 options across 25 categories)
 - Runtime option updates with validation
 - Zero external dependencies
 
@@ -256,7 +256,7 @@ interface Bar {
 | Crosshair draw | ~0.02ms |
 | Large dataset render (5000 bars) | ~1.4ms |
 | Series type render (500 bars) | ~0.3ms |
-| Bundle (gzipped) | 40.3KB |
+| Bundle (gzipped) | 46.2KB |
 | Memory (5000 bars) | <0.1MB |
 
 ## Browser Support

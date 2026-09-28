@@ -174,6 +174,121 @@ Complete configuration reference for all chart options. All options are optional
 
 ---
 
+## RSI (7 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the RSI sub-pane. |
+| `period` | `number` | `14` | RSI lookback period (Wilder's smoothing). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#a855f7'` | RSI line color (purple). |
+| `overbought` | `number` | `70` | Overbought reference line level. |
+| `oversold` | `number` | `30` | Oversold reference line level. |
+| `showLevels` | `boolean` | `true` | Show overbought/oversold reference lines. |
+
+---
+
+## MACD (9 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the MACD sub-pane. |
+| `fastPeriod` | `number` | `12` | Fast EMA period. |
+| `slowPeriod` | `number` | `26` | Slow EMA period. |
+| `signalPeriod` | `number` | `9` | Signal EMA period (of the MACD line). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `macdColor` | `string` | `'#3b82f6'` | MACD line color (blue). |
+| `signalColor` | `string` | `'#f59e0b'` | Signal line color (amber). |
+| `histogramUpColor` | `string` | `'#10B981'` | Positive histogram bar color. |
+| `histogramDownColor` | `string` | `'#E11D48'` | Negative histogram bar color. |
+
+---
+
+## Stochastic (10 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Stochastic sub-pane. |
+| `kPeriod` | `number` | `14` | %K lookback period. |
+| `dPeriod` | `number` | `3` | %D smoothing period (SMA of %K). |
+| `smoothK` | `number` | `3` | Slow %K smoothing (1 = fast stochastic, 3 = slow). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `kColor` | `string` | `'#3b82f6'` | %K line color (blue). |
+| `dColor` | `string` | `'#f59e0b'` | %D line color (amber). |
+| `overbought` | `number` | `80` | Overbought reference line level. |
+| `oversold` | `number` | `20` | Oversold reference line level. |
+| `showLevels` | `boolean` | `true` | Show overbought/oversold reference lines. |
+
+---
+
+## Williams %R (7 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Williams %R sub-pane. |
+| `period` | `number` | `14` | Lookback period. |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#ec4899'` | Williams %R line color (pink). |
+| `overbought` | `number` | `-20` | Overbought reference line level (near 0). |
+| `oversold` | `number` | `-80` | Oversold reference line level (near -100). |
+| `showLevels` | `boolean` | `true` | Show overbought/oversold reference lines. |
+
+---
+
+## CCI (7 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the CCI sub-pane. |
+| `period` | `number` | `20` | Lookback period. |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#06b6d4'` | CCI line color (cyan). |
+| `upperLevel` | `number` | `100` | Upper reference line level. |
+| `lowerLevel` | `number` | `-100` | Lower reference line level. |
+| `showLevels` | `boolean` | `true` | Show reference lines. |
+
+---
+
+## MFI (7 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Money Flow Index sub-pane. |
+| `period` | `number` | `14` | Lookback period. |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#f97316'` | MFI line color (orange). |
+| `overbought` | `number` | `80` | Overbought reference line level. |
+| `oversold` | `number` | `20` | Oversold reference line level. |
+| `showLevels` | `boolean` | `true` | Show reference lines. |
+
+---
+
+## ATR (4 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the Average True Range sub-pane. |
+| `period` | `number` | `14` | ATR lookback period (Wilder's smoothing). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `color` | `string` | `'#14b8a6'` | ATR line color (teal). |
+
+---
+
+## ADX (8 options)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `show` | `boolean` | `false` | Display the ADX / Directional Movement sub-pane. |
+| `period` | `number` | `14` | Lookback period (Wilder smoothing). |
+| `heightPercent` | `number` | `0.15` | Sub-pane height as fraction of total chart height (0.05–0.5). |
+| `adxColor` | `string` | `'#3b82f6'` | ADX line color (blue). |
+| `plusDiColor` | `string` | `'#10B981'` | +DI line color (green). |
+| `minusDiColor` | `string` | `'#E11D48'` | −DI line color (red). |
+| `threshold` | `number` | `25` | Strong-trend reference line level. |
+| `showThreshold` | `boolean` | `true` | Show the threshold reference line. |
+
+---
+
 ## OBV (3 options)
 
 | Option | Type | Default | Description |
@@ -236,4 +351,6 @@ Complete configuration reference for all chart options. All options are optional
 
 ---
 
-**Total: 94 options across 14 categories + 1 init-only setting.**
+**Total: 164 options across 25 categories + 1 init-only setting.**
+
+*Count = settable fields documented in the tables above (all 14 types/series/scales categories + 12 indicator sub-panes + context). `devicePixelRatio` is init-only. Per-section headers list each section's option count.*

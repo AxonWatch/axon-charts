@@ -18,7 +18,7 @@ Be respectful, constructive, and professional. This is an open-source project an
 ```
 src/              -- Source code (index.ts, core, ui, series, subpanes, utils, api)
 docs/             -- Public documentation
-  SETTINGS.md     -- Options reference (94 options)
+  SETTINGS.md     -- Options reference (164 options)
   API.md          -- API surface reference
   LLM.md          -- LLM integration guide
   STREAMING.md    -- Streaming patterns
