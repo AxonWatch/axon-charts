@@ -1,5 +1,6 @@
 import { LAYOUT } from '../core/layout.js';
 import { deriveVisibleStartIdx, clampOffsetX, xToIndex, indexToX, calculateRightEdgeOffset } from '../utils/projection.js';
+import { getSubPaneStack } from '../utils/subPaneLayout.js';
 import { IChart } from '../types/index.js';
 import { DrawingInteraction } from './drawings.js';
 
@@ -120,29 +121,26 @@ export class EventManager {
     }
 
     // If double-clicked on separator line, reset sub-pane height to default (20%)
-    let currentTop = chartBottom;
-    for (const pane of this.chart.getActiveSubPanes()) {
-      const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
+    for (const layout of getSubPaneStack(this.chart)) {
+      const currentTop = chartBottom + layout.top;
       const SEPARATOR_HIT = 6;
       const isOverSeparator = mouseY > currentTop - SEPARATOR_HIT && mouseY < currentTop + SEPARATOR_HIT;
       if (isOverSeparator) {
-        const opts = pane.getOptions();
+        const opts = layout.pane.getOptions();
         if (opts) opts.heightPercent = 0.2;
         this.chart.render();
         return;
       }
 
       // If double-clicked on sub-pane axis area, reset zoom/scale
-      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
+      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + layout.height;
       const isOverAxis = mouseX > chartAreaWidth;
 
       if (isOverThisPane && isOverAxis) {
-        pane.handleDblClick(this.chart);
+        layout.pane.handleDblClick(this.chart);
         this.chart.render();
         return;
       }
-
-      currentTop += subPaneHeight;
     }
 
     // If double-clicked on Time Axis, reset horizontal zoom to default
@@ -418,19 +416,16 @@ export class EventManager {
       return;
     }
 
-    // === NEW: Sub-pane axis zoom ===
-    let currentTop = chartBottomEdge;
-    for (const pane of this.chart.getActiveSubPanes()) {
-      const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
-      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
+    // === Sub-pane axis zoom ===
+    for (const layout of getSubPaneStack(this.chart)) {
+      const currentTop = chartBottomEdge + layout.top;
+      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + layout.height;
       const isOverAxis = mouseX > chartAreaWidth;
 
-      if (isOverThisPane && isOverAxis && pane.handleWheel(this.chart, e.deltaY)) {
+      if (isOverThisPane && isOverAxis && layout.pane.handleWheel(this.chart, e.deltaY)) {
         this.chart.render();
         return;
       }
-
-      currentTop += subPaneHeight;
     }
 
     // Horizontal Zoom (time axis only, not sub-pane)
@@ -507,37 +502,32 @@ export class EventManager {
     } else if (mouseY >= chartBottomEdge - 6 && mouseY <= h - bottomMargin) {
       // Check for separator drag (6px zone, matching highlight threshold)
       const SEPARATOR_DRAG_THRESHOLD = 6;
-      let currentSepTop = chartBottomEdge;
       let foundSeparator = false;
-      for (const pane of this.chart.getActiveSubPanes()) {
-        if (Math.abs(mouseY - currentSepTop) < SEPARATOR_DRAG_THRESHOLD) {
+      for (const layout of getSubPaneStack(this.chart)) {
+        const sepTop = chartBottomEdge + layout.top;
+        if (Math.abs(mouseY - sepTop) < SEPARATOR_DRAG_THRESHOLD) {
           this.dragMode = 'separator';
           // Store WHICH pane this separator belongs to — the pane
-          // BELOW the separator line (the one whose top edge = currentSepTop).
+          // BELOW the separator line (the one whose top edge = sepTop).
           // Without this, the drag handler always resizes the first pane.
-          this.activePane = pane;
+          this.activePane = layout.pane;
           foundSeparator = true;
           break;
         }
-        currentSepTop += pane.computeHeight(this.chart.state, pane.getOptions());
       }
       if (!foundSeparator) {
         // Check if over any sub-pane axis
-        let currentTop = chartBottomEdge;
         let foundPane = false;
-        for (const pane of this.chart.getActiveSubPanes()) {
-          const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
-          const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
-          const isOverAxis = mouseX > chartAreaWidth;
+        for (const layout of getSubPaneStack(this.chart)) {
+          const currentTop = chartBottomEdge + layout.top;
+          const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + layout.height;
 
-          if (isOverThisPane && isOverAxis) {
+          if (isOverThisPane && mouseX > chartAreaWidth) {
             this.dragMode = 'subPane';
-            this.activePane = pane;
+            this.activePane = layout.pane;
             foundPane = true;
             break;
           }
-
-          currentTop += subPaneHeight;
         }
 
         if (!foundPane) {
@@ -611,14 +601,14 @@ export class EventManager {
     // Check if over any sub-pane axis, and update separator hover state
     let isOverSubPaneAxis = false;
     let separatorHovered = false;
-    let currentTop = chartBottomEdge;
     // Reset all pane separator hover states before checking
     for (const pane of this.chart.getActiveSubPanes()) {
       pane.separatorHovered = false;
     }
-    for (const pane of this.chart.getActiveSubPanes()) {
-      const subPaneHeight = pane.computeHeight(this.chart.state, pane.getOptions());
-      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + subPaneHeight;
+    for (const layout of getSubPaneStack(this.chart)) {
+      const currentTop = chartBottomEdge + layout.top;
+      const pane = layout.pane;
+      const isOverThisPane = mouseY > currentTop && mouseY <= currentTop + layout.height;
       const isOverAxis = mouseX > chartAreaWidth;
 
       if (isOverThisPane && isOverAxis) {
@@ -634,8 +624,6 @@ export class EventManager {
       }
 
       if (isOverThisPane && isOverAxis) break;
-
-      currentTop += subPaneHeight;
     }
 
     // Trigger render when separator hover state changes (highlight on/off)

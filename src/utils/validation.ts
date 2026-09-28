@@ -78,6 +78,11 @@ export function validateOptions(options: Partial<ChartOptions>): void {
     validateVolume(options.volume);
   }
 
+  // === SUB-PANE LAYOUT BUDGET ===
+  if (options.subPane) {
+    validateSubPane(options.subPane);
+  }
+
   // === ATTRIBUTION LOGO ===
   if (options.attribution) {
     validateAttribution(options.attribution);
@@ -455,6 +460,17 @@ function validateVolume(volume: any, path: string = "volume"): void {
   if (volume.minMove !== undefined && volume.minMove !== null) {
     if (typeof volume.minMove !== "number" || volume.minMove <= 0) {
       throw new ValidationError(path + ".minMove", "Min move must be a positive number, or null", volume.minMove);
+    }
+  }
+}
+
+function validateSubPane(sp: any, path: string = 'subPane'): void {
+  if (typeof sp !== 'object' || sp === null) {
+    throw new ValidationError(path, 'Sub-pane layout must be an object', sp);
+  }
+  if (sp.maxTotalHeightPercent !== undefined) {
+    if (typeof sp.maxTotalHeightPercent !== 'number' || sp.maxTotalHeightPercent < 0.2 || sp.maxTotalHeightPercent > 0.8) {
+      throw new ValidationError(`${path}.maxTotalHeightPercent`, 'maxTotalHeightPercent must be a number between 0.2 and 0.8', sp.maxTotalHeightPercent);
     }
   }
 }
