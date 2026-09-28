@@ -150,6 +150,8 @@ Returns everything an LLM needs to reason about the current chart state:
 
 Enable `context: { exposeData: true, derived: true }` and `getContext()` adds a **`derived` block**: pre-computed scalars LLMs cannot reliably derive from raw arrays (arithmetic on long number arrays is error-prone), plus visible-window summary statistics. Numbers only — no textual interpretation; the consuming application does bucketing/interpretation.
 
+**Summary mode:** `context: { exposeData: false, derived: true }` returns the derived block as a scalars-only snapshot — windowStats, windowPivots, active-indicator signals, per-pane layout metadata, and the sub-pane budget — with NO bar arrays, drawings, or overlay values. Typical payload ~1.1KB vs ~12.5KB chars for the full dump (~91% smaller). Ideal for cheap polling reads and escalation flows: read the summary first, fetch the full diet only when the scalars show something interesting.
+
 **Object form — per-bar derived fields:** `derived: { perBar: ['returnPct', 'bodyRatio', 'trueRange', ...] }` attaches the named fields INLINE to each `visibleBars[]` entry (the dataset itself is never mutated — a clone is returned). Available fields:
 
 | Field | Formula | Why |

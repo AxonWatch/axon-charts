@@ -24,6 +24,13 @@ All notable changes to this project will be documented in this file.
 - **`donchianPosition`** — 0..1 within the Donchian channel upper/lower (Donchian overlay active); **`cloudPosition`** + **`cloudColor`** (1/−1/0) — price position within the Ichimoku Kumo (null at zero-height span overlaps) — via `positionInChannel()` pure helper; **`superTrendTrend`** / **`psarTrend`** — 1/−1 trend directions from the already-exposed `direction` components.
 - All new metrics follow the shipped design rules: numbers only, normalized where possible, null where undefined, computed only for ACTIVE indicators (nothing for inactive ones). Verified: bearish/bullish cross detection (−1/+1), steady-trend 0, macd null-safe on tiny datasets, donchian 0.75/0.99/bull-marked ranges, ichimoku 0.909 (0..1) + color, psar/superTrend 1/−1, zero-height cloud edge case returns null position without crashing.
 
+### Added — Summary mode (scalars-only context snapshot)
+- **`{ exposeData: false, derived: true }` is now a valid combination** — previously the derived block was gated behind `exposeData`, forcing agents to pay the full bar-array payload even when they only wanted the scalars. Now the two concerns are independent:
+  - `exposeData: true` (default) → full diet as before (visibleBars, latestBar, pane value arrays, drawings, overlays) + derived block when derived is on
+  - `exposeData: false, derived: true` → **summary snapshot**: windowStats + windowPivots + active-indicator scalars + per-pane layout metadata (`effectiveHeightPercent`) + `subPaneBudget` — NO bar arrays (~1.1K chars vs ~12.5K for the full dump, ~91% smaller in the verification case)
+  - `exposeData: false, derived: false` (default) → viewport metadata only, unchanged
+- Regressions guarded: combination C (metadata-only) remains exactly `state + viewport`; full-mode output byte-structure unchanged. Ideal for cheap agent polling and escalation flows (read summary → fetch full dump only when the scalars flag something).
+
 ## [1.6.4] - 2026-09-28
 
 ### Added

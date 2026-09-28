@@ -1028,51 +1028,60 @@ export class Chart {
         } }
     };
 
-    // Conditionally expose data — reduces token cost for AI agents that only need metadata
-    if (this.options.context?.exposeData !== false) {
-      // Tier 3 per-bar derived fields: when opted in, attach them INLINE on
-      // a CLONE of the visible slice (the dataset objects are never mutated).
-      const derivedCfg = this.options.context?.derived;
-      const perBarFields = (typeof derivedCfg === 'object' && derivedCfg !== null && Array.isArray((derivedCfg as any).perBar))
-        ? (derivedCfg as { perBar: string[] }).perBar : [];
-      if (perBarFields.includes('returnPct') || perBarFields.includes('bodyRatio') || perBarFields.includes('trueRange')
-        || perBarFields.includes('delta') || perBarFields.includes('body')
-        || perBarFields.includes('upperWick') || perBarFields.includes('lowerWick')) {
-        const prevBar = startIdx > 0 ? data[startIdx - 1] : null;
-        result.visibleBars = visibleBars.map((b, i) => {
-          const prev = i === 0 ? prevBar : visibleBars[i - 1];
-          const clone: Record<string, unknown> = { ...b };
-          for (const f of perBarFields) {
-            switch (f) {
-              case 'returnPct': clone.returnPct = prev ? returnPct(b.close, prev.close) : null; break;
-              case 'delta': clone.delta = prev ? b.close - prev.close : null; break;
-              case 'body': clone.body = b.close - b.open; break;
-              case 'bodyRatio': clone.bodyRatio = bodyRatio(b.open, b.high, b.low, b.close); break;
-              case 'trueRange': {
-                if (!prev) { clone.trueRange = b.high - b.low; break; }
-                const tr1 = b.high - b.low, tr2 = Math.abs(b.high - prev.close), tr3 = Math.abs(b.low - prev.close);
-                clone.trueRange = Math.max(tr1, tr2, tr3);
-                break;
-              }
-              case 'upperWick': case 'lowerWick': {
-                const wk = wicks(b.open, b.high, b.low, b.close);
-                if (f === 'upperWick') clone.upperWick = wk.upperWick; else clone.lowerWick = wk.lowerWick;
-                break;
-              }
-            }
-          }
-          return clone as unknown as typeof b;
-        });
-      } else {
-        result.visibleBars = visibleBars;
-      }
-      result.latestBar = data[data.length - 1];
+    // Two exposure channels:
+    //  exposeData !== false  → full diet (visibleBars, latestBar, pane value
+    //    arrays, drawings, overlays)
+    //  derived === true | { perBar } → derived scalars block; works standalone
+    //    as a SUMMARY snapshot (no bar arrays) when exposeData === false.
+    const derivedOn = this.options.context?.derived === true || typeof this.options.context?.derived === 'object';
+    const exposeData = this.options.context?.exposeData !== false;
 
-      // Helper: slice a full-length array to the visible range
+    if (exposeData || derivedOn) {
+      // Helper: slice a full-length array to the visible range (full mode only consumers)
       const sliceComponent = (arr: number[]): { values: (number | null)[]; latestValue: number | null } => ({
         values: arr.slice(startIdx, endIdx + 1).map(v => (v != null && !isNaN(v)) ? v : null),
         latestValue: (() => { const lv = arr[arr.length - 1]; return (lv != null && !isNaN(lv)) ? lv : null; })()
       });
+
+      if (exposeData) {
+        // Tier 3 per-bar derived fields: when opted in, attach them INLINE on
+        // a CLONE of the visible slice (the dataset objects are never mutated).
+        const derivedCfg = this.options.context?.derived;
+        const perBarFields = (typeof derivedCfg === 'object' && derivedCfg !== null && Array.isArray((derivedCfg as any).perBar))
+          ? (derivedCfg as { perBar: string[] }).perBar : [];
+        if (perBarFields.includes('returnPct') || perBarFields.includes('bodyRatio') || perBarFields.includes('trueRange')
+          || perBarFields.includes('delta') || perBarFields.includes('body')
+          || perBarFields.includes('upperWick') || perBarFields.includes('lowerWick')) {
+          const prevBar = startIdx > 0 ? data[startIdx - 1] : null;
+          result.visibleBars = visibleBars.map((b, i) => {
+            const prev = i === 0 ? prevBar : visibleBars[i - 1];
+            const clone: Record<string, unknown> = { ...b };
+            for (const f of perBarFields) {
+              switch (f) {
+                case 'returnPct': clone.returnPct = prev ? returnPct(b.close, prev.close) : null; break;
+                case 'delta': clone.delta = prev ? b.close - prev.close : null; break;
+                case 'body': clone.body = b.close - b.open; break;
+                case 'bodyRatio': clone.bodyRatio = bodyRatio(b.open, b.high, b.low, b.close); break;
+                case 'trueRange': {
+                  if (!prev) { clone.trueRange = b.high - b.low; break; }
+                  const tr1 = b.high - b.low, tr2 = Math.abs(b.high - prev.close), tr3 = Math.abs(b.low - prev.close);
+                  clone.trueRange = Math.max(tr1, tr2, tr3);
+                  break;
+                }
+                case 'upperWick': case 'lowerWick': {
+                  const wk = wicks(b.open, b.high, b.low, b.close);
+                  if (f === 'upperWick') clone.upperWick = wk.upperWick; else clone.lowerWick = wk.lowerWick;
+                  break;
+                }
+              }
+            }
+            return clone as unknown as typeof b;
+          });
+        } else {
+          result.visibleBars = visibleBars;
+        }
+        result.latestBar = data[data.length - 1];
+      }
 
       // Auto-expose all active sub-panes (with computed values for the visible range)
       const subPanes: Record<string, any> = {};
@@ -1093,7 +1102,8 @@ export class Chart {
         }
         const scalePane = pane as any;
         // Include computed values for the visible range if available
-        if (scalePane.paneState?.computedValues) {
+        // (full mode only — summary mode keeps pane metadata + budget only)
+        if (exposeData && scalePane.paneState?.computedValues) {
           const values = scalePane.paneState.computedValues as number[];
           ctxData.values = values.slice(startIdx, endIdx + 1).map(v =>
             (v != null && !isNaN(v)) ? v : null
@@ -1104,11 +1114,13 @@ export class Chart {
           }
         }
         // Expose secondary components for multi-component indicators
-        // (MACD signal/histogram, Stochastic %D, ADX +DI/-DI)
-        const extraComps = scalePane.getSecondaryComponents?.() ?? {};
-        for (const [name, arr] of Object.entries(extraComps)) {
-          if (Array.isArray(arr) && (arr as number[]).length > 0) {
-            ctxData[name] = sliceComponent(arr as number[]);
+        // (MACD signal/histogram, Stochastic %D, ADX +DI/-DI) — full mode only
+        if (exposeData) {
+          const extraComps = scalePane.getSecondaryComponents?.() ?? {};
+          for (const [name, arr] of Object.entries(extraComps)) {
+            if (Array.isArray(arr) && (arr as number[]).length > 0) {
+              ctxData[name] = sliceComponent(arr as number[]);
+            }
           }
         }
         subPanes[pane.id] = ctxData;
@@ -1123,8 +1135,8 @@ export class Chart {
         };
       }
 
-      // Expose drawings (positions, trendlines, boxes, etc.)
-      if (this._drawings.length > 0) {
+      // Expose drawings (positions, trendlines, boxes, etc.) — full mode only
+      if (exposeData && this._drawings.length > 0) {
         result.drawings = this._drawings.map(d => ({
           id: d.id,
           type: d.type,
@@ -1138,9 +1150,9 @@ export class Chart {
         }));
       }
 
-      // Expose overlays (SMA, EMA, Bollinger Bands, etc.) with their computed values
+      // Expose overlays (SMA, EMA, Bollinger Bands, etc.) with their computed values — full mode only
       const overlays = this.renderer.getOverlays();
-      if (overlays.length > 0) {
+      if (exposeData && overlays.length > 0) {
         const overlayData: Record<string, any> = {};
         for (const overlay of overlays) {
           const opts = overlay.getOptions();
@@ -1175,11 +1187,11 @@ export class Chart {
         }
       }
 
-      // === Derived metrics (opt-in: context.derived === true or { perBar }) ===
+      // === Derived metrics — fires in BOTH modes (full diet and summary) ===
       // Tier 1+2 scalars: normalized ratios for each ACTIVE indicator +
-      // visible-window stats. (perBar-only object form still gets scalars —
-      // they are the cheapest, most reused block.)
-      if (this.options.context?.derived === true || typeof this.options.context?.derived === 'object') {
+      // visible-window stats. In summary mode (exposeData false) this is
+      // the ONLY payload beyond viewport/budget metadata — pure scalars.
+      if (derivedOn) {
         // Window self-anchored pivots (no session inference — anchor is the
         // visible window itself: P/R1/R2/S1/S2 from its own extremes).
         const ws = windowStats(visibleBars);
