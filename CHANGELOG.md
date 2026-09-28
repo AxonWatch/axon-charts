@@ -18,6 +18,12 @@ All notable changes to this project will be documented in this file.
 - Validation updated: object form must be `{ perBar?: string[] }` — unknown keys/non-string members rejected with explicit field-name guidance. Args previously `ValidationError`-only boolean gate now union-typed in `ChartOptions.context`.
 - Verified via harness: fields computed correctly across `visibleBars` boundaries (first-visible bar reads `data[startIdx-1]` for prevClose), empty `perBar` no-ops cleanly, boolean form (1.6.x behavior) unchanged, all three invalid-shape rejections fire.
 
+### Added — Tier 4 + MACD cross signal
+- **`windowPivots`** — classic floor-trader pivots anchored to the VISIBLE window itself: `P = (winHigh + winLow + winOpen)/3`, `R1 = 2P − winLow`, `S1 = 2P − winHigh`, `R2 = P + (winHigh − winLow)`, `S2 = P − (winHigh − winLow)`. No session inference (honors the minimal-library constraint — the window is its own anchor); new pure helper `windowPivots()`.
+- **`macdCrossedSignal`** (last Tier-1 scalar) — +1 = bullish cross within the last 5 visible bars, −1 = bearish, 0 = none. New pure helper `macdCrossedSignal(macd, signal, lookback)` reads the already-cached sub-pane slices. A window-anchoring bug was caught and fixed during verification (the initial draft scanned slice-index 0..N instead of the last N bars — unit tests confirmed +1/−1 detection now fires exactly when the cross is inside the trailing window and 0 when it is outside).
+- **`donchianPosition`** — 0..1 within the Donchian channel upper/lower (Donchian overlay active); **`cloudPosition`** + **`cloudColor`** (1/−1/0) — price position within the Ichimoku Kumo (null at zero-height span overlaps) — via `positionInChannel()` pure helper; **`superTrendTrend`** / **`psarTrend`** — 1/−1 trend directions from the already-exposed `direction` components.
+- All new metrics follow the shipped design rules: numbers only, normalized where possible, null where undefined, computed only for ACTIVE indicators (nothing for inactive ones). Verified: bearish/bullish cross detection (−1/+1), steady-trend 0, macd null-safe on tiny datasets, donchian 0.75/0.99/bull-marked ranges, ichimoku 0.909 (0..1) + color, psar/superTrend 1/−1, zero-height cloud edge case returns null position without crashing.
+
 ## [1.6.4] - 2026-09-28
 
 ### Added

@@ -9,7 +9,7 @@ import { priceToY, indexToX, xToIndex, deriveVisibleStartIdx, clampOffsetX, calc
 import { deepMerge, deepClone } from '../utils/merge.js';
 import { PriceFormatter } from '../utils/formatter.js';
 import { migrateSnapshot } from '../utils/migrate.js';
-import { percentB, bandwidth, priceVsMA, macdHistogramTrend, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats, returnPct, bodyRatio, wicks } from '../utils/derived.js';
+import { percentB, bandwidth, priceVsMA, macdHistogramTrend, macdCrossedSignal, rsiDistanceFromMid, stochKMinusD, closeVsATR, windowStats, windowPivots, positionInChannel, returnPct, bodyRatio, wicks } from '../utils/derived.js';
 import { getSubPaneStack, subPaneStackTotal, subPaneStackRequested } from '../utils/subPaneLayout.js';
 import { PriceScaleAPI } from '../api/price-scale.js';
 import { TimeScaleAPI } from '../api/time-scale.js';
@@ -1180,9 +1180,15 @@ export class Chart {
       // visible-window stats. (perBar-only object form still gets scalars —
       // they are the cheapest, most reused block.)
       if (this.options.context?.derived === true || typeof this.options.context?.derived === 'object') {
+        // Window self-anchored pivots (no session inference — anchor is the
+        // visible window itself: P/R1/R2/S1/S2 from its own extremes).
+        const ws = windowStats(visibleBars);
         const derived: Record<string, any> = {
-          windowStats: windowStats(visibleBars)
+          windowStats: ws
         };
+        if (ws.high != null && ws.low != null && visibleBars.length > 0) {
+          derived.windowPivots = windowPivots(ws.high, ws.low, visibleBars[0].open);
+        }
 
         const indicators: Record<string, any> = {};
         const lastBar = data[data.length - 1];
@@ -1216,6 +1222,26 @@ export class Chart {
             if (vwapVal != null) {
               indicators.priceVsVWAP = priceVsMA(lastBar?.close, vwapVal);
             }
+          } else if (typeName === 'donchian') {
+            const comps = overlay.getComponents?.() ?? {};
+            const upper = comps.upper?.[comps.upper.length - 1];
+            const lower = comps.lower?.[comps.lower.length - 1];
+            if (upper != null && lower != null) {
+              indicators.donchianPosition = positionInChannel(lastBar?.close, upper, lower);
+            }
+          } else if (typeName === 'ichimoku') {
+            const comps = overlay.getComponents?.() ?? {};
+            const a = comps.senkouA?.[comps.senkouA.length - 1];
+            const b = comps.senkouB?.[comps.senkouB.length - 1];
+            if (a != null && b != null && !isNaN(a) && !isNaN(b)) {
+              indicators.cloudPosition = positionInChannel(lastBar?.close, Math.max(a, b), Math.min(a, b));
+              indicators.cloudColor = a > b ? 1 : (a < b ? -1 : 0);  // 1 bullish A>B (same basis as TV-style cloud shading)
+            }
+          } else if (typeName === 'supertrend' || typeName === 'psar') {
+            const dir = overlay.getComponents?.()?.direction?.[(overlay.getComponents?.() as any).direction.length - 1];
+            if (dir != null && dir !== 0) {
+              indicators[typeName === 'psar' ? 'psarTrend' : 'superTrendTrend'] = dir;
+            }
           }
         }
 
@@ -1235,6 +1261,10 @@ export class Chart {
         if (macdPane?.macdValues) {
           const hist = macdPane.macdValues.histogram.slice(startIdx, endIdx + 1).map((v: number) => (v != null && !isNaN(v)) ? v : null);
           indicators.macdHistogramTrend = macdHistogramTrend(hist as any);
+          // Cross within the last N visible bars
+          const macdSlice = macdPane.macdValues.macd.slice(startIdx, endIdx + 1).map((v: number) => (v != null && !isNaN(v)) ? v : null) as any[];
+          const signalSlice = macdPane.macdValues.signal.slice(startIdx, endIdx + 1).map((v: number) => (v != null && !isNaN(v)) ? v : null) as any[];
+          indicators.macdCrossedSignal = macdCrossedSignal(macdSlice, signalSlice, 5);
         }
 
         const stochPane = subPaneMap['stochastic'] as any;

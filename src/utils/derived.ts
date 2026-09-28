@@ -135,6 +135,76 @@ export function wicks(open: number, high: number, low: number, close: number): {
   return { upperWick: high - top, lowerWick: bottom - low };
 }
 
+// ── Tier 4: window/local-derived metrics (opt-in via context.derived) ──
+
+/**
+ * Position within a channel: (close − bottom) / (top − bottom), 0..1.
+ * Used for `donchianPosition` (top/bottom = rolling highest-high/
+ * lowest-low over N bars) and `cloudPosition` (Ichimoku Kumo edges).
+ * Null when the channel has zero height.
+ */
+export function positionInChannel(close: number, top: number, bottom: number): number | null {
+  if (close == null || top == null || bottom == null) return null;
+  if (isNaN(close) || isNaN(top) || isNaN(bottom)) return null;
+  if (top === bottom) return null;
+  return (close - bottom) / (top - bottom);
+}
+
+/**
+ * Window pivots (classic floor-trader math anchored to the VISIBLE window —
+ * no session inference; the anchor is the window itself):
+ *   P  = (winHigh + winLow + winOpen) / 3
+ *   R1 = 2P − winLow    S1 = 2P − winHigh
+ *   R2 = P + (winHigh − winLow)    S2 = P − (winHigh − winLow)
+ */
+export function windowPivots(winHigh: number, winLow: number, winOpen: number): {
+  p: number; r1: number; r2: number; s1: number; s2: number;
+} {
+  const p = (winHigh + winLow + winOpen) / 3;
+  const range = winHigh - winLow;
+  return {
+    p,
+    r1: 2 * p - winLow,
+    r2: p + range,
+    s1: 2 * p - winHigh,
+    s2: p - range
+  };
+}
+
+/**
+ * MACD cross signal over the last window: +1 if the MACD line crossed ABOVE
+ * the signal within the last `lookback` bars, −1 if it crossed BELOW, 0 if
+ * no cross in the window. Null when either line is not defined in the window.
+ *
+ * @param macd / signal arrays of visible-slice values (null where undefined)
+ * @param lookback how many trailing bars to inspect (default 5)
+ */
+/**
+ * MACD cross signal over the last window: +1 if the MACD line crossed ABOVE
+ * the signal within the last `lookback` bars, −1 if it crossed BELOW, 0 if
+ * no cross in the window. Null when either line is not defined in the window.
+ *
+ * @param macd / signal arrays of visible-slice values (null where undefined)
+ * @param lookback how many trailing bars to inspect (default 5)
+ */
+export function macdCrossedSignal(
+  macd: (number | null)[],
+  signal: (number | null)[],
+  lookback: number = 5
+): number | null {
+  const n = Math.min(macd.length, signal.length);
+  const from = Math.max(1, n - lookback);   // exclusive lower bound
+  for (let i = n - 1; i >= from; i--) {
+    const m1 = macd[i], s1 = signal[i], m0 = macd[i - 1], s0 = signal[i - 1];
+    if (m1 == null || s1 == null || m0 == null || s0 == null) continue;
+    const diff1 = m1 - s1;
+    const diff0 = m0 - s0;
+    if (diff0 <= 0 && diff1 > 0) return 1;    // bullish cross (prev below/at, now above)
+    if (diff0 >= 0 && diff1 < 0) return -1;   // bearish cross
+  }
+  return 0;
+}
+
 /**
  * Summary statistics over the visible window.
  * Collapses the whole visible range into ~10 numbers the LLM cannot
