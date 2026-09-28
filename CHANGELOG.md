@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.6.4] - 2026-07-26
+## [1.6.4] - 2026-09-28
 
 ### Added
 - **`chart.viewLatest()` + `execute({ type: 'viewLatest' })`** — pure positioning call: places the latest bar at the live edge (same placement as `scrollToLatest()`: `rightOffset` gap respected, current zoom preserved) but **does not modify the live-follow state**. `scrollToLatest()` still re-enables auto-follow (unchanged behavior); `viewLatest()` is the state-neutral equivalent for programmatic callers (state restore, agent tooling) that want to *display* the newest bar without changing follow behavior. Fully additive; runtime +30 bytes.
@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 - All counts verified against source: bundle = 46,200 gz; options = 164 documented settable fields across 25 categories + init-only `devicePixelRatio`; indicators = 11 sub-pane + 9 overlay.
 - The "11 chart configurations running live" claim in README was re-verified against `html/examples.html` (11 entries in its example registry) — accurate, no change.
 
-## [1.6.3] - 2026-07-26
+## [1.6.3] - 2026-09-22
 
 ### Fixed — Calendar-anchored time axis
 - **Time-axis labels are now anchored to real calendar boundaries** — previously boundaries were snapped to epoch multiples of `step × interval`, so day-change (date) labels appeared near-but-not-at local midnight, and in empty regions (no bars visible — panned beyond the data) the day-rollover detection compared against a synthetic previous-time hop (`t − step × interval`), which misfired on most boundaries and produced dense interleaved date/time label merges on heavily zoomed-out/empty charts. Now a single unified rule applies everywhere (in-data and empty regions):
@@ -26,7 +26,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Bundle: 45289 → 46200 bytes gzipped (+911 bytes).
 
-## [1.6.2] - 2026-07-26
+## [1.6.2] - 2026-09-22
 
 ### Fixed — `timeScale.minBarSpacing` now fully honored
 - **Mouse/touch zoom interactions now respect the configured `minBarSpacing`** — the option defined the deepest zoom-out level, but the wheel, drag-zoom, and pinch handlers enforced a hardcoded 4px floor regardless of the setting. Now all three interaction paths read `timeScale.minBarSpacing`, consistent with the `zoomIn`/`zoomOut`/`fitContent`/`setVisibleRange` APIs which already honored it. Default remains 4 (no behavior change for existing users).
@@ -35,7 +35,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Bundle: 45265 → 45289 bytes gzipped (+24 bytes).
 
-## [1.6.1] - 2026-07-26
+## [1.6.1] - 2026-09-21
 
 ### Fixed — TypeScript types unreachable through `exports`
 - **TypeScript consumers could not resolve the package's types** — `package.json`'s `exports` map had no `types` condition, and modern module resolution (`bundler`, `node16`, `nodenext` — what modern consumers use) resolves types ONLY through conditions inside `exports`; the top-level `"types": "dist/index.d.ts"` field is ignored when `exports` exists. Result: `error TS7016: Could not find a declaration file for module 'axon-charts'` under `strict`, despite the 150 `.d.ts` files shipping in the tarball since 1.6.0. Fix: added `"types": "./dist/index.d.ts"` as the first condition of the `"."` export. Verified against the live tarball with consumer simulations under `--moduleResolution bundler` and `node16`.
@@ -44,7 +44,7 @@ All notable changes to this project will be documented in this file.
 - **`"require"` condition pointed at the IIFE build** — `dist/chart.js` is `format: 'iife'` (assigns a browser global, never touches `module.exports`), so a CommonJS consumer got `{}` silently. Additionally, under the package's `"type": "module"`, a `.js` CJS file would be parsed as ESM by Node regardless. Fix: `esbuild.config.js` now emits a true CommonJS bundle as `dist/chart.cjs` (no `globalName` → esbuild assigns `module.exports`; `.cjs` extension required under `"type": "module"`), wired into `"require"` and `"default"` conditions + top-level `main`. Verified at runtime: `require('axon-charts')` returns the full exports object (`createChart`, `Chart`, `Indicators`, …).
 - Browser bundles unchanged: `dist/chart.js` (IIFE) and `dist/chart.esm.js` are byte-identical in content to 1.6.0 — the `.cjs` build is an additional tarball-only artifact (~45KB packed) never loaded by browsers.
 
-## [1.6.0] - 2026-07-26
+## [1.6.0] - 2026-09-21
 
 ### Changed
 - Bundle: 41712 → 45259 bytes gzipped (+3547 bytes) for 7 new indicators, the derived-metrics module, and all context exposure fixes. TypeScript declarations (`.d.ts`) are additionally shipped but cost zero runtime bytes.
