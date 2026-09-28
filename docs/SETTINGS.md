@@ -22,6 +22,14 @@ Complete configuration reference for all chart options. All options are optional
 
 ---
 
+## Sub-Pane Layout (1 option)
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `maxTotalHeightPercent` | `number` | `0.45` | Ceiling for the COMBINED height of all active sub-panes, as a fraction of the **usable** chart height (0.2–0.8). When the active pane stack (volume, RSI, MACD, …) would exceed the budget, all pane heights shrink proportionally so the main candle area always keeps at least (1 − budget) of the drawable space. Configured `heightPercent` values are preserved in options — only rendering is scaled. The main chart is not affected for stacks within budget (≤ 2 panes at default heights). |
+
+---
+
 ## Attribution (1 option)
 
 | Option | Type | Default | Description |
