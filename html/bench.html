@@ -4,15 +4,16 @@
 <meta charset="UTF-8">
 <title>Axon Charts - Performance Benchmarks</title>
 <script src="https://unpkg.com/axon-charts@1.7.0/dist/chart.js"></script>
+<link rel="stylesheet" href="tokens.css">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #0d0d0d; color: #ccc; font-family: system-ui, -apple-system, sans-serif; padding: 32px; }
+  body { background: var(--bg-primary); color: #ccc; font-family: system-ui, -apple-system, sans-serif; padding: 32px; }
   h1 { font-size: 20px; color: #fff; margin-bottom: 4px; }
   h1 span { color: #4ade80; }
-  .sub { color: #666; font-size: 13px; margin-bottom: 24px; }
+  .sub { color: var(--text-tertiary); font-size: 13px; margin-bottom: 24px; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
   .card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 16px; }
-  .card h3 { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .card h3 { font-size: 13px; color: var(--text-secondary); margin-bottom: 8px; }
   .card .val { font-size: 28px; font-weight: 700; color: #4ade80; }
   #chart-wrap { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
   #chart-wrap .hdr { padding: 12px 16px; border-bottom: 1px solid #2a2a2a; font-size: 13px; color: #aaa; display: flex; justify-content: space-between; }

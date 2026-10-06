@@ -5,21 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Axon Charts - Documentation</title>
   <script src="https://unpkg.com/lucide@0.462.0"></script>
-  <style>
-    :root {
-      --bg-primary: #0a0a0a;
-      --bg-secondary: #1a1a1a;
-      --bg-tertiary: #111;
-      --text-primary: #ffffff;
-      --text-secondary: #888888;
-      --text-tertiary: #666666;
-      --border-color: #2a2a2a;
-      --border-light: #333333;
-      --accent: #4ade80;
-      --accent-hover: #22c55e;
-      --card-bg: #1a1a1a;
-      --sidebar-bg: #111;
-    }
+  <link rel="stylesheet" href="tokens.css">
+<style>
 
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -2252,8 +2239,11 @@ interface DrawingData {
           e.preventDefault();
           e.stopPropagation();
 
-          // Scroll to heading smoothly
-          heading.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          // Scroll to heading smoothly (respect reduced-motion preference)
+          heading.scrollIntoView({
+            behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+            block: 'start'
+          });
 
           // Copy URL to clipboard (using section hash for compatibility)
           const url = window.location.href.split('#')[0] + `#${sectionId}`;

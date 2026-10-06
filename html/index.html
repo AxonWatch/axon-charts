@@ -6,22 +6,8 @@
   <title>Axon Charts - LLM-First Financial Charting Library</title>
   <meta name="description" content="High-performance, LLM-first financial charting library for modern web applications. Built for AI agents, optimized for developers.">
   <script src="https://unpkg.com/lucide@0.462.0"></script>
-  <style>
-    :root {
-      --bg-primary: #0a0a0a;
-      --bg-secondary: #1a1a1a;
-      --bg-tertiary: #0f0f0f;
-      --text-primary: #ffffff;
-      --text-secondary: #888888;
-      --text-tertiary: #666666;
-      --border-color: #2a2a2a;
-      --border-light: #333333;
-      --accent: #4ade80;
-      --accent-hover: #22c55e;
-      --card-bg: #1a1a1a;
-      --input-bg: #0f0f0f;
-      --shadow: rgba(0, 0, 0, 0.45);
-    }
+  <link rel="stylesheet" href="tokens.css">
+<style>
 
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -264,7 +250,7 @@
 
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
       gap: 32px;
       max-width: 1200px;
       margin: 0 auto;
@@ -376,7 +362,7 @@
 
     .api-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
       gap: 24px;
       max-width: 1200px;
       margin: 0 auto;
@@ -637,7 +623,7 @@
   <!-- Navigation -->
   <nav>
     <div class="logo">
-      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo" style="height: 32px; vertical-align: middle; margin-right: 8px;">
+      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo" width="35" height="32" style="height: 32px; vertical-align: middle; margin-right: 8px;">
       <span style="vertical-align: middle;">Axon Charts</span>
     </div>
     <button class="mobile-menu-button" onclick="toggleMobileMenu()" aria-label="Toggle menu">
@@ -671,7 +657,7 @@
   <!-- Hero Section -->
   <section class="hero">
     <div class="hero-logo">
-      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo">
+      <img src="assets/images/axon_charts_logo.png" alt="Axon Charts Logo" width="200" height="182">
 
     </div>
     <h1>Axon Charts</h1>
@@ -839,7 +825,7 @@
     <h2 class="section-title">Use Cases</h2>
     <p class="section-subtitle">Built for the next generation of intelligent trading systems.</p>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto;">
       <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 12px; padding: 40px; text-align: center;">
         <div style="font-size: 64px; margin-bottom: 20px; display: flex; justify-content: center;">
           <i data-lucide="bot" style="color: var(--accent); width: 64px; height: 64px;"></i>
@@ -983,7 +969,7 @@
         <button class="modal-close" onclick="closeDocsModal()">&times;</button>
       </div>
       <div class="modal-body" id="docs-modal-body">
-        <p style="color:#888">Loading...</p>
+        <p style="color: var(--text-secondary)">Loading...</p>
       </div>
     </div>
   </div>

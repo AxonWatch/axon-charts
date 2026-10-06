@@ -5,16 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Axon Charts - Examples</title>
   <script src="https://unpkg.com/axon-charts@1.7.0/dist/chart.js"></script>
-  <style>
-    :root {
-      --bg-primary: #0a0a0a;
-      --bg-secondary: #111;
-      --bg-card: #1a1a1a;
-      --text-primary: #ffffff;
-      --text-secondary: #888;
-      --border: #2a2a2a;
-      --accent: #4ade80;
-    }
+  <link rel="stylesheet" href="tokens.css">
+<style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: var(--bg-primary);
@@ -93,11 +85,12 @@
     }
     .codebar .cp {
       flex-shrink: 0;
-      width: 40px;
+      min-width: 44px;
+      height: 40px;
       background: #181818;
       border: none;
       border-left: 1px solid var(--border);
-      color: #666;
+      color: var(--text-tertiary);
       cursor: pointer;
       font-size: 16px;
       transition: background .15s, color .15s;

@@ -27,6 +27,19 @@
   --accent: #4ade80;
   --accent-hover: #22c55e;
 
+  /* Compat alias (docs.html/demo.html referenced --text-muted without defining it) */
+  --text-muted: #9a9a9a;
+
   /* Elevation (Flat-By-Default Rule) */
   --shadow: rgba(0, 0, 0, 0.45);
+}
+
+/* Reduced motion: kill transitions/animations globally on every page that loads tokens.css */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
