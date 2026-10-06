@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Axon Charts - LLM-First Financial Charting Library</title>
   <meta name="description" content="High-performance, LLM-first financial charting library for modern web applications. Built for AI agents, optimized for developers.">
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.462.0"></script>
   <style>
     :root {
       --bg-primary: #0a0a0a;
@@ -20,7 +20,7 @@
       --accent-hover: #22c55e;
       --card-bg: #1a1a1a;
       --input-bg: #0f0f0f;
-      --shadow: var(--shadow);
+      --shadow: rgba(0, 0, 0, 0.45);
     }
 
 
@@ -826,7 +826,7 @@
       </div>
 
       <!-- Embedded iframe with the test page -->
-      <iframe src="demo.html"
+      <iframe src="demo.html" loading="lazy"
               style="width: 100%; height: 600px; border: none;"
               title="Axon Charts Interactive Demo">
       </iframe>
@@ -1119,7 +1119,7 @@
   </style>
 
 
-<script src="https://unpkg.com/axon-charts/dist/chart.js"></script>
+<script src="https://unpkg.com/axon-charts@1.7.0/dist/chart.js"></script>
 <script>
 // ---- Live chart examples ----
 (function() {
