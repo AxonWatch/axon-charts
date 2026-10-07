@@ -66,6 +66,10 @@ export class TimeScaleAPI {
 
     // Re-render
     this.chart.render();
+
+    // Notify viewport listeners (documented contract: onVisibleRangeChange
+    // fires from programmatic APIs too — restore/backfill flows depend on it)
+    this.chart.triggerVisibleRangeChange();
   }
 
   /**
@@ -150,6 +154,9 @@ export class TimeScaleAPI {
 
     // Re-render
     this.chart.render();
+
+    // Notify viewport listeners (documented contract)
+    this.chart.triggerVisibleRangeChange();
   }
 
   /**
@@ -187,6 +194,9 @@ export class TimeScaleAPI {
 
     // Re-render
     this.chart.render();
+
+    // Notify viewport listeners (documented contract)
+    this.chart.triggerVisibleRangeChange();
   }
 
   /**
@@ -281,6 +291,9 @@ export class TimeScaleAPI {
     }
 
     this.chart.render();
+
+    // Notify viewport listeners (documented contract)
+    this.chart.triggerVisibleRangeChange();
   }
 
   /**
@@ -311,6 +324,9 @@ export class TimeScaleAPI {
     this.chart.state.barWidth = barSpacing;
     this.chart.options.timeScale.barSpacing = barSpacing;
     this.chart.render();
+
+    // Notify viewport listeners (documented contract)
+    this.chart.triggerVisibleRangeChange();
   }
 
   /**
