@@ -38,7 +38,7 @@ Returns everything an LLM needs to reason about the current chart state:
     "scales": { "pricePerPixel": 0.025, "timePerBar": 60000, "barWidth": 11 }
   },
   "state": {
-    "id": "ax-a1b2c3", "version": "1.7.0", "totalBars": 5000, "isAutoScrolling": true,
+    "id": "ax-a1b2c3", "version": "1.7.1", "totalBars": 5000, "isAutoScrolling": true,
     "seriesType": "candlestick",
     "market": { "baseAsset": "BTC", "quoteAsset": "USDT", "timeframe": "1m", "source": "Binance" }
   },
@@ -362,7 +362,11 @@ const ctx = JSON.stringify(chart.getContext(), null, 2);
 // 2. LLM sends a command
 chart.execute({ type: 'scrollToTime', time: 1704067200000 });
 
-// 3. Chart fires events when user interacts
+// 3. Chart fires events for BOTH user interaction AND programmatic/agent commands:
+//    onVisibleRangeChange fires after every viewport-changing execute() command
+//    (setVisibleRange, scrollToTime, fitContent, zoomIn, zoomOut, setBarSpacing)
+//    — so the agent's own actions loop back into its state view automatically.
+//    (v1.7.1; throttled to 1 event/200ms — rapid command bursts report the final range)
 chart.onVisibleRangeChange = (range) => {
   const updated = chart.getContext();
   sendToLLM(updated);
@@ -546,7 +550,8 @@ CONTROL:
 REACT:
   chart.onCrosshairMove = fn     → fires on cursor move
   chart.onBarClick = fn          → fires on bar click
-  chart.onVisibleRangeChange = fn → fires on pan/zoom
+  chart.onVisibleRangeChange = fn → fires on pan/zoom, resize, and ALL viewport commands
+      (setVisibleRange/scrollToTime/fitContent/zoomIn/zoomOut/setBarSpacing — v1.7.1)
   chart.onDataUpdate = fn        → fires on data mutation
   chart.onCandleClose = fn       → fires once per candle close
 

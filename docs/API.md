@@ -1,4 +1,4 @@
-# API Reference — Axon Charts v1.7.0
+# API Reference — Axon Charts v1.7.1
 
 This document provides the complete API surface for the Axon Charts library. The library exposes an `AxonCharts` global (when loaded via script tag) or named exports (when used as an ES module).
 
@@ -135,7 +135,7 @@ Returns a structured JSON object with current viewport state, visible bars, pric
   },
   state: {
     id: 'ax-a1b2c3',
-    version: '1.7.0',
+    version: '1.7.1',
     totalBars: 150,
     isAutoScrolling: true,
     seriesType: 'candlestick',
@@ -203,6 +203,8 @@ Returns `true` if the viewport is currently tracking the latest candle.
 chart.triggerVisibleRangeChange(): void
 ```
 Manually fires the `onVisibleRangeChange` callback with the current visible range. Throttled to 200ms between calls. Also called internally after resize and render.
+
+> **Programmatic + interaction parity (v1.7.1):** all viewport-changing surfaces fire this event — user interaction (wheel zoom, drag/pan, pinch, touch), window resize, `scrollToLatest()`/`viewLatest()`, **and now** the programmatic TimeScale APIs (`setVisibleRange`, `scrollToTime`, `fitContent`, `zoomIn`/`zoomOut`, `setBarSpacing`) plus the `execute()` viewport commands. This is what makes state-restore flows work: re-anchor the viewport after loading fresh bars → the event fires → listeners (backfill loaders, snapshot sync, agent state) run once with the restored range. See the [state-restore pattern](#state-restore-pattern).
 
 #### LLM Control
 
@@ -898,6 +900,39 @@ type VisibleRangeChangeCallback = (range: {
   fromTime: number;
   toTime: number;
 }) => void;
+```
+
+**Contract (v1.7.1):**
+
+| Behavior | Detail |
+|----------|--------|
+| Fires from | wheel zoom, drag/pan, pinch, touch, window resize, `scrollToLatest()`, `viewLatest()`, **programmatic TimeScale APIs** (`setVisibleRange`, `scrollToTime`, `fitContent`, `zoomIn`/`zoomOut`, `setBarSpacing`), and `execute()` viewport commands |
+| Does NOT fire from | `setData()`/`appendBar()`/`prependData()` data loads (viewport is not reset), failed/throwing API calls (validation/missing timestamps/no data), calls clamped to a no-op (zoom already at its limit), and back-to-back calls inside the 200ms rate window (only the final range is reported) |
+| Payload | indices + timestamps are computed live from the current viewport and actual bar data at fire time — always truthful, never extrapolated during data gaps |
+| Throttle | max 1 event / 200ms per chart; single re-anchor calls (restore, agent command) are always delivered |
+
+#### State-restore pattern
+
+An integration saving viewport snapshots (e.g. per symbol) should restore by *timestamp* and rely on the event to trigger backfill:
+
+```typescript
+// On restore, AFTER fresh bars have landed:
+try {
+  if (snapshot.atLiveEdge) {
+    chart.scrollToLatest();            // re-follow the tip with the saved rightGap
+  } else {
+    chart.timeScale().setVisibleRange(snapshot.from, snapshot.to);  // pinned historical view
+    // ← v1.7.1: this now fires onVisibleRangeChange — run your backfill in the listener
+  }
+} catch {
+  chart.scrollToLatest();              // snapshot older than current data → degrade to live edge
+}
+```
+
+Notes:
+- The event reports `fromTime`/`toTime` from ACTUAL loaded bars. If a restored window falls partly outside the loaded dataset, clamp your fetches to what you actually hold.
+- `setVisibleRange` throws when either timestamp is not found in the current data — persist timestamps you know exist or degrade to `scrollToLatest()`.
+- A pinned historical restore does **not** change auto-follow state by itself. If auto-follow was engaged (see `isAutoScrolling()`), the next live bar rolls the viewport by one bar; user interaction (pan/scroll) re-evaluates follow automatically. Programmatic follow control is on the roadmap — for now, prefer restoring through `viewLatest()`/user-gesture equivalents or re-anchoring follow with `scrollToLatest()` for live-edge saves.
 ```
 
 ```typescript
@@ -1815,7 +1850,7 @@ Axon Charts automatically registers in `window.__AXON_CHARTS__` for AI agent dis
 ```javascript
 // Global registry structure
 window.__AXON_CHARTS__ = {
-  version: '1.7.0',
+  version: '1.7.1',
   charts: {
     'ax-a1b2c3': chartInstance,   // Keyed by axonId
     'btc-usdt': chartInstance       // User-provided context.id

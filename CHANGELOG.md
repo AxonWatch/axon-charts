@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.7.1] - 2026-10-07
+
+### Fixed — `onVisibleRangeChange` now fires from programmatic viewport APIs
+- **Consumer-reported restore bug** (pinned-snapshot flows): `timeScale().setVisibleRange()` re-anchored the viewport and rendered, but never called `triggerVisibleRangeChange()` — so apps listening for viewport changes (tile backfill, virtualized history loaders, agent-state sync) never ran after a *historical* restore. Only live-edge saves took the `scrollToLatest()` branch (which does fire), explaining "sometimes it works".
+- Same omission existed across the **entire programmatic family**: `scrollToTime()`, `fitContent()`, `zoomIn()`, `zoomOut()` (delegates), `setBarSpacing()`. All five now fire the event after render. `types/index.ts` already documented this contract — the implementation now honors it.
+- `execute({ type: 'setVisibleRange' })` and the other viewport commands delegate to the same APIs and inherit the fix automatically.
+- **No event on failure**: if validation throws (`from >= to`, timestamp not found, no data), state is untouched and nothing fires. No event for calls that are clamped to no-ops either (e.g. `zoomIn()` hitting `maxBarSpacing`).
+- **Rate limit unchanged** (pre-existing, documented): `triggerVisibleRangeChange` coalesces to one event per 200ms — rapid back-to-back programmatic calls receive at most one event carrying the *final* range; single restore/agent calls are unaffected.
+- Bundle: 47699 → **47708 bytes gzipped** (+9 bytes — five call sites). Build and typecheck green; verified with the fake-DOM harness that each API fires exactly once per call (spaced >200ms) with correct `from/to` indices and timestamps, including via `execute()`.
+
 ## [1.7.0] - 2026-09-28
 
 ### Added — Sub-pane layout budget (keeps the main chart readable)
